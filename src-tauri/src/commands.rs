@@ -44,6 +44,18 @@ pub fn hide_panel(app: AppHandle) {
     panel::hide(&app);
 }
 
+/// The panel page has loaded and rendered its first state.
+#[tauri::command]
+pub fn panel_ready(app: AppHandle) {
+    panel::on_ready(&app);
+}
+
+/// The panel painted its first frame after being shown (timing log).
+#[tauri::command]
+pub fn panel_painted(app: AppHandle) {
+    panel::on_painted(&app);
+}
+
 #[tauri::command]
 pub fn quit(app: AppHandle) {
     state::quit(&app);

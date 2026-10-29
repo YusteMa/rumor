@@ -62,7 +62,7 @@ Run `npm run tauri dev` (or the installed build). No window should open.
 
 ## Panel (phase 3)
 
-Reference screenshots: `docs/screenshots/panel-light.png`, `panel-dark.png`.
+Reference screenshots: `docs/screenshots/panel-light.png`, `panel-dark.png`, `accents.png`.
 
 - [ ] Right click on the tray icon: the panel fades in, 8 px upward, in under 150 ms, next to the icon.
 - [ ] Click anywhere outside: it fades out. Right click on the icon while open: it closes and stays closed.
@@ -72,6 +72,8 @@ Reference screenshots: `docs/screenshots/panel-light.png`, `panel-dark.png`.
 - [ ] Windows light and dark mode: the panel follows the system.
 - [ ] Play: the icon morphs into pause, the halo breathes slowly (4 s), the status dot turns pink, the spectrum fades in.
 - [ ] Pink / brown / white: the curve morphs to the new slope (−3 / −6 / 0 dB/oct) and lies on the dashed line.
+- [ ] The accent follows the noise (dusty pink, toasted caramel, blue-grey pearl) on play, halo, curve, selection, slider and focus ring, crossfading in ~300 ms together with the curve. Text stays neutral; the tray icon stays monochrome.
+- [ ] Panel lifecycle: hover the tray icon for half a second, then right click: the panel appears at once. Close it and wait 5 minutes: Task Manager shows Rumor back near 5 MB (WebView2 processes gone). Hovering again rebuilds it.
 - [ ] Volume drag is smooth, the value follows the thumb, the tray tooltip follows the value.
 - [ ] Timer 25 min while playing: "quedan 24:59" counts down here and in the tooltip; pausing cancels it; at the end the noise fades out over ~10 s.
 - [ ] Unplug headphones while the panel is open: "En pausa: se desconectaron los cascos" under the title.
@@ -83,4 +85,5 @@ Reference screenshots: `docs/screenshots/panel-light.png`, `panel-dark.png`.
 
 ## Measurements (SPEC §3.4)
 - [ ] `cargo run --release --example engine -- --check 20`: frames ≈ 100 % of expected, CPU < 1 % of the machine.
-- [ ] Memory (release, private bytes incl. WebView2), measured 2026-10-29: tray only ~21 MB; panel created and hidden ~162 MB; panel open ~215 MB. Executable: 6.0 MB.
+- [ ] Memory (RAM = private working set incl. WebView2, bundled build), measured 2026-10-29: no panel ~3 MB; panel open ~154 MB; hidden and suspended ~148 MB; 5 minutes after closing (webview destroyed) ~6 MB. Executable: 6.0 MB.
+- [ ] Panel open latency, click to first frame on screen (2026-10-29): already built 63–78 ms; hover ≥ 600 ms before the click ~100 ms; hover 400 ms ~210 ms; hover 250 ms ~300–380 ms; no hover (keyboard, second launch) ~600 ms. Building the webview takes ~500 ms.

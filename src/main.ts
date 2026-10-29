@@ -40,6 +40,8 @@ function render(s: PanelState): void {
     document.documentElement.toggleAttribute("data-mica", s.mica);
     spectrum.refreshPalette();
   }
+  // The accent follows the noise (tokens.css); text stays neutral.
+  document.documentElement.dataset.noise = s.color;
   ui.player.render(s);
   ui.colors.render(s);
   ui.volume.render(s);
@@ -59,6 +61,8 @@ api.onShown(() => {
   panel.classList.add("is-open");
   spectrum.start();
   void api.getState().then((s) => s && render(s));
+  // Two frames: the first paints, the second runs once it is on screen.
+  requestAnimationFrame(() => requestAnimationFrame(() => void api.painted()));
 });
 api.onHiding(() => {
   panel.classList.remove("is-open");
@@ -83,3 +87,4 @@ if (isTauri) {
 
 const initial = await api.getState();
 if (initial) render(initial);
+void api.ready();

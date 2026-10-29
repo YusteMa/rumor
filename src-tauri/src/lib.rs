@@ -21,12 +21,21 @@ use tauri::RunEvent;
 pub fn run() {
     let app = tauri::Builder::default()
         // Must be first, so a second launch exits before doing anything else.
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            state::second_instance(app);
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            state::second_instance(app, &args);
         }))
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(log::LevelFilter::Info)
+                // Our own debug lines (timings, second-instance args) in dev builds.
+                .level_for(
+                    "rumor_lib",
+                    if cfg!(debug_assertions) {
+                        log::LevelFilter::Debug
+                    } else {
+                        log::LevelFilter::Info
+                    },
+                )
                 .build(),
         )
         .plugin(tauri_plugin_notification::init())
@@ -39,6 +48,8 @@ pub fn run() {
             commands::set_volume,
             commands::set_timer,
             commands::hide_panel,
+            commands::panel_ready,
+            commands::panel_painted,
             commands::quit,
         ])
         .setup(|app| state::setup(app.handle()))

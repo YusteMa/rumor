@@ -8,8 +8,6 @@ import { BANDS, F_MAX, F_MIN, bandCentres, type Color } from "../api";
 export const SLOPES: Record<Color, number> = { pink: -3, brown: -6, white: 0 };
 
 const REF_BANDS = bandCentres.flatMap((f, i) => (f >= 800 && f <= 1250 ? [i] : []));
-/** Per-frame approach to the target: ~150 ms at 60 fps. */
-const MORPH = 0.16;
 const FADE = 0.08;
 /** No data for this long means the stream stopped. */
 const STALE_MS = 300;
@@ -25,6 +23,8 @@ interface Palette {
   bottom: number;
   lineWidth: number;
   dash: number;
+  /** Time constant of the morph, so it settles in --dur-accent like the accent. */
+  morphTau: number;
 }
 
 export class Spectrum {
@@ -38,6 +38,7 @@ export class Spectrum {
   private slope = SLOPES.pink;
   private targetSlope = SLOPES.pink;
   private raf = 0;
+  private lastFrame = 0;
   private palette: Palette;
   private readonly reduced = matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -66,6 +67,8 @@ export class Spectrum {
       bottom: Number(v("--spectrum-db-bottom")) || -30,
       lineWidth: parseFloat(v("--spectrum-line")) || 1.5,
       dash: parseFloat(v("--spectrum-dash")) || 3,
+      // ~95 % of the way in --dur-accent (three time constants).
+      morphTau: (parseFloat(v("--dur-accent")) || 300) / 3,
     };
   }
 
@@ -100,15 +103,23 @@ export class Spectrum {
   stop(): void {
     cancelAnimationFrame(this.raf);
     this.raf = 0;
+    this.lastFrame = 0;
   }
 
-  private readonly frame = (): void => {
+  private readonly frame = (now: number): void => {
+    const dt = this.lastFrame ? Math.min(now - this.lastFrame, 100) : 16;
+    this.lastFrame = now;
+    const k = this.palette.morphTau > 0 ? 1 - Math.exp(-dt / this.palette.morphTau) : 1;
     const live = this.playing && performance.now() - this.lastData < STALE_MS;
     const goal = live ? 1 : 0;
     this.alpha += Math.sign(goal - this.alpha) * Math.min(FADE, Math.abs(goal - this.alpha));
     if (this.alpha === 0) this.seeded = false;
-    for (let i = 0; i < BANDS; i++) this.shown[i] += (this.target[i] - this.shown[i]) * MORPH;
-    this.slope += (this.targetSlope - this.slope) * MORPH;
+    for (let i = 0; i < BANDS; i++) this.shown[i] += (this.target[i] - this.shown[i]) * k;
+    this.slope += (this.targetSlope - this.slope) * k;
+    // The accent is mid-transition after a colour change: follow it.
+    const css = getComputedStyle(document.documentElement);
+    this.palette.accent = css.getPropertyValue("--accent").trim();
+    this.palette.soft = css.getPropertyValue("--accent-soft").trim();
     this.draw();
     this.raf = requestAnimationFrame(this.frame);
   };
@@ -122,8 +133,11 @@ export class Spectrum {
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
     }
+    // Clear in device pixels: at fractional scaling (150 %) a CSS-pixel clear
+    // misses the last column and stale strokes pile up there.
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, w, h);
     const y = (db: number) => ((p.top - Math.max(p.bottom, Math.min(p.top, db))) / (p.top - p.bottom)) * h;
 
     // Decade grid.

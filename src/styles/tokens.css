@@ -1,15 +1,38 @@
 /* Design tokens (SPEC §4.5). Every colour, size and duration in the UI comes
    from here; components never hard-code values (CLAUDE.md rule 9). */
+
+/* Registered so the accent can transition when the noise colour changes. */
+@property --accent {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #c7647f;
+}
+
+@property --accent-soft {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #f7e1e6;
+}
+
 :root {
-  /* Colour: warm neutrals and a single dusty-pink accent. */
+  /* Colour: warm neutrals and one accent, which follows the noise:
+     dusty pink, toasted caramel or blue-grey pearl. Accents are ~3.5:1
+     against the background in light (WCAG non-text ≥ 3:1) and ≥ 7:1 in
+     dark; text on the soft tints is ≥ 11:1. */
   --bg: #faf7f5;
   --surface: #ffffff;
   --surface-hover: #f6f1ee;
   --ink: #2b2523;
   --muted: #857a76;
   --line: #ece4e0;
-  --accent: #d4728c;
-  --accent-soft: #f7e1e6;
+  --accent-pink: #c7647f;
+  --accent-pink-soft: #f7e1e6;
+  --accent-brown: #b5733d;
+  --accent-brown-soft: #f3e4d6;
+  --accent-white: #76859a;
+  --accent-white-soft: #e6eaf0;
+  --accent: var(--accent-pink);
+  --accent-soft: var(--accent-pink-soft);
   --on-accent: #ffffff;
 
   /* Type: the Windows system font, 0 KB and native. */
@@ -62,6 +85,8 @@
   --dur-close: 120ms;
   --dur-max: 250ms;
   --dur-breathe: 4s;
+  /* Accent change between noises; the spectrum curve morphs in step. */
+  --dur-accent: 300ms;
   --open-offset: 8px;
   --press-scale: 0.96;
   --hover-scale: 1.03;
@@ -88,8 +113,12 @@
     --ink: #f2ece9;
     --muted: #a39793;
     --line: #38322f;
-    --accent: #e8899f;
-    --accent-soft: #3d2a2f;
+    --accent-pink: #e8899f;
+    --accent-pink-soft: #3d2a2f;
+    --accent-brown: #d9a06a;
+    --accent-brown-soft: #3b2e23;
+    --accent-white: #afbacb;
+    --accent-white-soft: #2b3038;
     --on-accent: #1c1a19;
     color-scheme: dark;
   }
@@ -102,10 +131,31 @@
   --ink: #f2ece9;
   --muted: #a39793;
   --line: #38322f;
-  --accent: #e8899f;
-  --accent-soft: #3d2a2f;
+  --accent-pink: #e8899f;
+  --accent-pink-soft: #3d2a2f;
+  --accent-brown: #d9a06a;
+  --accent-brown-soft: #3b2e23;
+  --accent-white: #afbacb;
+  --accent-white-soft: #2b3038;
   --on-accent: #1c1a19;
   color-scheme: dark;
+}
+
+/* The accent follows the selected noise. */
+:root {
+  transition:
+    --accent var(--dur-accent) var(--ease-in-out),
+    --accent-soft var(--dur-accent) var(--ease-in-out);
+}
+
+:root[data-noise="brown"] {
+  --accent: var(--accent-brown);
+  --accent-soft: var(--accent-brown-soft);
+}
+
+:root[data-noise="white"] {
+  --accent: var(--accent-white);
+  --accent-soft: var(--accent-white-soft);
 }
 
 /* On Mica the backdrop shows through a warm veil; cards stay readable. */
@@ -138,5 +188,6 @@
     --press-scale: 1;
     --hover-scale: 1;
     --thumb-hover-scale: 1;
+    --dur-accent: 0ms;
   }
 }

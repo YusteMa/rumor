@@ -135,6 +135,12 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
     let mut builder = TrayIconBuilder::with_id(ID)
         .tooltip(&text)
         .on_tray_icon_event(|tray, event| {
+            // Build the panel as soon as the pointer arrives, so the click
+            // finds it ready.
+            if let TrayIconEvent::Enter { .. } | TrayIconEvent::Move { .. } = event {
+                panel::prepare(tray.app_handle());
+                return;
+            }
             if let TrayIconEvent::Click {
                 button,
                 button_state: MouseButtonState::Up,

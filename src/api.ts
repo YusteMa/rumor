@@ -28,6 +28,10 @@ export interface Backend {
   setTimer(minutes: number): Promise<void>;
   hide(): Promise<void>;
   quit(): Promise<void>;
+  /** The page has rendered its first state. */
+  ready(): Promise<void>;
+  /** The first frame after being shown is on screen (timing). */
+  painted(): Promise<void>;
   onState(cb: (s: PanelState) => void): void;
   /** 64 band levels in dB (power density), ~30 per second while visible. */
   onSpectrum(cb: (bands: number[]) => void): void;
@@ -61,6 +65,8 @@ async function tauriBackend(): Promise<Backend> {
     setTimer: (minutes) => call("set_timer", { minutes }),
     hide: () => call("hide_panel"),
     quit: () => call("quit"),
+    ready: () => call("panel_ready"),
+    painted: () => call("panel_painted"),
     onState: (cb) => void listen<PanelState>("state-changed", (e) => cb(e.payload)),
     onSpectrum: (cb) => void listen<number[]>("spectrum", (e) => cb(e.payload)),
     onTimerTick: (cb) =>
@@ -129,6 +135,8 @@ function mockBackend(): Backend {
     },
     hide: async () => {},
     quit: async () => {},
+    ready: async () => {},
+    painted: async () => {},
     onState: (cb) => listeners.state.push(cb),
     onSpectrum: (cb) => listeners.spectrum.push(cb),
     onTimerTick: () => {},

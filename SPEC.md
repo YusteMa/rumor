@@ -187,7 +187,7 @@ El panel solo enseña lo que usas a diario. **Todo lo demás vive en Ajustes**, 
 **Principios**
 1. **Una cosa protagonista por pantalla.** En el panel es el botón de play; todo lo demás es secundario y más discreto.
 2. **Divulgación progresiva.** Lo diario está en el panel; lo avanzado, en Ajustes. Nunca al revés.
-3. **Calidez, no frialdad.** Neutros con un toque cálido (nunca gris puro) y **un único acento: rosa polvo**. Identidad propia, no un clon de nadie.
+3. **Calidez, no frialdad.** Neutros con un toque cálido (nunca gris puro) y **un único acento a la vez**, que sigue al ruido (rosa polvo, caramelo tostado o gris perla azulado). Identidad propia, no un clon de nadie.
 4. **El movimiento informa.** Cada animación explica algo (se abre, cambia o suena); ninguna es decorativa sin motivo.
 5. **Nativo de Windows.** Debe sentirse parte de Windows 11, no una web metida en una ventana.
 
@@ -200,8 +200,12 @@ El panel solo enseña lo que usas a diario. **Todo lo demás vive en Ajustes**, 
 | `--ink` | `#2B2523` | `#F2ECE9` | Texto principal |
 | `--muted` | `#857A76` | `#A39793` | Texto secundario |
 | `--line` | `#ECE4E0` | `#38322F` | Bordes de 1 px |
-| `--accent` | `#D4728C` | `#E8899F` | Rosa polvo: play, selección, slider |
-| `--accent-soft` | `#F7E1E6` | `#3D2A2F` | Halos y fondos de selección |
+| `--accent-pink` | `#C7647F` | `#E8899F` | Acento con ruido rosa (rosa polvo) |
+| `--accent-brown` | `#B5733D` | `#D9A06A` | Acento con ruido marrón (caramelo tostado) |
+| `--accent-white` | `#76859A` | `#AFBACB` | Acento con ruido blanco (gris perla azulado) |
+| `--accent-*-soft` | `#F7E1E6` · `#F3E4D6` · `#E6EAF0` | `#3D2A2F` · `#3B2E23` · `#2B3038` | Halos, relleno del espectro y fondos de selección |
+
+**El acento sigue al ruido** (2026-10-29): `--accent` y `--accent-soft` toman el par del ruido seleccionado y cambian con una transición de 300 ms (`--dur-accent`), sincronizada con la curva del espectro. Solo cambia el acento (play, halo, curva, selección, slider, foco); el texto queda neutro y el icono de la bandeja, monocromo. Contraste: ~3,5:1 sobre el fondo en claro (mínimo WCAG para elementos gráficos, 3:1) y ≥ 7:1 en oscuro; el texto sobre los tonos suaves supera 11:1. El rosa claro pasa de `#D4728C` a `#C7647F` porque el original daba 2,99:1.
 
 - **Tipografía:** **Segoe UI Variable** (la del sistema en Windows 11; pesa 0 KB y queda nativa), con `system-ui` como respaldo. Números con `tabular-nums` para que la cuenta atrás no baile.
 - **Escala:** 12 / 14 / 16 / 20 / 28 px. Espaciado en múltiplos de 4 px. Radio de 12 px en tarjetas y 999 px en el botón de play.

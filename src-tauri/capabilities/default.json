@@ -13,6 +13,8 @@
     "allow-set-volume",
     "allow-set-timer",
     "allow-hide-panel",
+    "allow-panel-ready",
+    "allow-panel-painted",
     "allow-quit"
   ]
 }

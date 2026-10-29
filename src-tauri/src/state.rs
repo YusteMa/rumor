@@ -138,7 +138,7 @@ pub fn setup(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     // The shortcut first, so the tray can show it.
     shortcut::register_defaults(app);
     tray::create(app)?;
-    panel::create(app)?;
+    panel::init(app);
     start_ticker(app);
     #[cfg(debug_assertions)]
     dev_overrides(app);
@@ -277,7 +277,31 @@ pub fn quit(app: &AppHandle) {
 }
 
 /// Someone launched Rumor again (single instance): show the panel.
-pub fn second_instance(app: &AppHandle) {
+///
+/// Debug builds also take `--dev-hide`, `--dev-prepare` and
+/// `--dev-color <pink|brown|white>`, to drive the panel for screenshots and
+/// timings.
+pub fn second_instance(app: &AppHandle, args: &[String]) {
+    log::debug!("second instance: {args:?}");
+    if cfg!(debug_assertions) {
+        if args.iter().any(|a| a == "--dev-hide") {
+            panel::hide(app);
+            return;
+        }
+        // What hovering the tray icon does.
+        if args.iter().any(|a| a == "--dev-prepare") {
+            panel::prepare(app);
+            return;
+        }
+        let color = args
+            .iter()
+            .position(|a| a == "--dev-color")
+            .and_then(|i| args.get(i + 1))
+            .and_then(|c| serde_json::from_value(serde_json::Value::String(c.clone())).ok());
+        if let Some(color) = color {
+            set_color(app, color);
+        }
+    }
     panel::open(app, None);
 }
 

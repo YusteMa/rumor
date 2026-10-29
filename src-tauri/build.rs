@@ -8,6 +8,8 @@ const COMMANDS: &[&str] = &[
     "set_volume",
     "set_timer",
     "hide_panel",
+    "panel_ready",
+    "panel_painted",
     "quit",
 ];
 

@@ -1,10 +1,15 @@
 //! The panel window (SPEC §4.2): frameless, anchored next to the tray on
 //! whichever side the taskbar is, Mica on Windows 11 (solid colour on 10),
-//! hidden when it loses focus. It is created hidden at startup so it opens
-//! instantly; the UI animates in on `panel-shown` and out on `panel-hiding`.
+//! hidden when it loses focus. The UI animates in on `panel-shown` and out
+//! on `panel-hiding`.
+//!
+//! Memory (SPEC §3.4): WebView2 costs well over 100 MB, so the panel only
+//! exists while it is useful. It is built when the pointer enters the tray
+//! icon, so it is usually ready by the time the click lands; while hidden it
+//! asks WebView2 for low memory; after five minutes closed it is destroyed.
 
-use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
 use serde::Serialize;
@@ -26,13 +31,30 @@ const CLOSE_MS: u64 = 120;
 /// A click on the tray icon blurs the panel just before the click arrives;
 /// within this window that click must not reopen it.
 const REOPEN_GUARD: Duration = Duration::from_millis(300);
+/// How long a closed panel is kept before its webview is destroyed.
+const IDLE_TTL: Duration = Duration::from_secs(5 * 60);
+
+enum Life {
+    Absent,
+    Loading { started: Instant },
+    Ready,
+}
 
 struct Panel {
-    mica: bool,
+    mica: AtomicBool,
     open: AtomicBool,
-    /// Bumped on every open/hide so a stale delayed hide does nothing.
+    /// Bumped on every open/hide so stale delayed work does nothing.
     generation: AtomicU64,
     last_hidden: Mutex<Option<Instant>>,
+    life: Mutex<Life>,
+    /// An open requested while the webview was still loading.
+    pending: Mutex<Option<(Option<Rect>, Instant)>>,
+    /// When the current open was requested, to log how long it took to show.
+    requested: Mutex<Option<Instant>>,
+}
+
+fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
+    m.lock().unwrap_or_else(|e| e.into_inner())
 }
 
 /// Debug builds only: `RUMOR_THEME=light|dark` forces the theme (the
@@ -48,7 +70,62 @@ fn forced_theme() -> Option<Theme> {
     }
 }
 
-pub fn create(app: &AppHandle) -> tauri::Result<()> {
+/// Debug builds only: `RUMOR_DEV_PANEL_TTL=<seconds>` shortens the idle
+/// time before the panel is destroyed, to test it.
+fn idle_ttl() -> Duration {
+    if cfg!(debug_assertions) {
+        if let Some(secs) = std::env::var("RUMOR_DEV_PANEL_TTL")
+            .ok()
+            .and_then(|v| v.parse().ok())
+        {
+            return Duration::from_secs(secs);
+        }
+    }
+    IDLE_TTL
+}
+
+/// Registers the panel's state; the window itself is built on demand.
+pub fn init(app: &AppHandle) {
+    app.manage(Panel {
+        mica: AtomicBool::new(false),
+        open: AtomicBool::new(false),
+        generation: AtomicU64::new(0),
+        last_hidden: Mutex::new(None),
+        life: Mutex::new(Life::Absent),
+        pending: Mutex::new(None),
+        requested: Mutex::new(None),
+    });
+}
+
+/// Starts building the panel if it does not exist. Called when the pointer
+/// enters the tray icon, so the click usually finds it ready.
+pub fn prepare(app: &AppHandle) {
+    let Some(panel) = app.try_state::<Panel>() else {
+        return;
+    };
+    {
+        let mut life = lock(&panel.life);
+        if !matches!(*life, Life::Absent) {
+            return;
+        }
+        *life = Life::Loading {
+            started: Instant::now(),
+        };
+    }
+    let app = app.clone();
+    // Building a webview on the event loop's own thread can deadlock on
+    // Windows; from another thread Tauri hands the work to the loop.
+    std::thread::spawn(move || {
+        if let Err(e) = build(&app) {
+            log::error!("panel: {e}");
+            if let Some(panel) = app.try_state::<Panel>() {
+                *lock(&panel.life) = Life::Absent;
+            }
+        }
+    });
+}
+
+fn build(app: &AppHandle) -> tauri::Result<()> {
     let theme = forced_theme();
     let window = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("index.html".into()))
         .title("Rumor")
@@ -68,15 +145,9 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
 
     // Fails on Windows 10, where the CSS falls back to a solid colour.
     let mica = window_vibrancy::apply_mica(&window, theme.map(|t| t == Theme::Dark)).is_ok();
-    log::info!("panel ready (mica: {mica})");
-
-    app.manage(Panel {
-        mica,
-        open: AtomicBool::new(false),
-        generation: AtomicU64::new(0),
-        last_hidden: Mutex::new(None),
-    });
-
+    if let Some(panel) = app.try_state::<Panel>() {
+        panel.mica.store(mica, Ordering::Relaxed);
+    }
     set_border(&window, window.theme().unwrap_or(Theme::Light));
 
     let handle = app.clone();
@@ -87,6 +158,57 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
         _ => {}
     });
     Ok(())
+}
+
+/// The page has loaded and rendered its first state (`panel_ready`).
+pub fn on_ready(app: &AppHandle) {
+    let Some(panel) = app.try_state::<Panel>() else {
+        return;
+    };
+    let started = {
+        let mut life = lock(&panel.life);
+        let started = match *life {
+            Life::Loading { started } => Some(started),
+            _ => None,
+        };
+        *life = Life::Ready;
+        started
+    };
+    if let Some(started) = started {
+        log::info!(
+            "panel built in {} ms (mica: {})",
+            started.elapsed().as_millis(),
+            panel.mica.load(Ordering::Relaxed)
+        );
+    }
+    let pending = lock(&panel.pending).take();
+    match pending {
+        Some((anchor, clicked)) => {
+            log::info!(
+                "panel ready {} ms after the click",
+                clicked.elapsed().as_millis()
+            );
+            show(app, anchor, clicked);
+        }
+        None => {
+            // Built ahead of a click that may never come.
+            set_low_memory(app, true);
+            schedule_destroy(app, panel.generation.load(Ordering::Relaxed));
+        }
+    }
+}
+
+/// The UI painted its first frame after `panel-shown` (`panel_painted`).
+pub fn on_painted(app: &AppHandle) {
+    let Some(panel) = app.try_state::<Panel>() else {
+        return;
+    };
+    if let Some(clicked) = lock(&panel.requested).take() {
+        log::info!(
+            "panel on screen {} ms after the click",
+            clicked.elapsed().as_millis()
+        );
+    }
 }
 
 /// Windows 11 draws a 1 px border round the panel in its own colour, dark
@@ -118,8 +240,90 @@ fn set_border(window: &WebviewWindow, theme: Theme) {
     let _ = (window, theme);
 }
 
+/// Asks WebView2 to trim its memory while the panel is hidden.
+fn set_low_memory(app: &AppHandle, low: bool) {
+    let Some(window) = app.get_webview_window(LABEL) else {
+        return;
+    };
+    #[cfg(windows)]
+    {
+        // Hiding the window doesn't tell WebView2; it only trims memory once
+        // the controller itself is invisible, and frees most of it suspended.
+        let result = window.with_webview(move |webview| {
+            use webview2_com::Microsoft::Web::WebView2::Win32::{
+                COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW,
+                COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL, ICoreWebView2_3, ICoreWebView2_19,
+            };
+            use webview2_com::TrySuspendCompletedHandler;
+            use windows_core::Interface;
+
+            let controller = webview.controller();
+            unsafe {
+                let Ok(core) = controller.CoreWebView2() else {
+                    return;
+                };
+                let core3 = core.cast::<ICoreWebView2_3>().ok();
+                let core19 = core.cast::<ICoreWebView2_19>().ok();
+                if low {
+                    let _ = controller.SetIsVisible(false);
+                    if let Some(c) = &core19 {
+                        let _ =
+                            c.SetMemoryUsageTargetLevel(COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW);
+                    }
+                    if let Some(c) = &core3 {
+                        let done = TrySuspendCompletedHandler::create(Box::new(|_, _| Ok(())));
+                        let _ = c.TrySuspend(&done);
+                    }
+                } else {
+                    if let Some(c) = &core3 {
+                        let _ = c.Resume();
+                    }
+                    if let Some(c) = &core19 {
+                        let _ = c.SetMemoryUsageTargetLevel(
+                            COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL,
+                        );
+                    }
+                    let _ = controller.SetIsVisible(true);
+                }
+            }
+        });
+        if let Err(e) = result {
+            log::warn!("panel memory level: {e}");
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = (window, low);
+}
+
+/// Destroys the panel's webview if it stays closed for `idle_ttl()`.
+fn schedule_destroy(app: &AppHandle, generation: u64) {
+    let app = app.clone();
+    std::thread::spawn(move || {
+        let ttl = idle_ttl();
+        std::thread::sleep(ttl);
+        let Some(panel) = app.try_state::<Panel>() else {
+            return;
+        };
+        let untouched = panel.generation.load(Ordering::Relaxed) == generation
+            && !panel.open.load(Ordering::Relaxed)
+            && matches!(*lock(&panel.life), Life::Ready);
+        if !untouched {
+            return;
+        }
+        if let Some(window) = app.get_webview_window(LABEL) {
+            if let Err(e) = window.destroy() {
+                log::warn!("panel destroy: {e}");
+                return;
+            }
+        }
+        *lock(&panel.life) = Life::Absent;
+        log::info!("panel released after {} s closed", ttl.as_secs());
+    });
+}
+
 pub fn uses_mica(app: &AppHandle) -> bool {
-    app.try_state::<Panel>().is_some_and(|p| p.mica)
+    app.try_state::<Panel>()
+        .is_some_and(|p| p.mica.load(Ordering::Relaxed))
 }
 
 fn is_open(app: &AppHandle) -> bool {
@@ -136,25 +340,37 @@ pub fn toggle(app: &AppHandle, anchor: Option<Rect>) {
         hide(app);
         return;
     }
-    let just_hidden = panel
-        .last_hidden
-        .lock()
-        .ok()
-        .and_then(|t| *t)
-        .is_some_and(|t| t.elapsed() < REOPEN_GUARD);
+    let just_hidden = lock(&panel.last_hidden).is_some_and(|t| t.elapsed() < REOPEN_GUARD);
     if !just_hidden {
         open(app, anchor);
     }
 }
 
+/// Shows the panel, building it first if needed.
 pub fn open(app: &AppHandle, anchor: Option<Rect>) {
+    let Some(panel) = app.try_state::<Panel>() else {
+        return;
+    };
+    let clicked = Instant::now();
+    let ready = matches!(*lock(&panel.life), Life::Ready);
+    if ready {
+        show(app, anchor, clicked);
+    } else {
+        // Shown by `on_ready` once the page has loaded.
+        *lock(&panel.pending) = Some((anchor, clicked));
+        prepare(app);
+    }
+}
+
+fn show(app: &AppHandle, anchor: Option<Rect>, clicked: Instant) {
     let (Some(window), Some(panel)) = (app.get_webview_window(LABEL), app.try_state::<Panel>())
     else {
         return;
     };
-    let started = Instant::now();
     panel.generation.fetch_add(1, Ordering::Relaxed);
     panel.open.store(true, Ordering::Relaxed);
+    *lock(&panel.requested) = Some(clicked);
+    set_low_memory(app, false);
     place(app, &window, anchor);
     emit_state(app);
     if let Err(e) = window.show() {
@@ -165,7 +381,6 @@ pub fn open(app: &AppHandle, anchor: Option<Rect>) {
     if let Some(state) = app.try_state::<AppState>() {
         state.engine.set_spectrum(true);
     }
-    log::debug!("panel opened in {:?}", started.elapsed());
 }
 
 pub fn hide(app: &AppHandle) {
@@ -176,9 +391,7 @@ pub fn hide(app: &AppHandle) {
     if !panel.open.swap(false, Ordering::Relaxed) {
         return;
     }
-    if let Ok(mut t) = panel.last_hidden.lock() {
-        *t = Some(Instant::now());
-    }
+    *lock(&panel.last_hidden) = Some(Instant::now());
     if let Some(state) = app.try_state::<AppState>() {
         state.engine.set_spectrum(false);
     }
@@ -192,6 +405,8 @@ pub fn hide(app: &AppHandle) {
             .map(|p| p.generation.load(Ordering::Relaxed));
         if current == Some(generation) {
             let _ = window.hide();
+            set_low_memory(&app, true);
+            schedule_destroy(&app, generation);
         }
     });
 }
