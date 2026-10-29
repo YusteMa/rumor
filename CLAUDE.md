@@ -2,9 +2,9 @@
 
 Guía para Claude Code en este repositorio. **Lee `SPEC.md` y `ROADMAP.md` antes de tocar nada.**
 
-## Prioridades (por encima de todo lo demás)
-1. **La calidad de sonido es la prioridad número uno**, por encima de cualquier función. Ante la duda, se recorta una función antes que tocar el sonido.
-2. **Tiene que sentirse premium:** cada detalle visual pulido, nada que parezca hecho deprisa.
+## Prioridades por encima de todo
+1. **La calidad de sonido es la prioridad número uno**, por encima de cualquier función nueva.
+2. **El producto tiene que sentirse premium:** cada detalle visual pulido, nada que parezca hecho deprisa.
 
 ## Qué es
 App de bandeja para Windows que genera ruido rosa, marrón y blanco en tiempo real. Tauri v2 + motor de audio en Rust (`cpal`) + panel en TypeScript sin framework. Diseño de referencia: `docs/prototype.html`.
@@ -41,10 +41,16 @@ rumor/
 │  │  └─ audio/
 │  │     ├─ mod.rs
 │  │     ├─ engine.rs        # stream cpal, reconexión
+│  │     ├─ device_watch.rs  # IMMNotificationClient, cascos vs altavoces
 │  │     ├─ noise.rs         # generadores (puros, testeables)
 │  │     ├─ smoothing.rs     # rampas y one-pole
 │  │     ├─ params.rs        # parámetros atómicos
 │  │     └─ analysis.rs      # bandas del espectro para el panel
+│  │  └─ study/
+│  │     ├─ mod.rs
+│  │     ├─ machine.rs       # estados cronómetro/Pomodoro (puro, testeable)
+│  │     ├─ idle.rs          # GetLastInputInfo
+│  │     └─ db.rs            # SQLite: sessions, tags, migraciones
 │  ├─ tests/dsp.rs           # tests espectrales
 │  ├─ icons/
 │  ├─ capabilities/default.json
@@ -63,10 +69,16 @@ rumor/
 6. **Permisos mínimos** en `capabilities/`: solo los comandos y plugins que se usan.
 7. **Sin frameworks de UI ni librerías de componentes.** El panel debe pesar muy poco.
 8. **Sin telemetría ni peticiones de red** (salvo el futuro updater, que será opt-in).
+9. **Diseño = SPEC §4.5.** Todo color, tamaño y duración sale de `src/styles/tokens.css`; ningún valor suelto en los componentes. Sencillo por fuera (panel) y completo por dentro (Ajustes). Si dudas entre añadir algo al panel o a Ajustes, va a Ajustes.
+10. **Cascos desconectados → pausa** por defecto (SPEC §3.3). Nunca soltar ruido por los altavoces sin que el usuario lo haya pedido.
+11. **El tiempo se mide con `Instant`, no sumando ticks.** El cronómetro debe cuadrar al segundo tras horas, suspensiones y pausas. Las fechas guardadas, en UTC; se muestran en hora local.
+12. **Los módulos son independientes.** Sonido y Estudio no se llaman directamente: la vinculación pasa por un coordinador en `state.rs`, para poder desactivar cualquiera sin romper el otro.
+13. **Atajos sin AltGr:** ningún atajo por defecto puede producir un carácter en teclados europeos (`Ctrl+Alt` = AltGr).
 
 ## Comandos y eventos (contrato)
-- Comandos: `get_state`, `toggle`, `set_playing(bool)`, `set_color("pink"|"brown"|"white")`, `set_volume(f32 0..1)`, `set_timer(minutes: u32 | 0)`, `get_settings`, `update_settings(partial)`, `set_shortcut(String)`, `quit`.
-- Eventos de Rust al panel: `state-changed` (estado completo), `spectrum` (`[f32; 64]`, solo con el panel visible), `timer-tick` (segundos restantes).
+- Comandos: `get_state`, `toggle`, `set_playing(bool)`, `set_color("pink"|"brown"|"white")`, `set_volume(f32 0..1)`, `set_timer(minutes: u32 | 0)`, `get_settings`, `update_settings(partial)`, `set_shortcut(action, String)`, `quit`.
+- Comandos de estudio: `study_toggle`, `study_finish`, `study_set_mode("stopwatch"|"pomodoro")`, `study_set_tag(id|null)`, `study_resolve_idle(keep: bool)`, `study_totals`, `tags_list`, `tags_upsert`, `tags_delete`.
+- Eventos de Rust al panel: `state-changed` (estado completo, incluido el del estudio), `spectrum` (`[f32; 64]`, solo con el panel visible), `timer-tick` (segundos restantes), `study-tick` (1 Hz, solo con el panel visible), `study-idle` (minutos inactivo).
 
 ## Forma de trabajar
 - **Una fase del ROADMAP cada vez.** Al terminar: tests, clippy, fmt, tsc → commit con Conventional Commits (`feat:`, `fix:`, `chore:`…).
