@@ -18,6 +18,18 @@ export interface PanelState {
   shortcutTaken: string | null;
   lang: Lang;
   mica: boolean;
+  timerPresets: [number, number, number];
+  appearance: Appearance;
+  systemAccent: string | null;
+}
+
+export interface Appearance {
+  theme: "system" | "light" | "dark";
+  accent: "noise" | "system";
+  mica: boolean;
+  spectrum: boolean;
+  reduceMotion: boolean;
+  language: "auto" | "es" | "en";
 }
 
 export interface Backend {
@@ -28,6 +40,7 @@ export interface Backend {
   setTimer(minutes: number): Promise<void>;
   hide(): Promise<void>;
   quit(): Promise<void>;
+  openSettings(): Promise<void>;
   /** The page has rendered its first state. */
   ready(): Promise<void>;
   /** The first frame after being shown is on screen (timing). */
@@ -65,6 +78,7 @@ async function tauriBackend(): Promise<Backend> {
     setTimer: (minutes) => call("set_timer", { minutes }),
     hide: () => call("hide_panel"),
     quit: () => call("quit"),
+    openSettings: () => call("open_settings"),
     ready: () => call("panel_ready"),
     painted: () => call("panel_painted"),
     onState: (cb) => void listen<PanelState>("state-changed", (e) => cb(e.payload)),
@@ -91,6 +105,16 @@ function mockBackend(): Backend {
     shortcutTaken: params.get("taken") ? "Ctrl+Alt+P" : null,
     lang: (params.get("lang") as Lang) ?? (navigator.language.startsWith("es") ? "es" : "en"),
     mica: false,
+    timerPresets: [25, 50, 90],
+    appearance: {
+      theme: "system",
+      accent: params.get("accent") === "system" ? "system" : "noise",
+      mica: true,
+      spectrum: params.get("spectrum") !== "0",
+      reduceMotion: false,
+      language: "auto",
+    },
+    systemAccent: params.get("accent") === "system" ? "#0078d4" : null,
   };
   let deadline = 0;
   const arm = () => {
@@ -135,6 +159,7 @@ function mockBackend(): Backend {
     },
     hide: async () => {},
     quit: async () => {},
+    openSettings: async () => {},
     ready: async () => {},
     painted: async () => {},
     onState: (cb) => listeners.state.push(cb),

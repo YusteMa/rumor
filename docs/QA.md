@@ -84,6 +84,22 @@ Reference screenshots: `docs/screenshots/panel-light.png`, `panel-dark.png`, `ac
 - [ ] Scaling 100 / 150 / 200 %: text and the spectrum are crisp, nothing is clipped.
 - [ ] Footer: "Salir" fades the noise out and quits; "Ajustes" says it arrives in the next version.
 
+## Settings (phase 4)
+
+Open it from the panel (⚙ Ajustes). Every change must apply at once, without a Save button.
+
+- [ ] First launch ever (delete `%APPDATA%io.github.yustema.rumorsettings.json`): a welcome notification; not on the next launch.
+- [ ] Quit and reopen: colour, volume and timer are the same as before.
+- [ ] Sound: "Color al iniciar" fixed to Marrón starts brown; fade length 3 s is audibly slower; maximum volume 50 % makes the panel's 100 % as loud as 50 % was.
+- [ ] Playback: each "Si se desconectan los cascos" option behaves as in the phase 1 table; "Al iniciar Rumor": No sonar / Sonar siempre / Como lo dejé (quit while playing, reopen: plays).
+- [ ] Timer: change the quick times to 10/20/30 → the panel's buttons change; final fade 5 s; notification at the end on and off.
+- [ ] Shortcuts: record Ctrl+Shift+F9 for "Subir volumen" and use it; Ctrl+Alt+E is refused on a Spanish keyboard (types €); the same combination for two actions is refused; Esc cancels; Delete clears.
+- [ ] Tray: left click "Abrir el panel" opens it instead of toggling; tooltip without time left when turned off.
+- [ ] Appearance: theme light/dark/system changes the panel and Settings at once; accent "El de Windows" uses Windows' colour, still readable; Mica off gives solid backgrounds; spectrum off hides the card; reduce motion removes the halo; language English switches every text, tray tooltip included.
+- [ ] Startup: "Iniciar con Windows" on → Rumor starts after signing in again; off → it doesn't.
+- [ ] Advanced: pick a fixed output → noise moves there; unplug it → pauses, never falls back to the speakers; buffer 10/20/50 ms plays clean; export then import gives the same settings; a non-settings JSON is refused with a message; reset asks first and keeps colour/volume/timer; "Abrir carpeta" opens the logs.
+- [ ] Settings looks right in light and dark, at 100/150/200 % scaling, and with the keyboard only.
+
 ## Measurements (SPEC §3.4)
 - [ ] `cargo run --release --example engine -- --check 20`: frames ≈ 100 % of expected, CPU < 1 % of the machine.
 - [ ] Memory (RAM = private working set incl. WebView2, bundled build), measured 2026-10-29: no panel ~3 MB; panel open ~154 MB; hidden and suspended ~148 MB; 5 minutes after closing (webview destroyed) ~6 MB. Executable: 6.0 MB.

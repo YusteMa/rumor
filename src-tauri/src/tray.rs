@@ -9,6 +9,7 @@ use tauri::{AppHandle, Manager};
 
 use crate::audio::device_watch::PauseReason;
 use crate::audio::noise::NoiseColor;
+use crate::settings::LeftClick;
 use crate::state::{self, AppState, Snapshot};
 use crate::{panel, taskbar};
 
@@ -99,7 +100,8 @@ pub fn clock(secs: u64) -> String {
 }
 
 fn tooltip(state: &AppState, s: &Snapshot) -> String {
-    let t = &state.strings;
+    let t = state.strings();
+    let show_remaining = state.settings().tray.show_remaining;
     if s.playing {
         let volume = (s.sound.volume * 100.0).round().to_string();
         let base = t.format(
@@ -109,7 +111,7 @@ fn tooltip(state: &AppState, s: &Snapshot) -> String {
                 ("volume", &volume),
             ],
         );
-        return match s.timer_remaining {
+        return match s.timer_remaining.filter(|_| show_remaining) {
             Some(secs) => t.format("trayTimer", &[("base", &base), ("time", &clock(secs))]),
             None => base,
         };
@@ -148,9 +150,15 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
                 ..
             } = event
             {
-                match button {
-                    MouseButton::Left => state::toggle(tray.app_handle()),
-                    MouseButton::Right => panel::toggle(tray.app_handle(), Some(rect)),
+                let app = tray.app_handle();
+                let left = app
+                    .try_state::<AppState>()
+                    .map(|s| s.settings().tray.left_click);
+                match (button, left) {
+                    (MouseButton::Left, Some(LeftClick::Panel)) | (MouseButton::Right, _) => {
+                        panel::toggle(app, Some(rect))
+                    }
+                    (MouseButton::Left, _) => state::toggle(app),
                     _ => {}
                 }
             }

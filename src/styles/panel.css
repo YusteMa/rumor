@@ -22,21 +22,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-button,
-input,
-output {
-  font: inherit;
-  color: inherit;
-}
-
-button {
-  cursor: pointer;
-}
-
-:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-offset);
-}
 
 /* ---- Open / close (SPEC §4.5 Movimiento) ---------------------------------- */
 
@@ -320,56 +305,6 @@ button {
   padding: var(--space-1);
 }
 
-/* ---- Volume slider ---------------------------------------------------------- */
-
-.slider {
-  --fill: 40%;
-  width: 100%;
-  height: var(--thumb-size);
-  margin: 0;
-  appearance: none;
-  background: transparent;
-  cursor: pointer;
-}
-
-.slider::-webkit-slider-runnable-track {
-  height: var(--track-height);
-  border-radius: var(--radius-pill);
-  background: linear-gradient(to right, var(--accent) var(--fill), var(--line) var(--fill));
-}
-
-.slider::-webkit-slider-thumb {
-  appearance: none;
-  width: var(--thumb-size);
-  height: var(--thumb-size);
-  margin-top: calc((var(--track-height) - var(--thumb-size)) / 2);
-  border: var(--border);
-  border-radius: var(--radius-pill);
-  background: radial-gradient(
-    circle,
-    var(--accent) calc(var(--thumb-inner) / 2),
-    var(--surface) calc(var(--thumb-inner) / 2 + var(--border-width))
-  );
-  transition: transform var(--dur-press) var(--ease-out);
-}
-
-.slider:hover::-webkit-slider-thumb {
-  transform: scale(var(--thumb-hover-scale));
-}
-
-.slider:active::-webkit-slider-thumb {
-  transform: scale(var(--press-scale));
-}
-
-.slider:focus-visible {
-  outline: none;
-}
-
-.slider:focus-visible::-webkit-slider-thumb {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-offset);
-}
-
 /* ---- Footer ------------------------------------------------------------------ */
 
 .foot {
@@ -424,4 +359,13 @@ button {
     animation: none;
     transform: none;
   }
+}
+
+:root[data-reduce-motion] .is-playing .play::before {
+  animation: none;
+  transform: none;
+}
+
+.spectrum[hidden] {
+  display: none;
 }

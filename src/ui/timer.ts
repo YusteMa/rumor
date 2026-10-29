@@ -16,13 +16,14 @@ export function timer(onPick: (minutes: number) => void) {
   };
 
   return {
-    /** Option labels depend on the language. */
-    localise() {
-      root.querySelectorAll<HTMLButtonElement>('[data-value]:not([data-value="0"])').forEach((b) => {
-        b.textContent = t("timerOption", { n: Number(b.dataset.value) });
-      });
-    },
     render(s: PanelState) {
+      // The quick choices come from Settings → Timer.
+      const chips = root.querySelectorAll<HTMLButtonElement>('[role="radio"]:not([data-value="0"])');
+      chips.forEach((b, i) => {
+        const n = s.timerPresets[i];
+        b.dataset.value = String(n);
+        b.textContent = t("timerOption", { n });
+      });
       group.set(String(s.timerMinutes));
       out.textContent = label(s);
     },

@@ -1,0 +1,322 @@
+/* The Settings window (SPEC §4.4, §4.5): a sidebar of sections and cards of
+   rows, each with a one-line explanation, like Windows 11's own Settings. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: var(--weight-regular) var(--text-sm) / var(--leading) var(--font);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+.settings {
+  height: 100%;
+  display: grid;
+  grid-template-columns: var(--side-width) 1fr;
+}
+
+/* ---- Sidebar ------------------------------------------------------------------ */
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-3);
+}
+
+.side-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--row-height-sm);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  text-align: left;
+  transition: background-color var(--dur-press) var(--ease-out);
+}
+
+.side-item:hover {
+  background: var(--surface-hover);
+}
+
+.side-item[aria-current="page"] {
+  background: var(--accent-soft);
+  font-weight: var(--weight-semibold);
+}
+
+/* ---- Content ------------------------------------------------------------------ */
+
+.content {
+  overflow-y: auto;
+  padding: var(--space-5) var(--space-6) var(--space-8) var(--space-2);
+  outline: none;
+}
+
+.section-title {
+  margin: 0 0 var(--space-4);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+
+.intro {
+  margin: 0 0 var(--space-3);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.card {
+  border: var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: var(--row-height);
+  padding: var(--space-3) var(--space-4);
+}
+
+.row + .row {
+  border-top: var(--border);
+}
+
+.row-text {
+  min-width: 0;
+}
+
+.row-label {
+  display: block;
+}
+
+.row-hint {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.row-error {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+}
+
+.row-error[hidden] {
+  display: none;
+}
+
+.row-error::before {
+  content: "";
+  display: inline-block;
+  width: var(--dot-size);
+  height: var(--dot-size);
+  margin-right: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  vertical-align: middle;
+}
+
+.row-control {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.row-value {
+  min-width: var(--value-width);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  text-align: right;
+}
+
+/* Sliders and long selects go under their text, full width. */
+.row-stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
+}
+
+.row-stack .row-control {
+  width: 100%;
+}
+
+.row-stack .inline {
+  width: 100%;
+}
+
+.row-stack .slider {
+  flex: 1;
+  width: auto;
+}
+
+.row-stack .row-value {
+  text-align: left;
+}
+
+.row-stack .select {
+  max-width: none;
+  width: 100%;
+}
+
+.row-text {
+  flex: 1;
+}
+
+/* ---- Controls ----------------------------------------------------------------- */
+
+.select,
+.number,
+.btn,
+.shortcut-btn {
+  height: var(--control-height);
+  border: var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  transition:
+    background-color var(--dur-press) var(--ease-out),
+    border-color var(--dur-press) var(--ease-out);
+}
+
+.select {
+  max-width: var(--control-wide);
+  padding: 0 var(--space-2);
+}
+
+.number {
+  width: var(--number-width);
+  padding: 0 var(--space-2);
+  text-align: right;
+}
+
+.btn,
+.shortcut-btn {
+  padding: 0 var(--space-3);
+}
+
+.btn:hover,
+.shortcut-btn:hover,
+.select:hover {
+  background: var(--surface-hover);
+}
+
+.btn.primary {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.shortcut-btn {
+  min-width: var(--control-wide-sm);
+  font-variant-numeric: normal;
+}
+
+.shortcut-btn.is-empty {
+  color: var(--muted);
+}
+
+.shortcut-btn.is-recording {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* Switch: a pill whose knob slides; the accent fills it when on. */
+.switch {
+  position: relative;
+  width: var(--switch-width);
+  height: var(--switch-height);
+  padding: 0;
+  border: var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--line);
+  transition: background-color var(--dur-press) var(--ease-out);
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: var(--switch-inset);
+  width: var(--switch-knob);
+  height: var(--switch-knob);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  transform: translateY(-50%);
+  transition: transform var(--dur-press) var(--ease-out);
+}
+
+.switch[aria-checked="true"] {
+  background: var(--accent);
+}
+
+.switch[aria-checked="true"]::after {
+  background: var(--on-accent);
+  transform: translate(var(--switch-travel), -50%);
+}
+
+.inline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+
+
+.card + .card,
+.spacer + .card {
+  margin-top: var(--space-4);
+}
+
+.status {
+  min-height: var(--space-5);
+  margin: var(--space-3) 0 0;
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+/* ---- About ------------------------------------------------------------------------ */
+
+.about {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+}
+
+.about-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+}
+
+.about p {
+  margin: 0;
+}
+
+.about .muted {
+  color: var(--muted);
+}
+
+.selectable {
+  user-select: text;
+}

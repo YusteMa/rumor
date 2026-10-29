@@ -3,6 +3,7 @@
 
 import { backend, isTauri, type PanelState } from "./api";
 import { applyStatic, setLang } from "./i18n";
+import { applyAccent } from "./ui/accent";
 import { colors } from "./ui/colors";
 import { footer } from "./ui/footer";
 import { player } from "./ui/player";
@@ -13,13 +14,17 @@ import { volume } from "./ui/volume";
 const api = await backend;
 const panel = document.getElementById("panel") as HTMLElement;
 const spectrum = new Spectrum(document.getElementById("spectrum-canvas") as HTMLCanvasElement);
+const spectrumCard = document.querySelector(".spectrum") as HTMLElement;
 
 const ui = {
   player: player(() => api.toggle()),
   colors: colors((c) => api.setColor(c)),
   volume: volume((v) => api.setVolume(v)),
   timer: timer((m) => api.setTimer(m)),
-  footer: footer(() => api.quit()),
+  footer: footer(
+    () => api.openSettings(),
+    () => api.quit(),
+  ),
 };
 
 let state: PanelState | null = null;
@@ -32,16 +37,18 @@ function render(s: PanelState): void {
     lang = s.lang;
     setLang(s.lang);
     applyStatic();
-    ui.timer.localise();
-    ui.footer.localise();
   }
   if (s.mica !== mica) {
     mica = s.mica;
     document.documentElement.toggleAttribute("data-mica", s.mica);
     spectrum.refreshPalette();
   }
-  // The accent follows the noise (tokens.css); text stays neutral.
+  // The accent follows the noise (tokens.css), or Windows' own; text stays neutral.
   document.documentElement.dataset.noise = s.color;
+  applyAccent(s.appearance.accent === "system" ? s.systemAccent : null);
+  document.documentElement.toggleAttribute("data-reduce-motion", s.appearance.reduceMotion);
+  spectrumCard.hidden = !s.appearance.spectrum;
+  spectrum.setEnabled(s.appearance.spectrum);
   ui.player.render(s);
   ui.colors.render(s);
   ui.volume.render(s);

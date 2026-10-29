@@ -75,6 +75,21 @@
   --thumb-inner: 8px;
   --dot-size: 6px;
   --icon-size: 16px;
+
+  /* Settings window. */
+  --side-width: 168px;
+  --row-height: 56px;
+  --row-height-sm: 32px;
+  --control-height: 32px;
+  --control-wide: 200px;
+  --control-wide-sm: 160px;
+  --number-width: 64px;
+  --value-width: 48px;
+  --switch-width: 40px;
+  --switch-height: 20px;
+  --switch-knob: 14px;
+  --switch-inset: 3px;
+  --switch-travel: 18px;
   --icon-stroke: 1.2;
 
   /* Motion. */
@@ -180,6 +195,15 @@
   --surface: rgb(255 255 255 / 0.045);
   --surface-hover: rgb(255 255 255 / 0.075);
   --line: rgb(242 236 233 / 0.09);
+}
+
+/* Windows' "animation effects" off, or Settings → Appearance → reduce motion. */
+:root[data-reduce-motion] {
+  --open-offset: 0px;
+  --press-scale: 1;
+  --hover-scale: 1;
+  --thumb-hover-scale: 1;
+  --dur-accent: 0ms;
 }
 
 @media (prefers-reduced-motion: reduce) {

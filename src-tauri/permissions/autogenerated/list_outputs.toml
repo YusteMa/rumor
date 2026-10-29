@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-list-outputs"
+description = "Enables the list_outputs command without any pre-configured scope."
+commands.allow = ["list_outputs"]
+
+[[permission]]
+identifier = "deny-list-outputs"
+description = "Denies the list_outputs command without any pre-configured scope."
+commands.deny = ["list_outputs"]

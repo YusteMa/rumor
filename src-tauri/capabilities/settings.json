@@ -1,0 +1,21 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "settings",
+  "description": "The Settings window: read and change settings, nothing else",
+  "windows": [
+    "settings"
+  ],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "allow-get-settings",
+    "allow-settings-ready",
+    "allow-update-settings",
+    "allow-set-shortcut",
+    "allow-list-outputs",
+    "allow-export-settings",
+    "allow-import-settings",
+    "allow-reset-settings",
+    "allow-open-logs"
+  ]
+}

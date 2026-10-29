@@ -10,6 +10,16 @@ const COMMANDS: &[&str] = &[
     "hide_panel",
     "panel_ready",
     "panel_painted",
+    "open_settings",
+    "get_settings",
+    "settings_ready",
+    "update_settings",
+    "set_shortcut",
+    "list_outputs",
+    "export_settings",
+    "import_settings",
+    "reset_settings",
+    "open_logs",
     "quit",
 ];
 

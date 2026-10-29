@@ -18,6 +18,8 @@ use tauri::{
     WebviewWindow, WebviewWindowBuilder, WindowEvent,
 };
 
+use crate::settings::Appearance;
+use crate::settings_window;
 use crate::state::{self, AppState};
 
 pub const LABEL: &str = "panel";
@@ -71,8 +73,15 @@ fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
     m.lock().unwrap_or_else(|e| e.into_inner())
 }
 
-/// Debug builds only: `RUMOR_THEME=light|dark` forces the theme (the
-/// Appearance setting replaces this in phase 4).
+/// The panel's theme: Settings → Appearance, or in debug builds
+/// `RUMOR_THEME=light|dark` (for screenshots).
+fn panel_theme(app: &AppHandle) -> Option<Theme> {
+    forced_theme().or_else(|| {
+        app.try_state::<AppState>()
+            .and_then(|s| settings_window::theme_of(s.settings().appearance.theme))
+    })
+}
+
 fn forced_theme() -> Option<Theme> {
     if !cfg!(debug_assertions) {
         return None;
@@ -142,7 +151,10 @@ pub fn prepare(app: &AppHandle) {
 }
 
 fn build(app: &AppHandle) -> tauri::Result<()> {
-    let theme = forced_theme();
+    let theme = panel_theme(app);
+    let wants_mica = app
+        .try_state::<AppState>()
+        .is_none_or(|s| s.settings().appearance.mica);
     let window = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("index.html".into()))
         .title("Rumor")
         .inner_size(WIDTH, HEIGHT)
@@ -160,7 +172,8 @@ fn build(app: &AppHandle) -> tauri::Result<()> {
         .build()?;
 
     // Fails on Windows 10, where the CSS falls back to a solid colour.
-    let mica = window_vibrancy::apply_mica(&window, theme.map(|t| t == Theme::Dark)).is_ok();
+    let mica =
+        wants_mica && window_vibrancy::apply_mica(&window, theme.map(|t| t == Theme::Dark)).is_ok();
     if let Some(panel) = app.try_state::<Panel>() {
         panel.mica.store(mica, Ordering::Relaxed);
     }
@@ -423,6 +436,25 @@ fn schedule_destroy(app: &AppHandle, generation: u64) {
         *lock(&panel.life) = Life::Absent;
         log::info!("panel released after {} s closed", ttl.as_secs());
     });
+}
+
+/// Settings → Appearance changed: theme and Mica follow at once; the page
+/// gets the rest (accent, spectrum, motion) through `state-changed`.
+pub fn apply_appearance(app: &AppHandle, appearance: &Appearance) {
+    let (Some(window), Some(panel)) = (app.get_webview_window(LABEL), app.try_state::<Panel>())
+    else {
+        return;
+    };
+    let theme = forced_theme().or(settings_window::theme_of(appearance.theme));
+    let _ = window.set_theme(theme);
+    let mica = if appearance.mica {
+        window_vibrancy::apply_mica(&window, theme.map(|t| t == Theme::Dark)).is_ok()
+    } else {
+        let _ = window_vibrancy::clear_mica(&window);
+        false
+    };
+    panel.mica.store(mica, Ordering::Relaxed);
+    set_border(&window, window.theme().unwrap_or(Theme::Light));
 }
 
 pub fn uses_mica(app: &AppHandle) -> bool {

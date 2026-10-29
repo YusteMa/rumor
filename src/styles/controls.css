@@ -1,0 +1,70 @@
+/* Controls shared by the panel and the Settings window, built from the
+   tokens (CLAUDE.md rule 9). */
+
+button,
+input,
+select,
+output {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+/* ---- Slider -------------------------------------------------------------------- */
+
+.slider {
+  --fill: 40%;
+  width: 100%;
+  height: var(--thumb-size);
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-runnable-track {
+  height: var(--track-height);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(to right, var(--accent) var(--fill), var(--line) var(--fill));
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+  margin-top: calc((var(--track-height) - var(--thumb-size)) / 2);
+  border: var(--border);
+  border-radius: var(--radius-pill);
+  background: radial-gradient(
+    circle,
+    var(--accent) calc(var(--thumb-inner) / 2),
+    var(--surface) calc(var(--thumb-inner) / 2 + var(--border-width))
+  );
+  transition: transform var(--dur-press) var(--ease-out);
+}
+
+.slider:hover::-webkit-slider-thumb {
+  transform: scale(var(--thumb-hover-scale));
+}
+
+.slider:active::-webkit-slider-thumb {
+  transform: scale(var(--press-scale));
+}
+
+.slider:focus-visible {
+  outline: none;
+}
+
+.slider:focus-visible::-webkit-slider-thumb {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+

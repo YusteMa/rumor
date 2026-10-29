@@ -56,12 +56,18 @@ enum StreamError {
     Format(SampleFormat),
 }
 
-/// Engine settings from SPEC §3.3 / §4.4 "Playback".
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+/// Engine settings from SPEC §3.3 / §4.4 "Playback" and "Advanced".
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct EngineConfig {
     pub on_output_change: OutputChangePolicy,
     pub resume_on_reconnect: bool,
+    /// Endpoint id of a fixed output; `None` follows Windows' default. A
+    /// fixed output that disappears pauses the noise: it never falls back to
+    /// another device (CLAUDE.md rule 10).
+    pub output_device: Option<String>,
+    /// Fixed buffer length, if the device supports it; `None` = Windows'.
+    pub buffer_ms: Option<u32>,
 }
 
 /// The output currently in use, for the panel and Settings → Advanced.
@@ -87,6 +93,8 @@ type EventSink = Box<dyn Fn(EngineEvent) + Send>;
 
 enum Command {
     Wake,
+    /// The output device or buffer setting changed: reopen the stream.
+    Reopen,
     System(SystemEvent),
     Shutdown,
 }
@@ -210,7 +218,18 @@ impl AudioEngine {
     }
 
     pub fn set_config(&self, config: EngineConfig) {
-        *lock(&self.shared.config) = config;
+        let reopen = {
+            let mut current = lock(&self.shared.config);
+            let reopen = current.output_device != config.output_device
+                || current.buffer_ms != config.buffer_ms;
+            *current = config;
+            reopen
+        };
+        let _ = self.tx.send(if reopen {
+            Command::Reopen
+        } else {
+            Command::Wake
+        });
     }
 
     /// Why the engine paused itself, until the user plays or pauses again.
@@ -315,6 +334,12 @@ impl Control {
             match self.rx.recv_timeout(TICK) {
                 Ok(Command::Shutdown) | Err(RecvTimeoutError::Disconnected) => break,
                 Ok(Command::Wake) | Err(RecvTimeoutError::Timeout) => {}
+                Ok(Command::Reopen) => {
+                    log::info!("output settings changed; reopening");
+                    self.switch_at = None;
+                    self.drop_live();
+                    self.reconcile();
+                }
                 Ok(Command::System(event)) => self.on_system(event),
             }
             self.tick();
@@ -427,7 +452,7 @@ impl Control {
             .map(|l| &l.endpoint)
             .or(self.last_endpoint.as_ref())
             .cloned();
-        let config = *lock(&self.shared.config);
+        let config = lock(&self.shared.config).clone();
         if self.shared.params.playing() {
             if let Verdict::Pause(reason) =
                 on_output_change(config.on_output_change, from.as_ref(), to)
@@ -485,25 +510,24 @@ impl Control {
         }
     }
 
-    fn default_id(&self) -> Option<String> {
-        let device = self.host.default_output_device()?;
-        device.id().ok().map(|id| id.to_string())
+    /// The output to use: the fixed one from Settings, or Windows' default.
+    fn target_id(&self) -> Option<cpal::DeviceId> {
+        let fixed = lock(&self.shared.config).output_device.clone();
+        match fixed {
+            Some(id) => id.parse().ok(),
+            None => self.host.default_output_device()?.id().ok(),
+        }
     }
 
-    /// The current default output as a concrete device (see the module docs).
+    fn default_id(&self) -> Option<String> {
+        self.target_id().map(|id| id.to_string())
+    }
+
+    /// The target output as a concrete device (see the module docs), or
+    /// `None` if it isn't there.
     fn default_output(&self) -> Option<(cpal::Device, Endpoint)> {
-        let id = self.host.default_output_device()?.id().ok()?;
-        let device = self.host.device_by_id(&id)?;
-        let description = device.description().ok();
-        let endpoint = Endpoint {
-            id: id.to_string(),
-            name: description
-                .as_ref()
-                .map_or_else(|| device.to_string(), |d| d.name().to_string()),
-            kind: description.map_or(OutputKind::Public, |d| {
-                OutputKind::from_device_type(d.device_type())
-            }),
-        };
+        let device = self.host.device_by_id(&self.target_id()?)?;
+        let endpoint = endpoint_of(&device)?;
         Some((device, endpoint))
     }
 
@@ -540,10 +564,18 @@ impl Control {
         let sample_rate = supported.sample_rate();
         let channels = supported.channels();
         let format = supported.sample_format();
+        let wanted = lock(&self.shared.config).buffer_ms;
+        let buffer_size = match (wanted, supported.buffer_size()) {
+            (Some(ms), cpal::SupportedBufferSize::Range { min, max }) => {
+                let frames = (sample_rate * ms / 1000).clamp(*min, *max);
+                BufferSize::Fixed(frames)
+            }
+            _ => BufferSize::Default,
+        };
         let config = StreamConfig {
             channels,
             sample_rate,
-            buffer_size: BufferSize::Default,
+            buffer_size,
         };
 
         // Calibration renders ~30 s of noise: once per sample rate, here,
@@ -721,4 +753,27 @@ fn run_spectrum(shared: &Shared, on_spectrum: impl Fn([f32; BANDS])) {
             on_spectrum(bands);
         }
     }
+}
+
+/// Describes a device as an endpoint (id, friendly name, headphones or not).
+fn endpoint_of(device: &cpal::Device) -> Option<Endpoint> {
+    let id = device.id().ok()?;
+    let description = device.description().ok();
+    Some(Endpoint {
+        id: id.to_string(),
+        name: description
+            .as_ref()
+            .map_or_else(|| device.to_string(), |d| d.name().to_string()),
+        kind: description.map_or(OutputKind::Public, |d| {
+            OutputKind::from_device_type(d.device_type())
+        }),
+    })
+}
+
+/// Every output device, for Settings → Advanced.
+pub fn output_devices() -> Vec<Endpoint> {
+    cpal::default_host()
+        .output_devices()
+        .map(|devices| devices.filter_map(|d| endpoint_of(&d)).collect())
+        .unwrap_or_default()
 }

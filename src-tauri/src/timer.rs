@@ -1,11 +1,9 @@
-//! Sleep timer (SPEC §4.2): counts down while the noise plays and fades it
-//! out at the end. Measured against `Instant`, never by adding up ticks
+//! Sleep timer (SPEC §4.2): counts down while the noise plays; the caller
+//! fades the noise out at the end (Settings → Timer sets how long). Measured against `Instant`, never by adding up ticks
 //! (CLAUDE.md rule 11). Pure: the caller passes `now`.
 
 use std::time::{Duration, Instant};
 
-/// Long fade when the timer runs out (SPEC §4.4, "unos 10 s").
-pub const END_FADE_MS: f32 = 10_000.0;
 /// Longest timer accepted from the panel.
 pub const MAX_MINUTES: u32 = 24 * 60;
 

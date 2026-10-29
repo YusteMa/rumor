@@ -15,6 +15,7 @@
     "allow-hide-panel",
     "allow-panel-ready",
     "allow-panel-painted",
+    "allow-open-settings",
     "allow-quit"
   ]
 }

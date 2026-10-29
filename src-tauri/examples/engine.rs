@@ -66,7 +66,7 @@ fn interactive() {
         volume: 0.3,
         ..Controls::default()
     };
-    let engine = match AudioEngine::start(controls, config, print_event, |_| {}) {
+    let engine = match AudioEngine::start(controls, config.clone(), print_event, |_| {}) {
         Ok(e) => e,
         Err(e) => return eprintln!("{e}"),
     };
@@ -108,12 +108,12 @@ fn interactive() {
                         continue;
                     }
                 };
-                engine.set_config(config);
+                engine.set_config(config.clone());
                 println!("{:?}", config.on_output_change);
             }
             (Some("resume"), Some(v)) => {
                 config.resume_on_reconnect = v == "on";
-                engine.set_config(config);
+                engine.set_config(config.clone());
                 println!("resume on reconnect: {}", config.resume_on_reconnect);
             }
             (Some("d"), _) => list_devices(),

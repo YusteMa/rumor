@@ -40,7 +40,14 @@ export class Spectrum {
   private raf = 0;
   private lastFrame = 0;
   private palette: Palette;
-  private readonly reduced = matchMedia("(prefers-reduced-motion: reduce)");
+  private readonly reducedQuery = matchMedia("(prefers-reduced-motion: reduce)");
+  private get reduced(): { matches: boolean } {
+    // Windows' setting, or Rumor's own (Settings → Appearance).
+    return {
+      matches:
+        this.reducedQuery.matches || document.documentElement.hasAttribute("data-reduce-motion"),
+    };
+  }
 
   constructor(private readonly canvas: HTMLCanvasElement) {
     const ctx = canvas.getContext("2d");
@@ -96,8 +103,16 @@ export class Spectrum {
     this.lastData = performance.now();
   }
 
+  private enabled = true;
+
+  /** Settings → Appearance → "show spectrum". */
+  setEnabled(enabled: boolean): void {
+    this.enabled = enabled;
+    if (!enabled) this.stop();
+  }
+
   start(): void {
-    if (!this.raf) this.raf = requestAnimationFrame(this.frame);
+    if (this.enabled && !this.raf) this.raf = requestAnimationFrame(this.frame);
   }
 
   stop(): void {

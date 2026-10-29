@@ -1,10 +1,17 @@
 //! `#[tauri::command]` handlers exposed to the panel (CLAUDE.md contract).
 //! Each one only forwards to the coordinator in `state.rs`.
 
-use tauri::AppHandle;
+use serde_json::Value;
+use tauri::{AppHandle, Manager};
+use tauri_plugin_dialog::DialogExt;
 
+use crate::audio::device_watch::Endpoint;
+use crate::audio::engine;
 use crate::audio::noise::NoiseColor;
 use crate::panel;
+use crate::settings::{Settings, ShortcutAction};
+use crate::settings_window::{self, SettingsView};
+use crate::shortcut::{self, ShortcutError};
 use crate::state::{self, PanelState};
 
 #[tauri::command]
@@ -59,4 +66,110 @@ pub fn panel_painted(app: AppHandle) {
 #[tauri::command]
 pub fn quit(app: AppHandle) {
     state::quit(&app);
+}
+
+/// The panel's ⚙ button.
+#[tauri::command]
+pub fn open_settings(app: AppHandle) {
+    panel::hide(&app);
+    settings_window::open(&app);
+}
+
+#[tauri::command]
+pub fn get_settings(app: AppHandle) -> Option<SettingsView> {
+    settings_window::view(&app)
+}
+
+/// The Settings page has rendered; show its window.
+#[tauri::command]
+pub fn settings_ready(app: AppHandle) {
+    settings_window::on_ready(&app);
+}
+
+/// A partial update, e.g. `{"sound": {"fadeMs": 800}}`.
+#[tauri::command]
+pub fn update_settings(app: AppHandle, patch: Value) -> Result<Option<SettingsView>, String> {
+    state::update_settings(&app, patch)?;
+    Ok(settings_window::view(&app))
+}
+
+/// `shortcut` = `None` clears it.
+#[tauri::command]
+pub fn set_shortcut(
+    app: AppHandle,
+    action: ShortcutAction,
+    shortcut: Option<String>,
+) -> Result<Option<SettingsView>, ShortcutError> {
+    shortcut::set(&app, action, shortcut)?;
+    Ok(settings_window::view(&app))
+}
+
+#[tauri::command]
+pub fn list_outputs() -> Vec<Endpoint> {
+    engine::output_devices()
+}
+
+/// Exports every setting (not what Rumor remembers between runs) to a JSON
+/// file the user picks. `false` if they cancelled.
+#[tauri::command]
+pub async fn export_settings(app: AppHandle) -> Result<bool, String> {
+    let settings = app.state::<state::AppState>().settings();
+    let mut value = serde_json::to_value(&settings).map_err(|e| e.to_string())?;
+    if let Some(object) = value.as_object_mut() {
+        object.remove("last");
+        object.remove("onboarded");
+    }
+    let Some(path) = app
+        .dialog()
+        .file()
+        .add_filter("JSON", &["json"])
+        .set_file_name("rumor-settings.json")
+        .blocking_save_file()
+    else {
+        return Ok(false);
+    };
+    let path = path.into_path().map_err(|e| e.to_string())?;
+    let text = serde_json::to_string_pretty(&value).map_err(|e| e.to_string())?;
+    std::fs::write(&path, text).map_err(|e| e.to_string())?;
+    log::info!("settings exported to {}", path.display());
+    Ok(true)
+}
+
+/// Imports settings from a JSON file the user picks. Unknown fields are
+/// ignored and bad values clamped; a file that isn't settings is refused.
+#[tauri::command]
+pub async fn import_settings(app: AppHandle) -> Result<bool, String> {
+    let Some(path) = app
+        .dialog()
+        .file()
+        .add_filter("JSON", &["json"])
+        .blocking_pick_file()
+    else {
+        return Ok(false);
+    };
+    let path = path.into_path().map_err(|e| e.to_string())?;
+    let text = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    let value: Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
+    let imported = Settings::from_json(value).map_err(|e| e.to_string())?;
+    state::replace_settings(&app, imported);
+    log::info!("settings imported from {}", path.display());
+    Ok(true)
+}
+
+/// Back to defaults (what Rumor remembers between runs is kept).
+#[tauri::command]
+pub fn reset_settings(app: AppHandle) -> Option<SettingsView> {
+    state::replace_settings(&app, Settings::default());
+    settings_window::view(&app)
+}
+
+#[tauri::command]
+pub fn open_logs(app: AppHandle) -> Result<(), String> {
+    let dir = app.path().app_log_dir().map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    std::process::Command::new("explorer")
+        .arg(&dir)
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| e.to_string())
 }

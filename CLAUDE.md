@@ -22,11 +22,12 @@ App de bandeja para Windows que genera ruido rosa, marrón y blanco en tiempo re
 ```
 rumor/
 ├─ src/                      # Panel (Vite + TS)
-│  ├─ index.html
+│  ├─ index.html             # panel
+│  ├─ settings.html          # ventana de Ajustes (settings.ts, settings-api.ts)
 │  ├─ main.ts                # arranque, enlaza eventos ↔ comandos
-│  ├─ ui/                    # player.ts, colors.ts, volume.ts, timer.ts, spectrum.ts, settings.ts
+│  ├─ ui/                    # player.ts, colors.ts, volume.ts, timer.ts, spectrum.ts, accent.ts, radio.ts, footer.ts
 │  ├─ i18n/                  # es.json, en.json
-│  └─ styles/                # tokens.css (tema), panel.css
+│  └─ styles/                # tokens.css (tema), controls.css (compartido), panel.css, settings.css
 ├─ src-tauri/
 │  ├─ src/
 │  │  ├─ main.rs
@@ -38,7 +39,8 @@ rumor/
 │  │  ├─ i18n.rs             # textos de Rust, leídos de src/i18n/*.json
 │  │  ├─ shortcut.rs
 │  │  ├─ timer.rs
-│  │  ├─ settings.rs
+│  │  ├─ settings.rs         # modelo de ajustes y store
+│  │  ├─ settings_window.rs  # ventana de Ajustes
 │  │  ├─ panel.rs            # crear/posicionar/ocultar ventana, Mica
 │  │  └─ audio/
 │  │     ├─ mod.rs

@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import { defineConfig } from "vite";
 
 // The panel lives in src/ (see CLAUDE.md), so that is the Vite root.
@@ -17,5 +18,12 @@ export default defineConfig({
     emptyOutDir: true,
     // WebView2 is evergreen Chromium.
     target: "chrome120",
+    // Two pages: the tray panel and the Settings window.
+    rollupOptions: {
+      input: {
+        panel: resolve(import.meta.dirname, "src/index.html"),
+        settings: resolve(import.meta.dirname, "src/settings.html"),
+      },
+    },
   },
 });

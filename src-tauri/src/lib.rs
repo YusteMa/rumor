@@ -8,6 +8,7 @@ mod commands;
 mod i18n;
 mod panel;
 mod settings;
+mod settings_window;
 mod shortcut;
 mod state;
 mod study;
@@ -39,6 +40,12 @@ pub fn run() {
                 .build(),
         )
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            None,
+        ))
         .plugin(shortcut::plugin())
         .invoke_handler(tauri::generate_handler![
             commands::get_state,
@@ -50,6 +57,16 @@ pub fn run() {
             commands::hide_panel,
             commands::panel_ready,
             commands::panel_painted,
+            commands::open_settings,
+            commands::get_settings,
+            commands::settings_ready,
+            commands::update_settings,
+            commands::set_shortcut,
+            commands::list_outputs,
+            commands::export_settings,
+            commands::import_settings,
+            commands::reset_settings,
+            commands::open_logs,
             commands::quit,
         ])
         .setup(|app| state::setup(app.handle()))
