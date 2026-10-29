@@ -31,6 +31,7 @@ pub struct Params {
     playing: AtomicBool,
     color: AtomicU8,
     volume: AtomicF32,
+    fade_in_ms: AtomicF32,
     fade_out_ms: AtomicF32,
 }
 
@@ -40,6 +41,7 @@ impl Params {
             playing: AtomicBool::new(initial.playing),
             color: AtomicU8::new(initial.color.index() as u8),
             volume: AtomicF32::new(initial.volume.clamp(0.0, 1.0)),
+            fade_in_ms: AtomicF32::new(initial.fade_in_ms),
             fade_out_ms: AtomicF32::new(initial.fade_out_ms),
         }
     }
@@ -56,6 +58,13 @@ impl Params {
     pub fn set_volume(&self, volume: f32) {
         if volume.is_finite() {
             self.volume.store(volume.clamp(0.0, 1.0));
+        }
+    }
+
+    /// Length of the next fade-in.
+    pub fn set_fade_in_ms(&self, ms: f32) {
+        if ms.is_finite() && ms > 0.0 {
+            self.fade_in_ms.store(ms);
         }
     }
 
@@ -77,6 +86,7 @@ impl Params {
             playing: self.playing.load(Ordering::Relaxed),
             color: NoiseColor::from_index(self.color.load(Ordering::Relaxed)),
             volume: self.volume.load(),
+            fade_in_ms: self.fade_in_ms.load(),
             fade_out_ms: self.fade_out_ms.load(),
         }
     }
@@ -92,6 +102,7 @@ mod tests {
         p.set_playing(true);
         p.set_color(NoiseColor::White);
         p.set_volume(0.75);
+        p.set_fade_in_ms(2_000.0);
         p.set_fade_out_ms(10_000.0);
         assert_eq!(
             p.snapshot(),
@@ -99,6 +110,7 @@ mod tests {
                 playing: true,
                 color: NoiseColor::White,
                 volume: 0.75,
+                fade_in_ms: 2_000.0,
                 fade_out_ms: 10_000.0,
             }
         );

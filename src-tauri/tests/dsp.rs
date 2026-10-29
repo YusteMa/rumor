@@ -193,6 +193,7 @@ fn ten_minutes_of_random_use_stay_finite_and_below_minus_3_dbfs() {
             // Mostly playing, so most of the time is spent at full output.
             c.playing = roll % 7 != 0;
             c.fade_out_ms = if roll % 2 == 0 { 400.0 } else { 3_000.0 };
+            c.fade_in_ms = if roll % 3 == 0 { 200.0 } else { 3_000.0 };
             if roll % 5 == 0 {
                 c.volume = 1.0;
             }

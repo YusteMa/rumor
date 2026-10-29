@@ -2,7 +2,8 @@
 //! dependency, so they can be tested by rendering to buffers (phase 1).
 
 mod analysis;
-mod engine;
+pub mod device_watch;
+pub mod engine;
 pub mod noise;
 pub mod params;
 pub mod smoothing;

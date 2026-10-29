@@ -13,9 +13,9 @@ use super::smoothing::{
     OnePole, Ramp, equal_power, fade_curve, soft_clip, step_per_sample, volume_gain,
 };
 
-/// Fade-in when playback starts (SPEC §3.2).
+/// Default fade-in when playback starts (SPEC §3.2; adjustable 0.2–3 s, §4.4).
 pub const FADE_IN_MS: f32 = 400.0;
-/// Default fade-out when playback stops (SPEC §3.2).
+/// Default fade-out when playback stops (SPEC §3.2; adjustable 0.2–3 s, §4.4).
 pub const FADE_OUT_MS: f32 = 400.0;
 /// Colour crossfade (SPEC §3.2).
 pub const CROSSFADE_MS: f32 = 150.0;
@@ -312,6 +312,8 @@ pub struct Controls {
     pub color: NoiseColor,
     /// Slider position in 0..=1; the perceptual curve is applied here.
     pub volume: f32,
+    /// Fade-in length for the next start.
+    pub fade_in_ms: f32,
     /// Fade-out length for the next stop (the sleep timer uses a longer one).
     pub fade_out_ms: f32,
 }
@@ -322,6 +324,7 @@ impl Default for Controls {
             playing: false,
             color: NoiseColor::Pink,
             volume: 0.4,
+            fade_in_ms: FADE_IN_MS,
             fade_out_ms: FADE_OUT_MS,
         }
     }
@@ -337,7 +340,6 @@ pub struct NoiseRenderer {
     fade: Ramp,
     volume: OnePole,
     crossfade_step: f32,
-    fade_in_step: f32,
     fs: f32,
 }
 
@@ -364,7 +366,6 @@ impl NoiseRenderer {
             fade: Ramp::new(0.0),
             volume: OnePole::new(VOLUME_SMOOTHING_MS, fs, volume_gain(initial.volume)),
             crossfade_step: step_per_sample(CROSSFADE_MS, fs),
-            fade_in_step: step_per_sample(FADE_IN_MS, fs),
             fs,
         }
     }
@@ -379,7 +380,7 @@ impl NoiseRenderer {
         }
 
         let fade = if c.playing {
-            self.fade.next(1.0, self.fade_in_step)
+            self.fade.next(1.0, step_per_sample(c.fade_in_ms, self.fs))
         } else {
             self.fade.next(0.0, step_per_sample(c.fade_out_ms, self.fs))
         };
