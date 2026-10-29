@@ -29,7 +29,8 @@ export function player(onToggle: () => void) {
       status.textContent = t(s.playing ? "statusPlaying" : "statusPaused");
 
       const reason = !s.output ? "noOutput" : s.playing ? null : s.pausedFor;
-      const notice = reason && reason !== "suspended" ? NOTICES[reason] : null;
+      // Sleep and lock pauses are expected: no notice for them.
+      const notice = reason && reason !== "suspended" && reason !== "locked" ? NOTICES[reason] : null;
       subtitle.textContent = notice ? t(notice) : t("subtitleLive");
       subtitle.classList.toggle("is-notice", notice !== null);
     },

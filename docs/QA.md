@@ -99,6 +99,9 @@ Open it from the panel (⚙ Ajustes). Every change must apply at once, without a
 - [ ] Startup: "Iniciar con Windows" on → Rumor starts after signing in again; off → it doesn't.
 - [ ] Advanced: pick a fixed output → noise moves there; unplug it → pauses, never falls back to the speakers; buffer 10/20/50 ms plays clean; export then import gives the same settings; a non-settings JSON is refused with a message; reset asks first and keeps colour/volume/timer; "Abrir carpeta" opens the logs.
 - [ ] Settings looks right in light and dark, at 100/150/200 % scaling, and with the keyboard only.
+- [ ] Volume per output: 30 % on headphones, switch to speakers and set 60 %, switch back: 30 % again, smoothly (no jump or click); with "Volumen de cada salida" off the volume stays put.
+- [ ] Lock (Win+L) while playing on headphones: it pauses; unlock: it plays again. Lock on headphones, take them off, unlock: stays paused, nothing from the speakers. "Pausar": stays paused after unlock. "No hacer nada": keeps playing while locked. Paused before locking: unlock never starts it.
+- [ ] Mono: one earbud in, mono on: the noise sounds the same and just as loud; switching mono on and off while playing never clicks.
 
 ## Measurements (SPEC §3.4)
 - [ ] `cargo run --release --example engine -- --check 20`: frames ≈ 100 % of expected, CPU < 1 % of the machine.

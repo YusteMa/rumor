@@ -54,6 +54,29 @@ pub enum OutputChangePolicy {
     KeepPlaying,
 }
 
+/// "Al bloquear el PC" (SPEC §3.3).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum LockPolicy {
+    /// Pause on lock; on unlock, play again only if still on headphones.
+    #[default]
+    PauseResumeWithHeadphones,
+    Pause,
+    Nothing,
+}
+
+/// Whether to resume on unlock: only after a lock pause, with the policy that
+/// asks for it, and only onto headphones (never into the room, rule 10).
+pub fn resumes_after_unlock(
+    policy: LockPolicy,
+    paused_for: Option<PauseReason>,
+    to: Option<&Endpoint>,
+) -> bool {
+    policy == LockPolicy::PauseResumeWithHeadphones
+        && paused_for == Some(PauseReason::Locked)
+        && to.is_some_and(|e| e.kind == OutputKind::Personal)
+}
+
 /// Why the engine paused on its own (the panel shows a message for each).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -62,6 +85,7 @@ pub enum PauseReason {
     OutputChanged,
     NoOutput,
     Suspended,
+    Locked,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -128,6 +152,9 @@ pub enum SystemEvent {
     Suspending,
     /// The PC woke up.
     Resumed,
+    /// The session was locked (Win+L) or unlocked.
+    Locked,
+    Unlocked,
 }
 
 #[cfg(windows)]
@@ -136,7 +163,8 @@ pub use win::SystemWatch;
 #[cfg(windows)]
 mod win {
     use std::ffi::c_void;
-    use std::sync::Arc;
+    use std::sync::{Arc, Mutex};
+    use std::thread::JoinHandle;
 
     use windows::Win32::Foundation::{HANDLE, PROPERTYKEY};
     use windows::Win32::Media::Audio::{
@@ -169,6 +197,8 @@ mod win {
         _power_params: Box<DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS>,
         _power_context: Box<Notify>,
         com_initialized: bool,
+        /// Thread with the hidden window that receives lock/unlock.
+        session: Option<(JoinHandle<()>, u32)>,
     }
 
     impl SystemWatch {
@@ -187,6 +217,7 @@ mod win {
             .into();
             unsafe { enumerator.RegisterEndpointNotificationCallback(&client)? };
 
+            let notify_for_session = notify.clone();
             let power_context = Box::new(notify);
             let mut power_params = Box::new(DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS {
                 Callback: Some(power_callback),
@@ -197,7 +228,13 @@ mod win {
                 log::warn!("suspend/resume notifications unavailable");
             }
 
+            let session = watch_session(notify_for_session);
+            if session.is_none() {
+                log::warn!("lock/unlock notifications unavailable");
+            }
+
             Ok(Self {
+                session,
                 enumerator,
                 client,
                 power,
@@ -221,6 +258,124 @@ mod win {
                 if self.com_initialized {
                     CoUninitialize();
                 }
+                if let Some((thread, id)) = self.session.take() {
+                    use windows::Win32::Foundation::{LPARAM, WPARAM};
+                    use windows::Win32::UI::WindowsAndMessaging::{PostThreadMessageW, WM_QUIT};
+                    if PostThreadMessageW(id, WM_QUIT, WPARAM(0), LPARAM(0)).is_ok() {
+                        let _ = thread.join();
+                    }
+                }
+            }
+        }
+    }
+
+    /// Who gets lock/unlock events (one engine at a time).
+    static SESSION_NOTIFY: Mutex<Option<Notify>> = Mutex::new(None);
+
+    const WM_WTSSESSION_CHANGE: u32 = 0x02B1;
+    const WTS_SESSION_LOCK: usize = 7;
+    const WTS_SESSION_UNLOCK: usize = 8;
+    const NOTIFY_FOR_THIS_SESSION: u32 = 0;
+
+    unsafe extern "system" fn session_proc(
+        hwnd: windows::Win32::Foundation::HWND,
+        msg: u32,
+        wparam: windows::Win32::Foundation::WPARAM,
+        lparam: windows::Win32::Foundation::LPARAM,
+    ) -> windows::Win32::Foundation::LRESULT {
+        use windows::Win32::UI::WindowsAndMessaging::DefWindowProcW;
+        if msg == WM_WTSSESSION_CHANGE {
+            let event = match wparam.0 {
+                WTS_SESSION_LOCK => Some(SystemEvent::Locked),
+                WTS_SESSION_UNLOCK => Some(SystemEvent::Unlocked),
+                _ => None,
+            };
+            if let (Some(event), Ok(notify)) = (event, SESSION_NOTIFY.lock()) {
+                if let Some(notify) = notify.as_ref() {
+                    notify(event);
+                }
+            }
+            return windows::Win32::Foundation::LRESULT(0);
+        }
+        unsafe { DefWindowProcW(hwnd, msg, wparam, lparam) }
+    }
+
+    /// Windows only sends lock/unlock (`WM_WTSSESSION_CHANGE`) to a window, so
+    /// a hidden one gets its own thread and message loop.
+    fn watch_session(notify: Notify) -> Option<(JoinHandle<()>, u32)> {
+        use windows::Win32::Foundation::HINSTANCE;
+        use windows::Win32::System::LibraryLoader::GetModuleHandleW;
+        use windows::Win32::System::RemoteDesktop::{
+            WTSRegisterSessionNotification, WTSUnRegisterSessionNotification,
+        };
+        use windows::Win32::System::Threading::GetCurrentThreadId;
+        use windows::Win32::UI::WindowsAndMessaging::{
+            CreateWindowExW, DestroyWindow, DispatchMessageW, GetMessageW, MSG, RegisterClassW,
+            WINDOW_EX_STYLE, WINDOW_STYLE, WNDCLASSW,
+        };
+        use windows::core::w;
+
+        if let Ok(mut slot) = SESSION_NOTIFY.lock() {
+            *slot = Some(notify);
+        }
+        let (tx, rx) = std::sync::mpsc::channel();
+        let thread = std::thread::Builder::new()
+            .name("rumor-session-watch".into())
+            .spawn(move || unsafe {
+                let Ok(module) = GetModuleHandleW(None) else {
+                    let _ = tx.send(None);
+                    return;
+                };
+                let instance = HINSTANCE(module.0);
+                let class = w!("RumorSessionWatch");
+                let wc = WNDCLASSW {
+                    lpfnWndProc: Some(session_proc),
+                    hInstance: instance,
+                    lpszClassName: class,
+                    ..Default::default()
+                };
+                RegisterClassW(&wc);
+                // A plain hidden window (never shown): message-only windows
+                // don't reliably get session notifications.
+                let hwnd = match CreateWindowExW(
+                    WINDOW_EX_STYLE::default(),
+                    class,
+                    w!(""),
+                    WINDOW_STYLE::default(),
+                    0,
+                    0,
+                    0,
+                    0,
+                    None,
+                    None,
+                    Some(instance),
+                    None,
+                ) {
+                    Ok(hwnd) => hwnd,
+                    Err(_) => {
+                        let _ = tx.send(None);
+                        return;
+                    }
+                };
+                if WTSRegisterSessionNotification(hwnd, NOTIFY_FOR_THIS_SESSION).is_err() {
+                    let _ = DestroyWindow(hwnd);
+                    let _ = tx.send(None);
+                    return;
+                }
+                let _ = tx.send(Some(GetCurrentThreadId()));
+                let mut msg = MSG::default();
+                while GetMessageW(&mut msg, None, 0, 0).as_bool() {
+                    DispatchMessageW(&msg);
+                }
+                let _ = WTSUnRegisterSessionNotification(hwnd);
+                let _ = DestroyWindow(hwnd);
+            })
+            .ok()?;
+        match rx.recv() {
+            Ok(Some(id)) => Some((thread, id)),
+            _ => {
+                let _ = thread.join();
+                None
             }
         }
     }
@@ -440,6 +595,29 @@ mod tests {
         assert!(!resumes_on(true, None, Some(&phones)));
         assert!(!resumes_on(
             true,
+            Some(PauseReason::Suspended),
+            Some(&phones)
+        ));
+    }
+
+    #[test]
+    fn unlock_resumes_only_onto_headphones_after_a_lock_pause() {
+        let phones = endpoint("phones", OutputKind::Personal);
+        let speakers = endpoint("speakers", OutputKind::Public);
+        let locked = Some(PauseReason::Locked);
+        let policy = LockPolicy::PauseResumeWithHeadphones;
+        assert!(resumes_after_unlock(policy, locked, Some(&phones)));
+        assert!(!resumes_after_unlock(policy, locked, Some(&speakers)));
+        assert!(!resumes_after_unlock(policy, locked, None));
+        assert!(!resumes_after_unlock(
+            LockPolicy::Pause,
+            locked,
+            Some(&phones)
+        ));
+        // Paused by the user, or by something else: never resumed by an unlock.
+        assert!(!resumes_after_unlock(policy, None, Some(&phones)));
+        assert!(!resumes_after_unlock(
+            policy,
             Some(PauseReason::Suspended),
             Some(&phones)
         ));

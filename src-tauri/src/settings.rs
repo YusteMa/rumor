@@ -6,10 +6,12 @@
 //! Rumor to work well, and unknown or missing fields in an old or imported
 //! file never break loading.
 
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::audio::device_watch::OutputChangePolicy;
+use crate::audio::device_watch::{LockPolicy, OutputChangePolicy};
 use crate::audio::noise::NoiseColor;
 
 /// Bumped when the shape changes in a way `#[serde(default)]` can't absorb.
@@ -107,6 +109,10 @@ pub struct Sound {
     pub fade_ms: u32,
     /// The slider's 100 % maps to this (0.1..=1.0).
     pub max_volume: f32,
+    /// Remember a volume for each output device (SPEC §3.3).
+    pub per_output_volume: bool,
+    /// Same signal in both ears, for a single earbud.
+    pub mono: bool,
 }
 
 impl Default for Sound {
@@ -115,6 +121,8 @@ impl Default for Sound {
             start_color: StartColor::Last,
             fade_ms: 400,
             max_volume: 1.0,
+            per_output_volume: true,
+            mono: false,
         }
     }
 }
@@ -124,6 +132,7 @@ impl Default for Sound {
 pub struct Playback {
     pub on_output_change: OutputChangePolicy,
     pub resume_on_reconnect: bool,
+    pub on_lock: LockPolicy,
     pub on_launch: OnLaunch,
 }
 
@@ -275,6 +284,8 @@ pub struct LastSession {
     pub volume: f32,
     pub timer_minutes: u32,
     pub was_playing: bool,
+    /// Slider position per output endpoint id (SPEC §3.3).
+    pub output_volumes: BTreeMap<String, f32>,
 }
 
 impl Default for LastSession {
@@ -284,6 +295,7 @@ impl Default for LastSession {
             volume: 0.4,
             timer_minutes: 0,
             was_playing: false,
+            output_volumes: BTreeMap::new(),
         }
     }
 }
@@ -351,6 +363,9 @@ impl Settings {
         }
         self.last.volume = clamp_f(self.last.volume, (0.0, 1.0), 0.4);
         self.last.timer_minutes = self.last.timer_minutes.min(PRESET_MINUTES.1);
+        for v in self.last.output_volumes.values_mut() {
+            *v = clamp_f(*v, (0.0, 1.0), 0.4);
+        }
         for action in ShortcutAction::ALL {
             let blank = self
                 .shortcuts
@@ -497,6 +512,9 @@ mod tests {
         assert_eq!(s.tray.left_click, LeftClick::Toggle);
         assert!(!s.startup.launch_at_login);
         assert_eq!(s.appearance.accent, AccentChoice::Noise);
+        assert!(s.sound.per_output_volume);
+        assert!(!s.sound.mono);
+        assert_eq!(s.playback.on_lock, LockPolicy::PauseResumeWithHeadphones);
     }
 
     #[test]

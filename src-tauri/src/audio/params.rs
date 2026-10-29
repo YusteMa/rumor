@@ -33,6 +33,7 @@ pub struct Params {
     volume: AtomicF32,
     fade_in_ms: AtomicF32,
     fade_out_ms: AtomicF32,
+    mono: AtomicBool,
 }
 
 impl Params {
@@ -43,6 +44,7 @@ impl Params {
             volume: AtomicF32::new(initial.volume.clamp(0.0, 1.0)),
             fade_in_ms: AtomicF32::new(initial.fade_in_ms),
             fade_out_ms: AtomicF32::new(initial.fade_out_ms),
+            mono: AtomicBool::new(initial.mono),
         }
     }
 
@@ -75,6 +77,10 @@ impl Params {
         }
     }
 
+    pub fn set_mono(&self, mono: bool) {
+        self.mono.store(mono, Ordering::Relaxed);
+    }
+
     pub fn playing(&self) -> bool {
         self.playing.load(Ordering::Relaxed)
     }
@@ -88,6 +94,7 @@ impl Params {
             volume: self.volume.load(),
             fade_in_ms: self.fade_in_ms.load(),
             fade_out_ms: self.fade_out_ms.load(),
+            mono: self.mono.load(Ordering::Relaxed),
         }
     }
 }
@@ -104,6 +111,7 @@ mod tests {
         p.set_volume(0.75);
         p.set_fade_in_ms(2_000.0);
         p.set_fade_out_ms(10_000.0);
+        p.set_mono(true);
         assert_eq!(
             p.snapshot(),
             Controls {
@@ -112,6 +120,7 @@ mod tests {
                 volume: 0.75,
                 fade_in_ms: 2_000.0,
                 fade_out_ms: 10_000.0,
+                mono: true,
             }
         );
     }

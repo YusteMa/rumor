@@ -2,7 +2,12 @@
 // Outside Tauri (a plain browser, for design work) a mock backend stands in.
 
 export type Color = "pink" | "brown" | "white";
-export type PauseReason = "headphonesDisconnected" | "outputChanged" | "noOutput" | "suspended";
+export type PauseReason =
+  | "headphonesDisconnected"
+  | "outputChanged"
+  | "noOutput"
+  | "suspended"
+  | "locked";
 export type Lang = "es" | "en";
 
 export interface PanelState {

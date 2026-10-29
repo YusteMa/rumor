@@ -120,7 +120,7 @@ fn tooltip(state: &AppState, s: &Snapshot) -> String {
         Some(PauseReason::HeadphonesDisconnected) => Some("pausedHeadphones"),
         Some(PauseReason::NoOutput) => Some("pausedNoOutput"),
         Some(PauseReason::OutputChanged) => Some("pausedOutputChanged"),
-        Some(PauseReason::Suspended) | None => None,
+        Some(PauseReason::Suspended | PauseReason::Locked) | None => None,
     };
     match reason {
         Some(key) => format!("Rumor · {}", t.get(key)),

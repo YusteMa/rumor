@@ -6,10 +6,11 @@ import { isTauri, type Appearance, type Color, type Lang } from "./api";
 export type Action = "toggle" | "volumeUp" | "volumeDown" | "nextColor" | "openPanel";
 
 export interface Settings {
-  sound: { startColor: "last" | Color; fadeMs: number; maxVolume: number };
+  sound: { startColor: "last" | Color; fadeMs: number; maxVolume: number; perOutputVolume: boolean; mono: boolean };
   playback: {
     onOutputChange: "pauseOnSpeakers" | "pauseAlways" | "keepPlaying";
     resumeOnReconnect: boolean;
+    onLock: "pauseResumeWithHeadphones" | "pause" | "nothing";
     onLaunch: "silent" | "play" | "resume";
   };
   timer: { presets: [number, number, number]; endFadeS: number; notifyOnEnd: boolean };
@@ -18,7 +19,7 @@ export interface Settings {
   appearance: Appearance;
   startup: { launchAtLogin: boolean };
   advanced: { outputDevice: string | null; buffer: "auto" | "ms10" | "ms20" | "ms50" };
-  last: { color: Color; volume: number; timerMinutes: number; wasPlaying: boolean };
+  last: { color: Color; volume: number; timerMinutes: number; wasPlaying: boolean; outputVolumes: Record<string, number> };
 }
 
 export interface Endpoint {
@@ -75,15 +76,15 @@ async function tauriBackend(): Promise<SettingsBackend> {
 
 function defaults(): Settings {
   return {
-    sound: { startColor: "last", fadeMs: 400, maxVolume: 1 },
-    playback: { onOutputChange: "pauseOnSpeakers", resumeOnReconnect: false, onLaunch: "silent" },
+    sound: { startColor: "last", fadeMs: 400, maxVolume: 1, perOutputVolume: true, mono: false },
+    playback: { onOutputChange: "pauseOnSpeakers", resumeOnReconnect: false, onLock: "pauseResumeWithHeadphones", onLaunch: "silent" },
     timer: { presets: [25, 50, 90], endFadeS: 10, notifyOnEnd: true },
     shortcuts: { toggle: "Ctrl+Alt+P", volumeUp: null, volumeDown: null, nextColor: null, openPanel: null },
     tray: { leftClick: "toggle", showRemaining: true },
     appearance: { theme: "system", accent: "noise", mica: true, spectrum: true, reduceMotion: false, language: "auto" },
     startup: { launchAtLogin: false },
     advanced: { outputDevice: null, buffer: "auto" },
-    last: { color: "pink", volume: 0.4, timerMinutes: 0, wasPlaying: false },
+    last: { color: "pink", volume: 0.4, timerMinutes: 0, wasPlaying: false, outputVolumes: {} },
   };
 }
 

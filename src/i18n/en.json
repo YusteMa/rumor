@@ -150,5 +150,14 @@
   "aboutRepo": "Source code",
   "aboutLicense": "MIT licence",
   "aboutTelemetry": "No telemetry: Rumor sends nothing anywhere.",
-  "aboutBugs": "To report a bug, open an issue on GitHub and attach the log (Advanced → Logs)."
+  "aboutBugs": "To report a bug, open an issue on GitHub and attach the log (Advanced → Logs).",
+  "optPerOutputVolume": "Volume per output",
+  "hintPerOutputVolume": "Remembers one volume for headphones, another for speakers… and applies it when you switch.",
+  "optMono": "Mono",
+  "hintMono": "The same sound on both sides, for listening with one earbud.",
+  "optOnLock": "When the PC locks",
+  "hintOnLock": "With Win+L. On unlock it only plays again if you're still on headphones.",
+  "lockPauseResume": "Pause, resume on headphones",
+  "lockPause": "Pause",
+  "lockNothing": "Do nothing"
 }

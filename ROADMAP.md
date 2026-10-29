@@ -61,7 +61,6 @@ Cada fase termina **compilando, con los tests en verde y con un commit**. No se 
 - `tauri-plugin-store` para la persistencia, más **exportar/importar ajustes en JSON**.
 - i18n ES/EN.
 - Notificación de bienvenida en el primer arranque.
-
 - **Volumen por salida:** un volumen recordado para cada dispositivo, aplicado con suavidad al cambiar.
 - **Bloqueo del PC:** pausa al bloquear (Win+L) y, al desbloquear, reanuda solo si la salida sigue siendo de cascos. Configurable en Reproducción.
 - **Modo mono** en Sonido, para un solo auricular.

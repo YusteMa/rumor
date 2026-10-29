@@ -263,3 +263,56 @@ fn colour_changes_crossfade_smoothly() {
     }
     assert_eq!(r.color_weights(), [1.0, 0.0, 0.0]);
 }
+
+#[test]
+fn mono_sends_the_same_signal_to_both_channels_at_the_same_loudness() {
+    let fs = 48_000.0;
+    let stereo = playing(NoiseColor::Pink);
+    let mono = Controls {
+        mono: true,
+        ..stereo
+    };
+    let mut r = NoiseRenderer::new(fs, 21, &mono);
+    for _ in 0..fs as usize {
+        r.next_frame(&mono);
+    }
+    let (mut l, mut rr) = (Vec::new(), Vec::new());
+    for _ in 0..(10.0 * fs) as usize {
+        let [a, b] = r.next_frame(&mono);
+        assert_eq!(a, b, "mono channels differ");
+        l.push(a);
+        rr.push(b);
+    }
+    let (stereo_l, _) = render(NoiseColor::Pink, fs, 10.0, 21);
+    let diff = k_weighted_rms_db(&l, fs) - k_weighted_rms_db(&stereo_l, fs);
+    eprintln!("mono vs stereo channel loudness: {diff:+.2} dB");
+    assert!(diff.abs() < 0.5, "mono is {diff:+.2} dB off");
+}
+
+#[test]
+fn switching_mono_never_jumps() {
+    let fs = 48_000.0;
+    let mut c = playing(NoiseColor::Brown);
+    let mut r = NoiseRenderer::new(fs, 23, &c);
+    for _ in 0..fs as usize {
+        r.next_frame(&c);
+    }
+    // The L/R difference must fade, not vanish in one sample.
+    let mut previous = {
+        let [a, b] = r.next_frame(&c);
+        (a - b).abs()
+    };
+    c.mono = true;
+    let mut max_jump = 0.0f32;
+    for _ in 0..(0.1 * fs) as usize {
+        let [a, b] = r.next_frame(&c);
+        let d = (a - b).abs();
+        max_jump = max_jump.max(previous - d);
+        previous = d;
+    }
+    assert_eq!(previous, 0.0, "not mono after the blend");
+    assert!(
+        max_jump < 0.05,
+        "L/R difference dropped by {max_jump} in one sample"
+    );
+}

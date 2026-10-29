@@ -150,5 +150,14 @@
   "aboutRepo": "Código fuente",
   "aboutLicense": "Licencia MIT",
   "aboutTelemetry": "Sin telemetría: Rumor no envía nada a ninguna parte.",
-  "aboutBugs": "Para reportar un fallo, abre un issue en GitHub y adjunta el registro (Avanzado → Registros)."
+  "aboutBugs": "Para reportar un fallo, abre un issue en GitHub y adjunta el registro (Avanzado → Registros).",
+  "optPerOutputVolume": "Volumen de cada salida",
+  "hintPerOutputVolume": "Recuerda un volumen para los cascos, otro para los altavoces… y lo aplica al cambiar.",
+  "optMono": "Modo mono",
+  "hintMono": "El mismo sonido por los dos lados, para escuchar con un solo auricular.",
+  "optOnLock": "Al bloquear el PC",
+  "hintOnLock": "Con Win+L. Al desbloquear solo vuelve a sonar si siguen puestos los cascos.",
+  "lockPauseResume": "Pausar y reanudar si hay cascos",
+  "lockPause": "Pausar",
+  "lockNothing": "No hacer nada"
 }

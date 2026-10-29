@@ -93,6 +93,7 @@ fn engine_config(s: &Settings) -> EngineConfig {
     EngineConfig {
         on_output_change: s.playback.on_output_change,
         resume_on_reconnect: s.playback.resume_on_reconnect,
+        on_lock: s.playback.on_lock,
         output_device: s.advanced.output_device.clone(),
         buffer_ms: s.advanced.buffer.millis(),
     }
@@ -169,6 +170,7 @@ pub fn setup(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
             volume: settings.effective_volume(settings.last.volume),
             fade_in_ms: fade,
             fade_out_ms: fade,
+            mono: settings.sound.mono,
         },
         engine_config(&settings),
         move |event| on_engine_event(&events, event),
@@ -256,9 +258,39 @@ fn on_engine_event(app: &AppHandle, event: EngineEvent) {
             lock(&state.timer).on_playing(true, Instant::now());
             remember(app, |last| last.was_playing = true);
         }
-        EngineEvent::OutputChanged(_) => settings_window::emit_changed(app),
+        EngineEvent::OutputChanged(output) => {
+            if let Some(output) = output {
+                apply_output_volume(app, &output.endpoint.id);
+            }
+            settings_window::emit_changed(app);
+        }
     }
     refresh(app);
+}
+
+/// Volume per output (SPEC §3.3): a device keeps its own volume; one never
+/// used before starts at the current volume.
+fn apply_output_volume(app: &AppHandle, id: &str) {
+    let state = app.state::<AppState>();
+    let settings = state.settings();
+    if !settings.sound.per_output_volume {
+        return;
+    }
+    match settings.last.output_volumes.get(id).copied() {
+        Some(saved) if saved != settings.last.volume => {
+            log::info!("volume for this output: {:.0} %", saved * 100.0);
+            // The engine's volume smoothing makes this a soft change.
+            state.engine.set_volume(settings.effective_volume(saved));
+            remember(app, |last| last.volume = saved);
+        }
+        Some(_) => {}
+        None => {
+            let id = id.to_owned();
+            remember(app, |last| {
+                last.output_volumes.insert(id, last.volume);
+            });
+        }
+    }
 }
 
 /// Updates and stores what Rumor remembers between runs.
@@ -316,10 +348,19 @@ pub fn set_volume(app: &AppHandle, volume: f32) {
     }
     let volume = volume.clamp(0.0, 1.0);
     let state = app.state::<AppState>();
-    state
-        .engine
-        .set_volume(state.settings().effective_volume(volume));
-    remember(app, |last| last.volume = volume);
+    let settings = state.settings();
+    state.engine.set_volume(settings.effective_volume(volume));
+    let output = settings
+        .sound
+        .per_output_volume
+        .then(|| state.engine.output().map(|o| o.endpoint.id))
+        .flatten();
+    remember(app, |last| {
+        last.volume = volume;
+        if let Some(id) = output {
+            last.output_volumes.insert(id, volume);
+        }
+    });
     refresh(app);
 }
 
@@ -402,6 +443,9 @@ fn apply(app: &AppHandle, old: &Settings, new: &Settings) {
     if old.sound.fade_ms != new.sound.fade_ms {
         state.engine.set_fade_in_ms(new.sound.fade_ms as f32);
         state.engine.set_fade_out_ms(new.sound.fade_ms as f32);
+    }
+    if old.sound.mono != new.sound.mono {
+        state.engine.set_mono(new.sound.mono);
     }
     if old.sound.max_volume != new.sound.max_volume {
         state

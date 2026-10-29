@@ -232,6 +232,8 @@ const SECTIONS: { id: string; title: Key; build: () => Node[] }[] = [
         row("optStartColor", "hintStartColor", select([["last", t("startLast")], ...colors()], (s) => s.sound.startColor, (v) => ({ sound: { startColor: v } }))),
         row("optFade", "hintFade", slider({ min: 0.2, max: 3, step: 0.1, get: (s) => s.sound.fadeMs / 1000, set: (v) => ({ sound: { fadeMs: Math.round(v * 1000) } }), format: (v) => t("seconds", { n: v.toLocaleString(lang ?? "es", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) }) }), true),
         row("optMaxVolume", "hintMaxVolume", slider({ min: 10, max: 100, step: 5, get: (s) => Math.round(s.sound.maxVolume * 100), set: (v) => ({ sound: { maxVolume: v / 100 } }), format: (v) => t("percent", { n: v }) }), true),
+        row("optPerOutputVolume", "hintPerOutputVolume", toggle((s) => s.sound.perOutputVolume, (on) => ({ sound: { perOutputVolume: on } }))),
+        row("optMono", "hintMono", toggle((s) => s.sound.mono, (on) => ({ sound: { mono: on } }))),
       ),
     ],
   },
@@ -242,6 +244,7 @@ const SECTIONS: { id: string; title: Key; build: () => Node[] }[] = [
       card(
         row("optOutputChange", "hintOutputChange", select([["pauseOnSpeakers", t("policyPauseOnSpeakers")], ["pauseAlways", t("policyPauseAlways")], ["keepPlaying", t("policyKeepPlaying")]], (s) => s.playback.onOutputChange, (v) => ({ playback: { onOutputChange: v } }))),
         row("optResume", "hintResume", toggle((s) => s.playback.resumeOnReconnect, (on) => ({ playback: { resumeOnReconnect: on } }))),
+        row("optOnLock", "hintOnLock", select([["pauseResumeWithHeadphones", t("lockPauseResume")], ["pause", t("lockPause")], ["nothing", t("lockNothing")]], (s) => s.playback.onLock, (v) => ({ playback: { onLock: v } })), true),
         row("optOnLaunch", "hintOnLaunch", select([["silent", t("launchSilent")], ["play", t("launchPlay")], ["resume", t("launchResume")]], (s) => s.playback.onLaunch, (v) => ({ playback: { onLaunch: v } }))),
       ),
     ],

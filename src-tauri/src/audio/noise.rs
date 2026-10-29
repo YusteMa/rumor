@@ -5,7 +5,7 @@
 //! or Tauri, so it runs on the audio thread and is tested by rendering to
 //! buffers (`tests/dsp.rs`).
 
-use std::f32::consts::TAU;
+use std::f32::consts::{FRAC_1_SQRT_2, TAU};
 
 use serde::{Deserialize, Serialize};
 
@@ -19,6 +19,8 @@ pub const FADE_IN_MS: f32 = 400.0;
 pub const FADE_OUT_MS: f32 = 400.0;
 /// Colour crossfade (SPEC §3.2).
 pub const CROSSFADE_MS: f32 = 150.0;
+/// Mono on/off blend, so switching it never clicks.
+pub const MONO_BLEND_MS: f32 = 50.0;
 /// Time constant of the volume smoother (SPEC §3.2).
 pub const VOLUME_SMOOTHING_MS: f32 = 30.0;
 /// Level every colour is normalised to at full volume: K-weighted RMS per
@@ -316,6 +318,8 @@ pub struct Controls {
     pub fade_in_ms: f32,
     /// Fade-out length for the next stop (the sleep timer uses a longer one).
     pub fade_out_ms: f32,
+    /// Both channels carry the same signal, for a single earbud.
+    pub mono: bool,
 }
 
 impl Default for Controls {
@@ -326,6 +330,7 @@ impl Default for Controls {
             volume: 0.4,
             fade_in_ms: FADE_IN_MS,
             fade_out_ms: FADE_OUT_MS,
+            mono: false,
         }
     }
 }
@@ -339,7 +344,10 @@ pub struct NoiseRenderer {
     mix: [Ramp; 3],
     fade: Ramp,
     volume: OnePole,
+    /// 0 = stereo, 1 = mono.
+    mono: Ramp,
     crossfade_step: f32,
+    mono_step: f32,
     fs: f32,
 }
 
@@ -364,6 +372,8 @@ impl NoiseRenderer {
             norm,
             mix,
             fade: Ramp::new(0.0),
+            mono: Ramp::new(if initial.mono { 1.0 } else { 0.0 }),
+            mono_step: step_per_sample(MONO_BLEND_MS, fs),
             volume: OnePole::new(VOLUME_SMOOTHING_MS, fs, volume_gain(initial.volume)),
             crossfade_step: step_per_sample(CROSSFADE_MS, fs),
             fs,
@@ -386,12 +396,24 @@ impl NoiseRenderer {
         };
         let gain = fade_curve(fade) * self.volume.next(volume_gain(c.volume));
 
-        let mut out = [0.0f32; 2];
-        for (o, channel) in out.iter_mut().zip(&mut self.channels) {
+        let mut raw = [0.0f32; 2];
+        for (o, channel) in raw.iter_mut().zip(&mut self.channels) {
             let s = channel.sample();
-            *o = soft_clip((s[0] * weights[0] + s[1] * weights[1] + s[2] * weights[2]) * gain);
+            *o = (s[0] * weights[0] + s[1] * weights[1] + s[2] * weights[2]) * gain;
         }
-        out
+        // Mono before the clipper, so the sum never goes past −3 dBFS. The
+        // two channels are uncorrelated, so (L + R)/√2 is as loud as each.
+        let m = self
+            .mono
+            .next(if c.mono { 1.0 } else { 0.0 }, self.mono_step);
+        if m > 0.0 {
+            let mono = (raw[0] + raw[1]) * FRAC_1_SQRT_2;
+            for o in &mut raw {
+                // Exactly equal once fully mono (no 1-ulp drift between ears).
+                *o = if m >= 1.0 { mono } else { *o + (mono - *o) * m };
+            }
+        }
+        raw.map(soft_clip)
     }
 
     /// True once a fade-out has fully finished: the output is exact zeros and

@@ -22,8 +22,8 @@ use serde::{Deserialize, Serialize};
 
 use super::analysis::{Analyzer, BANDS};
 use super::device_watch::{
-    Endpoint, OutputChangePolicy, OutputKind, PauseReason, SystemEvent, SystemWatch, Verdict,
-    on_output_change, resumes_on,
+    Endpoint, LockPolicy, OutputChangePolicy, OutputKind, PauseReason, SystemEvent, SystemWatch,
+    Verdict, on_output_change, resumes_after_unlock, resumes_on,
 };
 use super::noise::{Controls, NoiseColor, NoiseRenderer, calibrate};
 use super::params::Params;
@@ -62,6 +62,8 @@ enum StreamError {
 pub struct EngineConfig {
     pub on_output_change: OutputChangePolicy,
     pub resume_on_reconnect: bool,
+    /// What locking the PC does (SPEC §3.3).
+    pub on_lock: LockPolicy,
     /// Endpoint id of a fixed output; `None` follows Windows' default. A
     /// fixed output that disappears pauses the noise: it never falls back to
     /// another device (CLAUDE.md rule 10).
@@ -217,6 +219,10 @@ impl AudioEngine {
         self.shared.params.set_fade_out_ms(ms);
     }
 
+    pub fn set_mono(&self, mono: bool) {
+        self.shared.params.set_mono(mono);
+    }
+
     pub fn set_config(&self, config: EngineConfig) {
         let reopen = {
             let mut current = lock(&self.shared.config);
@@ -362,6 +368,24 @@ impl Control {
                     self.auto_pause(PauseReason::Suspended);
                 }
             }
+            SystemEvent::Locked => {
+                let policy = lock(&self.shared.config).on_lock;
+                if policy != LockPolicy::Nothing && self.shared.params.playing() {
+                    log::info!("session locked: pausing");
+                    self.auto_pause(PauseReason::Locked);
+                }
+            }
+            SystemEvent::Unlocked => {
+                let policy = lock(&self.shared.config).on_lock;
+                let paused_for = *lock(&self.shared.paused_for);
+                let to = self.live.as_ref().map(|l| l.endpoint.clone());
+                if resumes_after_unlock(policy, paused_for, to.as_ref()) {
+                    log::info!("session unlocked, still on headphones: resuming");
+                    self.auto_resume();
+                } else if paused_for == Some(PauseReason::Locked) {
+                    log::info!("session unlocked: staying paused");
+                }
+            }
             SystemEvent::Resumed => {
                 log::info!("system resumed");
                 // A stream that died during sleep reports an error; this just
@@ -498,7 +522,7 @@ impl Control {
     }
 
     fn auto_resume(&mut self) {
-        log::info!("headphones back: resuming");
+        log::info!("resuming on its own");
         self.shared.params.set_playing(true);
         *lock(&self.shared.paused_for) = None;
         self.emit(EngineEvent::AutoResumed);
