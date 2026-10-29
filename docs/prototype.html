@@ -1,0 +1,322 @@
+<title>Ruido Rosa</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: una sola columna centrada tipo "aparato": gran botón, curva de espectro en vivo, controles debajo */
+:root{
+  --bg:#f6eef0;
+  --surface:#fffafb;
+  --ink:#2a1d22;
+  --muted:#7d6670;
+  --line:#e6d5db;
+  --accent:#d9547e;
+  --accent-soft:#f3c9d6;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#17111a; --surface:#211824; --ink:#f5e9ee; --muted:#a58f9b;
+    --line:#352834; --accent:#ff7aa3; --accent-soft:#4a2536; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#17111a; --surface:#211824; --ink:#f5e9ee; --muted:#a58f9b;
+  --line:#352834; --accent:#ff7aa3; --accent-soft:#4a2536; color-scheme:dark;
+}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--display);
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap{max-width:560px; margin:0 auto; padding-block:32px 40px; display:flex; flex-direction:column; gap:22px}
+header{display:flex; justify-content:space-between; align-items:baseline; gap:12px; flex-wrap:wrap}
+h1{font-size:clamp(28px,6vw,40px); font-weight:800; letter-spacing:-0.02em; margin:0; text-wrap:balance}
+.status{font-family:var(--mono); font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+.status b{color:var(--accent); font-weight:500}
+
+.player{display:flex; align-items:center; gap:20px}
+#play{
+  width:96px; height:96px; flex:none; border-radius:50%; border:0; cursor:pointer;
+  background:var(--accent); color:var(--surface);
+  display:grid; place-items:center;
+  box-shadow:0 0 0 0 var(--accent-soft);
+  transition:transform .15s ease, box-shadow .6s ease;
+}
+#play:hover{transform:scale(1.04)}
+#play:focus-visible{outline:3px solid var(--ink); outline-offset:4px}
+#play.on{box-shadow:0 0 0 14px var(--accent-soft)}
+#play svg{width:34px; height:34px; fill:currentColor}
+.player-text{min-width:0}
+.player-text .big{font-size:22px; font-weight:600}
+.player-text .small{color:var(--muted); font-size:14px; margin-top:4px; line-height:1.4}
+
+.scope{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 14px 10px}
+.scope-head{display:flex; justify-content:space-between; font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; margin-bottom:6px}
+canvas{display:block; width:100%; height:150px}
+
+.controls{display:flex; flex-direction:column; gap:18px}
+.row{display:flex; flex-direction:column; gap:8px}
+.label{font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); display:flex; justify-content:space-between}
+.label span:last-child{color:var(--ink); font-variant-numeric:tabular-nums}
+.seg{display:flex; gap:6px; flex-wrap:wrap}
+.seg button{
+  flex:1 1 0; min-width:72px; padding:10px 8px; border-radius:10px; cursor:pointer;
+  border:1px solid var(--line); background:var(--surface); color:var(--ink);
+  font-family:var(--display); font-size:15px; font-weight:600;
+}
+.seg button small{display:block; font-weight:400; font-size:11px; color:var(--muted); margin-top:2px}
+.seg button[aria-pressed="true"]{border-color:var(--accent); background:var(--accent-soft)}
+.seg button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+input[type=range]{width:100%; accent-color:var(--accent); height:28px}
+.foot{font-size:13px; color:var(--muted); line-height:1.5}
+kbd{font-family:var(--mono); font-size:11px; border:1px solid var(--line); border-radius:4px; padding:1px 5px; background:var(--surface)}
+@media (prefers-reduced-motion: reduce){ #play{transition:none} }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Ruido rosa</h1>
+    <div class="status" id="status">Generado en vivo · <b>sin compresión</b></div>
+  </header>
+
+  <div class="player">
+    <button id="play" aria-label="Reproducir">
+      <svg id="ico" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <div class="player-text">
+      <div class="big" id="bigText">Pulsa para empezar</div>
+      <div class="small" id="smallText">Ruido estéreo calculado muestra a muestra. No es un audio en bucle.</div>
+    </div>
+  </div>
+
+  <div class="scope">
+    <div class="scope-head"><span>Espectro</span><span id="slopeLbl">−3 dB/octava</span></div>
+    <canvas id="cv" aria-label="Espectro del ruido en tiempo real"></canvas>
+  </div>
+
+  <div class="controls">
+    <div class="row">
+      <div class="label"><span>Color del ruido</span><span id="colorLbl">Rosa</span></div>
+      <div class="seg" id="colors">
+        <button data-c="pink" aria-pressed="true">Rosa<small>equilibrado</small></button>
+        <button data-c="brown" aria-pressed="false">Marrón<small>oscuro</small></button>
+        <button data-c="white" aria-pressed="false">Blanco<small>brillante</small></button>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="label"><span>Volumen</span><span id="volLbl">40 %</span></div>
+      <input id="vol" type="range" min="0" max="100" value="40" aria-label="Volumen">
+    </div>
+
+    <div class="row">
+      <div class="label"><span>Apagar en</span><span id="timerLbl">Nunca</span></div>
+      <div class="seg" id="timers">
+        <button data-m="0" aria-pressed="true">∞</button>
+        <button data-m="25" aria-pressed="false">25 min</button>
+        <button data-m="50" aria-pressed="false">50 min</button>
+        <button data-m="90" aria-pressed="false">90 min</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="foot"><kbd>Espacio</kbd> reproduce o pausa. Funciona con la pestaña en segundo plano; solo no la cierres.</p>
+</div>
+
+<script>
+(() => {
+const SLOPES = { pink: -3, brown: -6, white: 0 };
+const NAMES  = { pink: "Rosa", brown: "Marrón", white: "Blanco" };
+
+let ctx = null, node = null, gain = null, analyser = null, playing = false;
+let color = "pink", vol = 0.4, timerMin = 0, endAt = 0, raf = 0;
+
+try {
+  const s = JSON.parse(localStorage.getItem("ruido-rosa") || "{}");
+  if (s.color in SLOPES) color = s.color;
+  if (typeof s.vol === "number") vol = Math.min(1, Math.max(0, s.vol));
+} catch (e) {}
+const save = () => { try { localStorage.setItem("ruido-rosa", JSON.stringify({ color, vol })); } catch (e) {} };
+
+const $ = id => document.getElementById(id);
+const playBtn = $("play"), ico = $("ico");
+
+/* Generador: ruido blanco → filtro de Paul Kellet (rosa) o integrador con fuga (marrón). Un estado por canal = estéreo real. */
+const WORKLET = `
+class Noise extends AudioWorkletProcessor {
+  constructor(){
+    super(); this.color = "pink";
+    this.s = [0,1].map(() => ({b0:0,b1:0,b2:0,b3:0,b4:0,b5:0,b6:0,br:0}));
+    this.port.onmessage = e => { this.color = e.data; };
+  }
+  process(_, outputs){
+    const out = outputs[0];
+    for (let ch = 0; ch < out.length; ch++){
+      const o = out[ch], s = this.s[ch % 2];
+      for (let i = 0; i < o.length; i++){
+        const w = Math.random()*2 - 1;
+        if (this.color === "pink"){
+          s.b0 = 0.99886*s.b0 + w*0.0555179;
+          s.b1 = 0.99332*s.b1 + w*0.0750759;
+          s.b2 = 0.96900*s.b2 + w*0.1538520;
+          s.b3 = 0.86650*s.b3 + w*0.3104856;
+          s.b4 = 0.55000*s.b4 + w*0.5329522;
+          s.b5 = -0.7616*s.b5 - w*0.0168980;
+          o[i] = (s.b0+s.b1+s.b2+s.b3+s.b4+s.b5+s.b6 + w*0.5362) * 0.11;
+          s.b6 = w*0.115926;
+        } else if (this.color === "brown"){
+          s.br = (s.br + 0.02*w) / 1.02;
+          o[i] = s.br * 3.5;
+        } else {
+          o[i] = w * 0.33;
+        }
+      }
+    }
+    return true;
+  }
+}
+registerProcessor("noise", Noise);`;
+
+async function init(){
+  ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "playback" });
+  gain = ctx.createGain(); gain.gain.value = 0;
+  analyser = ctx.createAnalyser(); analyser.fftSize = 8192; analyser.smoothingTimeConstant = 0.9;
+  const url = URL.createObjectURL(new Blob([WORKLET], { type: "application/javascript" }));
+  await ctx.audioWorklet.addModule(url);
+  node = new AudioWorkletNode(ctx, "noise", { numberOfInputs: 0, outputChannelCount: [2] });
+  node.port.postMessage(color);
+  node.connect(analyser);
+  node.connect(gain).connect(ctx.destination);
+}
+
+const curve = v => v * v; // volumen perceptual
+async function start(){
+  if (!ctx) {
+    try { await init(); }
+    catch (e) { $("smallText").textContent = "Tu navegador no permite generar audio aquí. Prueba en Chrome o Edge actualizados."; return; }
+  }
+  await ctx.resume();
+  gain.gain.cancelScheduledValues(ctx.currentTime);
+  gain.gain.setTargetAtTime(curve(vol), ctx.currentTime, 0.4); // fundido de entrada suave
+  playing = true;
+  if (timerMin) endAt = Date.now() + timerMin * 60000;
+  ui();
+}
+function stop(){
+  playing = false; endAt = 0;
+  if (gain) gain.gain.setTargetAtTime(0, ctx.currentTime, 0.25);
+  ui();
+}
+playBtn.addEventListener("click", () => playing ? stop() : start());
+document.addEventListener("keydown", e => {
+  if (e.code === "Space" && !/INPUT|BUTTON/.test(document.activeElement.tagName)) { e.preventDefault(); playing ? stop() : start(); }
+});
+
+$("vol").value = Math.round(vol * 100);
+$("vol").addEventListener("input", e => {
+  vol = e.target.value / 100; save();
+  if (playing) gain.gain.setTargetAtTime(curve(vol), ctx.currentTime, 0.05);
+  ui();
+});
+
+$("colors").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  color = b.dataset.c; save();
+  if (node) {
+    if (playing) { // micro-fundido para que el cambio no haga "clic"
+      gain.gain.setTargetAtTime(0, ctx.currentTime, 0.03);
+      setTimeout(() => { node.port.postMessage(color); gain.gain.setTargetAtTime(curve(vol), ctx.currentTime, 0.15); }, 120);
+    } else node.port.postMessage(color);
+  }
+  ui();
+});
+
+$("timers").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  timerMin = +b.dataset.m;
+  endAt = playing && timerMin ? Date.now() + timerMin * 60000 : 0;
+  ui();
+});
+
+function fmt(ms){ const s = Math.max(0, Math.ceil(ms/1000)); return Math.floor(s/60) + ":" + String(s%60).padStart(2,"0"); }
+
+function ui(){
+  playBtn.classList.toggle("on", playing);
+  playBtn.setAttribute("aria-label", playing ? "Pausar" : "Reproducir");
+  ico.innerHTML = playing ? '<path d="M7 5h4v14H7zM13 5h4v14h-4z"/>' : '<path d="M8 5v14l11-7z"/>';
+  $("bigText").textContent = playing ? "Sonando · " + NAMES[color].toLowerCase() : (ctx ? "En pausa" : "Pulsa para empezar");
+  $("volLbl").textContent = Math.round(vol*100) + " %";
+  $("colorLbl").textContent = NAMES[color];
+  $("slopeLbl").textContent = (SLOPES[color] === 0 ? "0" : "−" + Math.abs(SLOPES[color])) + " dB/octava";
+  document.querySelectorAll("#colors button").forEach(b => b.setAttribute("aria-pressed", b.dataset.c === color));
+  document.querySelectorAll("#timers button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.m === timerMin));
+  $("timerLbl").textContent = !timerMin ? "Nunca" : (endAt ? "quedan " + fmt(endAt - Date.now()) : timerMin + " min al darle a play");
+}
+
+/* Espectro: eje de frecuencia logarítmico 20 Hz–20 kHz, normalizado a 0 dB en 1 kHz para que no dependa del volumen */
+const cv = $("cv"), g = cv.getContext("2d");
+const FMIN = 20, FMAX = 20000, DBTOP = 30, DBBOT = -30;
+let buf = null;
+function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+function draw(){
+  const dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
+  if (cv.width !== W*dpr || cv.height !== H*dpr){ cv.width = W*dpr; cv.height = H*dpr; }
+  g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,W,H);
+  const padB = 16, ph = H - padB;
+  const xOf = f => Math.log(f/FMIN) / Math.log(FMAX/FMIN) * W;
+  const yOf = db => (DBTOP - Math.max(DBBOT, Math.min(DBTOP, db))) / (DBTOP - DBBOT) * ph;
+  const muted = css("--muted"), line = css("--line"), accent = css("--accent"), soft = css("--accent-soft");
+
+  // rejilla y etiquetas
+  g.font = "10px " + css("--mono"); g.fillStyle = muted; g.strokeStyle = line; g.lineWidth = 1;
+  [[100,"100 Hz"],[1000,"1 kHz"],[10000,"10 kHz"]].forEach(([f,t]) => {
+    const x = Math.round(xOf(f)) + .5; g.beginPath(); g.moveTo(x,0); g.lineTo(x,ph); g.stroke();
+    g.textAlign = "center"; g.fillText(t, x, H - 3);
+  });
+
+  // curva real
+  if (playing && analyser){
+    const n = analyser.frequencyBinCount, sr = ctx.sampleRate;
+    if (!buf || buf.length !== n) buf = new Float32Array(n);
+    analyser.getFloatFrequencyData(buf);
+    const binOf = f => Math.round(f / (sr/2) * n);
+    let ref = 0, c = 0; for (let k = binOf(900); k <= binOf(1100); k++){ ref += buf[k]; c++; } ref /= c;
+    const pts = [], steps = Math.max(60, Math.floor(W/3));
+    for (let i = 0; i <= steps; i++){
+      const f0 = FMIN * Math.pow(FMAX/FMIN, i/steps), f1 = FMIN * Math.pow(FMAX/FMIN, (i+1)/steps);
+      let a = binOf(f0), b = Math.max(a, binOf(f1)), s = 0, m = 0;
+      for (let k = a; k <= b && k < n; k++){ if (k > 0){ s += buf[k]; m++; } }
+      if (m) pts.push([xOf(f0), yOf(s/m - ref)]);
+    }
+    if (pts.length){
+      g.beginPath(); g.moveTo(pts[0][0], ph); pts.forEach(p => g.lineTo(p[0], p[1])); g.lineTo(pts[pts.length-1][0], ph); g.closePath();
+      g.fillStyle = soft; g.fill();
+      g.beginPath(); pts.forEach((p,i) => i ? g.lineTo(p[0],p[1]) : g.moveTo(p[0],p[1]));
+      g.strokeStyle = accent; g.lineWidth = 1.5; g.stroke();
+    }
+  }
+
+  // pendiente teórica (siempre visible)
+  const slope = SLOPES[color], th = f => slope * Math.log2(f/1000);
+  g.beginPath(); g.setLineDash([4,4]); g.strokeStyle = playing ? muted : accent; g.lineWidth = 1.5;
+  g.moveTo(xOf(FMIN), yOf(th(FMIN))); g.lineTo(xOf(FMAX), yOf(th(FMAX))); g.stroke(); g.setLineDash([]);
+  if (!playing){ g.fillStyle = muted; g.textAlign = "left"; g.fillText("pendiente teórica", 6, 12); }
+
+  if (endAt){
+    if (Date.now() >= endAt){ stop(); }
+    else if ((Date.now() / 1000 | 0) !== draw.last){ draw.last = Date.now()/1000|0; ui(); }
+  }
+  raf = requestAnimationFrame(draw);
+}
+
+/* La pestaña en segundo plano no pinta, pero el temporizador sigue */
+setInterval(() => { if (endAt && Date.now() >= endAt) stop(); }, 1000);
+
+ui(); draw();
+})();
+</script>

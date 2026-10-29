@@ -1,0 +1,37 @@
+/* Theme tokens, taken from docs/prototype.html. */
+:root {
+  --bg: #f6eef0;
+  --surface: #fffafb;
+  --ink: #2a1d22;
+  --muted: #7d6670;
+  --line: #e6d5db;
+  --accent: #d9547e;
+  --accent-soft: #f3c9d6;
+  --display: "Bricolage Grotesque", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17111a;
+    --surface: #211824;
+    --ink: #f5e9ee;
+    --muted: #a58f9b;
+    --line: #352834;
+    --accent: #ff7aa3;
+    --accent-soft: #4a2536;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #17111a;
+  --surface: #211824;
+  --ink: #f5e9ee;
+  --muted: #a58f9b;
+  --line: #352834;
+  --accent: #ff7aa3;
+  --accent-soft: #4a2536;
+  color-scheme: dark;
+}
