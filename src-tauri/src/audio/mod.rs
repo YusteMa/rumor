@@ -3,6 +3,6 @@
 
 mod analysis;
 mod engine;
-mod noise;
-mod params;
-mod smoothing;
+pub mod noise;
+pub mod params;
+pub mod smoothing;

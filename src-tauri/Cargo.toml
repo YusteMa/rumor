@@ -21,6 +21,13 @@ tauri = { version = "2.12.5", features = [] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 
+[dev-dependencies]
+rustfft = "6.4.1"
+
+# The spectral tests run minutes of noise through FFTs; keep them fast in debug.
+[profile.dev.package.rustfft]
+opt-level = 3
+
 # Size guideline: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]
 codegen-units = 1

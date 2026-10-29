@@ -3,7 +3,7 @@
 //! All state lives here in Rust; the panel is only a remote control
 //! (see `CLAUDE.md`). Modules are filled in phase by phase (`ROADMAP.md`).
 
-mod audio;
+pub mod audio;
 mod commands;
 mod panel;
 mod settings;
