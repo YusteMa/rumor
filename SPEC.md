@@ -82,7 +82,17 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
 
 - Opción extra: **"Reanudar al volver a conectar los cascos"** (desactivada por defecto).
 - La reconexión del stream al nuevo dispositivo se hace siempre (aunque esté pausado), para que el siguiente play funcione al instante.
-- **Suspensión e hibernación:** al volver, reabrir el stream si murió y quedarse **en pausa**.
+- **Suspensión e hibernación:** al volver, reabrir el stream si murió y quedarse **en pausa**. El cronómetro de estudio no cuenta el tiempo suspendido.
+- **Bloqueo del PC** (Win+L), ajuste *"Al bloquear el PC"* en Reproducción:
+
+  | Opción | Qué hace |
+  |---|---|
+  | **Pausar y reanudar si hay cascos** *(por defecto)* | Al bloquear se pausan el ruido y el cronómetro. Al desbloquear vuelven **solo si la salida sigue siendo de cascos**; si ahora son altavoces, se quedan en pausa (regla 10) |
+  | Pausar | Se pausa al bloquear y no se reanuda solo |
+  | No hacer nada | Sigue sonando con el PC bloqueado |
+
+  Una pausa del usuario durante el bloqueo, o una reproducción ya parada antes de bloquear, nunca se "reanuda".
+- **Volumen por salida:** Rumor recuerda un volumen para cada dispositivo (los cascos, los altavoces, la tele por HDMI…) y lo aplica al cambiar de salida, con la misma transición suave que el slider. Un dispositivo que no se ha usado antes empieza con el volumen actual. Activado por defecto; se puede desactivar en Ajustes → Sonido. El volumen máximo permitido sigue siendo uno para todos.
 - **Hilo de audio sin asignaciones de memoria, sin locks y sin logs.** Los parámetros se pasan con `AtomicU32` (bits de f32) o con un `rtrb`/`ringbuf` para los comandos.
 
 ### 3.4 Objetivos medibles
@@ -151,6 +161,10 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
 
 **Etiquetas** (opcionales): asignar la sesión a una asignatura o tema ("Cálculo", "EDA"…), elegida de una lista que creas en Ajustes. Si no las usas, no aparecen en ninguna parte.
 
+**Avisos** (Ajustes → Estudio): para cada aviso (fin del temporizador de apagado, cambios de fase del Pomodoro y descanso de oídos) se elige **Notificación / Sonido suave / Las dos / Nada**. El sonido suave es un *"blim"* breve **sintetizado en el momento** (sin archivos de audio, como el ruido), a un volumen moderado que se mezcla encima del ruido sin cortarlo. Por defecto: *Notificación* para el temporizador, *Las dos* para el Pomodoro y para el descanso de oídos.
+
+**Descanso de oídos** (activado por defecto, desactivable): tras **X horas escuchando con cascos** (por defecto **3 h**, configurable) Rumor recuerda descansar con el aviso elegido. Cuenta solo el tiempo sonando por una salida de cascos; una pausa de **15 minutos o más** reinicia la cuenta. No para el ruido: solo avisa, una vez por tramo.
+
 **Fuera de la beta** (v0.2): pantalla de **estadísticas** (gráfico semanal, por asignatura, racha de días) y **exportar a CSV**.
 
 ### 4.3c Módulos activables
@@ -165,11 +179,11 @@ El panel solo enseña lo que usas a diario. **Todo lo demás vive en Ajustes**, 
 
 | Sección | Opciones |
 |---|---|
-| **Sonido** | Color por defecto · ajuste fino de tono (v0.2) · duración del fundido (0,2–3 s) · volumen máximo permitido (el 100 % del slider equivale a ese máximo) |
-| **Reproducción** | Si se desconectan los cascos (§3.3) · reanudar al reconectar · al iniciar Rumor: no sonar *(por defecto)* / sonar siempre / como lo dejé |
+| **Sonido** | Color por defecto · ajuste fino de tono (v0.2) · duración del fundido (0,2–3 s) · volumen máximo permitido (el 100 % del slider equivale a ese máximo) · recordar el volumen de cada salida (§3.3) · **modo mono** (para escuchar con un solo auricular) |
+| **Reproducción** | Si se desconectan los cascos (§3.3) · reanudar al reconectar · al bloquear el PC (§3.3) · al iniciar Rumor: no sonar *(por defecto)* / sonar siempre / como lo dejé · reacción a otro audio (v0.2) |
 | **Temporizador** | Tiempos rápidos editables (por defecto 25/50/90) · fundido final largo (unos 10 s) · notificar al acabar |
 | **Módulos** | Sonido · Estudio (§4.3c) |
-| **Estudio** | Modo por defecto (cronómetro o Pomodoro) · tiempos del Pomodoro (trabajo, descanso, descanso largo, ciclos) · vincular con el ruido · qué hace el ruido en los descansos · detección de inactividad y minutos · etiquetas (crear, renombrar, colores) · inicio de la semana (lunes) |
+| **Estudio** | Modo por defecto (cronómetro o Pomodoro) · tiempos del Pomodoro (trabajo, descanso, descanso largo, ciclos) · vincular con el ruido · qué hace el ruido en los descansos · detección de inactividad y minutos · etiquetas (crear, renombrar, colores) · inicio de la semana (lunes) · avisos (notificación / sonido suave / las dos / nada) para temporizador, Pomodoro y descanso de oídos · descanso de oídos (horas con cascos) |
 | **Atajos** | Alternar ruido (`Ctrl+Alt+P`) · cronómetro (`Ctrl+Alt+T`) · subir y bajar volumen · siguiente color · abrir panel. Se graban pulsando la combinación |
 | **Bandeja** | Acción del clic izquierdo · mostrar el tiempo restante en el tooltip |
 | **Apariencia** | Tema: sistema, claro u oscuro · acento: el del ruido *(por defecto)* o el del sistema · efecto Mica · mostrar espectro · reducir animaciones |
@@ -229,7 +243,8 @@ El panel solo enseña lo que usas a diario. **Todo lo demás vive en Ajustes**, 
 - Motor Rust: rosa, marrón y blanco; estéreo decorrelado; normalización; fundidos; crossfade.
 - Detección del cambio de salida con **pausa al quitar los cascos** (configurable, §3.3).
 - Ventana de **Ajustes** completa (§4.4) y **sistema de diseño** de §4.5.
-- **Módulo Estudio** (§4.3b): cronómetro, Pomodoro configurable, totales de hoy y de la semana, vinculación con el ruido, inactividad opcional, etiquetas y guardado en SQLite.
+- **Módulo Estudio** (§4.3b): cronómetro, Pomodoro configurable, totales de hoy y de la semana, vinculación con el ruido, inactividad opcional, etiquetas, avisos configurables, descanso de oídos y guardado en SQLite.
+- Volumen por salida, pausa al bloquear el PC y modo mono (§3.3, §4.4).
 - **Módulos activables** (§4.3c).
 - Bandeja con dos estados, tooltip y clics.
 - Panel con el diseño del prototipo, Mica, tema del sistema y cierre al perder el foco.

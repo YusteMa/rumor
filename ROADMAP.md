@@ -49,7 +49,11 @@ Cada fase termina **compilando, con los tests en verde y con un commit**. No se 
 - Módulos activables (SPEC §4.3c) e icono y tooltip adaptados.
 - Tests: la máquina de estados (pausas, fases del Pomodoro, sesión que cruza la medianoche) y que la suma diaria sea correcta.
 
-**Hecho cuando:** dejas el cronómetro 2 h con pausas y el total coincide al segundo con un reloj; el Pomodoro cambia de fase sin intervención; desactivar un módulo lo hace desaparecer por completo.
+- Avisos configurables (notificación / sonido suave "blim" sintetizado / las dos / nada) para el fin del temporizador, el Pomodoro y el descanso de oídos.
+- Recordatorio de descanso de oídos tras X horas con cascos (por defecto 3 h, desactivable).
+- El cronómetro se pausa al bloquear el PC y no cuenta el tiempo suspendido.
+
+**Hecho cuando:** dejas el cronómetro 2 h con pausas y el total coincide al segundo con un reloj; el Pomodoro cambia de fase sin intervención; desactivar un módulo lo hace desaparecer por completo; el "blim" suena limpio encima del ruido sin cortarlo.
 
 ### Fase 4 — Temporizador, ajustes e idioma
 - Temporizador en Rust (sigue funcionando sin panel), con fundido al acabar y notificación.
@@ -57,6 +61,10 @@ Cada fase termina **compilando, con los tests en verde y con un commit**. No se 
 - `tauri-plugin-store` para la persistencia, más **exportar/importar ajustes en JSON**.
 - i18n ES/EN.
 - Notificación de bienvenida en el primer arranque.
+
+- **Volumen por salida:** un volumen recordado para cada dispositivo, aplicado con suavidad al cambiar.
+- **Bloqueo del PC:** pausa al bloquear (Win+L) y, al desbloquear, reanuda solo si la salida sigue siendo de cascos. Configurable en Reproducción.
+- **Modo mono** en Sonido, para un solo auricular.
 
 ### Fase 5 — Pulido y release
 - Iconos definitivos (app, bandeja e instalador).
@@ -77,9 +85,10 @@ Cada fase termina **compilando, con los tests en verde y con un commit**. No se 
 - **Slider de tono** continuo (filtro *tilt*): de oscuro a brillante sin cambiar de preset.
 - **Estadísticas de estudio:** gráfico semanal y mensual, tiempo por asignatura, racha de días y exportar a CSV.
 
+- **Reacción a otro audio** (vídeos, llamadas): bajar el volumen (cuánto, configurable) / pausar / nada, con transiciones suaves como en iOS. Se detecta con las sesiones de audio de WASAPI.
+
 ### v0.3 — "Más sonidos, mismo principio"
 - Más colores: gris (ecualizado a la sensibilidad del oído), azul y violeta.
-- Pausa automática al empezar una llamada o al reproducir otro audio (opcional; investigar la viabilidad con WASAPI session events).
 
 ### v1.0
 - Firma de código (SignPath Foundation).
