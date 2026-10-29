@@ -1,15 +1,16 @@
 //! Tray icon, tooltip and clicks (SPEC §4.1). Left click toggles the noise;
-//! right click shows a provisional menu until the panel exists (phase 3).
+//! right click opens the panel next to the icon.
+
+use std::sync::Mutex;
 
 use tauri::image::Image;
-use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager, Wry};
+use tauri::{AppHandle, Manager};
 
 use crate::audio::device_watch::PauseReason;
 use crate::audio::noise::NoiseColor;
 use crate::state::{self, AppState, Snapshot};
-use crate::{shortcut, taskbar};
+use crate::{panel, taskbar};
 
 const ID: &str = "main";
 
@@ -36,19 +37,19 @@ const ICONS: &[(&str, &str, u32, &[u8])] = icons![
     "idle" "dark" 32, "idle" "dark" 40, "idle" "dark" 48,
 ];
 
-/// Menu items whose text follows the state.
-struct TrayMenu {
-    toggle: MenuItem<Wry>,
+/// What the tray shows now, so a refresh only touches what changed (volume
+/// drags refresh many times a second).
+#[derive(Default)]
+struct Shown {
+    icon: Mutex<Option<(bool, bool, u32)>>,
+    tooltip: Mutex<String>,
 }
 
 /// The icon drawn for the current scaling, so Windows never resamples it.
-fn icon(app: &AppHandle, playing: bool) -> Option<Image<'static>> {
+fn pick_icon(app: &AppHandle, playing: bool) -> (bool, bool, u32, Option<&'static [u8]>) {
     let state = if playing { "active" } else { "idle" };
-    let theme = if taskbar::uses_light_theme() {
-        "light"
-    } else {
-        "dark"
-    };
+    let light = taskbar::uses_light_theme();
+    let theme = if light { "light" } else { "dark" };
     let scale = app
         .primary_monitor()
         .ok()
@@ -62,8 +63,15 @@ fn icon(app: &AppHandle, playing: bool) -> Option<Image<'static>> {
         .clone()
         .filter(|(_, _, size, _)| *size >= wanted)
         .min_by_key(|(_, _, size, _)| *size)
-        .or_else(|| candidates.next_back())?;
-    match Image::from_bytes(best.3) {
+        .or_else(|| candidates.next_back());
+    match best {
+        Some(&(_, _, size, png)) => (playing, light, size, Some(png)),
+        None => (playing, light, 0, None),
+    }
+}
+
+fn decode(png: &[u8]) -> Option<Image<'static>> {
+    match Image::from_bytes(png) {
         Ok(image) => Some(image.to_owned()),
         Err(e) => {
             log::error!("tray icon: {e}");
@@ -80,17 +88,31 @@ fn color_key(color: NoiseColor) -> &'static str {
     }
 }
 
+/// `m:ss` or `h:mm:ss`.
+pub fn clock(secs: u64) -> String {
+    let (h, m, s) = (secs / 3600, secs / 60 % 60, secs % 60);
+    if h > 0 {
+        format!("{h}:{m:02}:{s:02}")
+    } else {
+        format!("{m}:{s:02}")
+    }
+}
+
 fn tooltip(state: &AppState, s: &Snapshot) -> String {
     let t = &state.strings;
     if s.playing {
         let volume = (s.sound.volume * 100.0).round().to_string();
-        return t.format(
+        let base = t.format(
             "trayPlaying",
             &[
                 ("color", t.get(color_key(s.sound.color))),
                 ("volume", &volume),
             ],
         );
+        return match s.timer_remaining {
+            Some(secs) => t.format("trayTimer", &[("base", &base), ("time", &clock(secs))]),
+            None => base,
+        };
     }
     let reason = match s.paused_for {
         Some(PauseReason::HeadphonesDisconnected) => Some("pausedHeadphones"),
@@ -107,51 +129,34 @@ fn tooltip(state: &AppState, s: &Snapshot) -> String {
 pub fn create(app: &AppHandle) -> tauri::Result<()> {
     let state = app.state::<AppState>();
     let snapshot = state.snapshot();
-    let accelerator = shortcut::toggle_label(app);
-    let toggle = MenuItem::with_id(
-        app,
-        "toggle",
-        state.strings.get(if snapshot.playing {
-            "menuPause"
-        } else {
-            "menuPlay"
-        }),
-        true,
-        accelerator.as_deref(),
-    )?;
-    let quit = MenuItem::with_id(
-        app,
-        "quit",
-        state.strings.get("menuQuit"),
-        true,
-        None::<&str>,
-    )?;
-    let menu = Menu::with_items(app, &[&toggle, &PredefinedMenuItem::separator(app)?, &quit])?;
+    let text = tooltip(&state, &snapshot);
+    let (playing, light, size, png) = pick_icon(app, snapshot.playing);
 
     let mut builder = TrayIconBuilder::with_id(ID)
-        .tooltip(tooltip(&state, &snapshot))
-        .menu(&menu)
-        .show_menu_on_left_click(false)
-        .on_menu_event(|app, event| match event.id().as_ref() {
-            "toggle" => state::toggle(app),
-            "quit" => state::quit(app),
-            _ => {}
-        })
+        .tooltip(&text)
         .on_tray_icon_event(|tray, event| {
             if let TrayIconEvent::Click {
-                button: MouseButton::Left,
+                button,
                 button_state: MouseButtonState::Up,
+                rect,
                 ..
             } = event
             {
-                state::toggle(tray.app_handle());
+                match button {
+                    MouseButton::Left => state::toggle(tray.app_handle()),
+                    MouseButton::Right => panel::toggle(tray.app_handle(), Some(rect)),
+                    _ => {}
+                }
             }
         });
-    if let Some(image) = icon(app, snapshot.playing) {
+    if let Some(image) = png.and_then(decode) {
         builder = builder.icon(image);
     }
     builder.build(app)?;
-    app.manage(TrayMenu { toggle });
+    app.manage(Shown {
+        icon: Mutex::new(Some((playing, light, size))),
+        tooltip: Mutex::new(text),
+    });
 
     let handle = app.clone();
     taskbar::watch_theme(move || refresh(&handle));
@@ -159,22 +164,32 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
 }
 
 pub fn refresh(app: &AppHandle) {
-    let (Some(tray), Some(state)) = (app.tray_by_id(ID), app.try_state::<AppState>()) else {
+    let (Some(tray), Some(state), Some(shown)) = (
+        app.tray_by_id(ID),
+        app.try_state::<AppState>(),
+        app.try_state::<Shown>(),
+    ) else {
         return;
     };
     let snapshot = state.snapshot();
-    if let Err(e) = tray.set_icon(icon(app, snapshot.playing)) {
-        log::warn!("tray icon: {e}");
+
+    let (playing, light, size, png) = pick_icon(app, snapshot.playing);
+    if let Ok(mut current) = shown.icon.lock() {
+        if *current != Some((playing, light, size)) {
+            *current = Some((playing, light, size));
+            if let Err(e) = tray.set_icon(png.and_then(decode)) {
+                log::warn!("tray icon: {e}");
+            }
+        }
     }
-    if let Err(e) = tray.set_tooltip(Some(tooltip(&state, &snapshot))) {
-        log::warn!("tray tooltip: {e}");
-    }
-    if let Some(menu) = app.try_state::<TrayMenu>() {
-        let key = if snapshot.playing {
-            "menuPause"
-        } else {
-            "menuPlay"
-        };
-        let _ = menu.toggle.set_text(state.strings.get(key));
+
+    let text = tooltip(&state, &snapshot);
+    if let Ok(mut current) = shown.tooltip.lock() {
+        if *current != text {
+            if let Err(e) = tray.set_tooltip(Some(&text)) {
+                log::warn!("tray tooltip: {e}");
+            }
+            *current = text;
+        }
     }
 }

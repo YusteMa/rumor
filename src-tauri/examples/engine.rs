@@ -66,7 +66,7 @@ fn interactive() {
         volume: 0.3,
         ..Controls::default()
     };
-    let engine = match AudioEngine::start(controls, config, print_event) {
+    let engine = match AudioEngine::start(controls, config, print_event, |_| {}) {
         Ok(e) => e,
         Err(e) => return eprintln!("{e}"),
     };
@@ -190,7 +190,7 @@ fn check(seconds: f64) {
         volume: 0.0,
         ..Controls::default()
     };
-    let engine = match AudioEngine::start(controls, EngineConfig::default(), print_event) {
+    let engine = match AudioEngine::start(controls, EngineConfig::default(), print_event, |_| {}) {
         Ok(e) => e,
         Err(e) => return eprintln!("{e}"),
     };

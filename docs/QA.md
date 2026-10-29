@@ -52,15 +52,35 @@ Run `npm run tauri dev` (or the installed build). No window should open.
 - [ ] Left click: noise fades in and the icon becomes the "waves"; left click again: fades out, idle icon.
 - [ ] Tooltip while playing: `Rumor · Rosa · 40 %` (English: `Rumor · Pink · 40%`); paused: `Rumor · En pausa`.
 - [ ] Unplug / switch off headphones while playing: idle icon, tooltip `Rumor · En pausa: se desconectaron los cascos`.
-- [ ] Right click: menu with "Pausar/Reproducir  Ctrl+Alt+P" and "Salir de Rumor"; the first item follows the state.
 - [ ] `Ctrl+Alt+P` toggles from any app, including a full-screen one.
 - [ ] Spanish keyboard: typing with AltGr in an editor (`AltGr+E` = €, `AltGr+2` = @) still works and never toggles Rumor.
-- [ ] Shortcut taken: register `Ctrl+Alt+P` in another app first (e.g. an AutoHotkey script `^!p::return`), start Rumor → notification says it uses `Ctrl+Alt+N`, and the menu shows it.
-- [ ] Launch Rumor a second time: no second icon; a notification says it's already in the tray.
-- [ ] "Salir de Rumor" while playing: the noise fades out, then the icon disappears. No click.
+- [ ] Shortcut taken: register `Ctrl+Alt+P` in another app first (e.g. an AutoHotkey script `^!p::return`), start Rumor → notification says it uses `Ctrl+Alt+N`, and the panel footer says so.
+- [ ] Launch Rumor a second time: no second icon; the panel opens.
 - [ ] Switch Windows between light and dark mode: the icon ink follows within a second.
 - [ ] Display scaling 100 / 150 / 200 %: the icon is crisp (restart Rumor after changing it).
 - [ ] Task Manager: Rumor with no panel uses ~20 MB of RAM and ~0 % CPU while paused.
 
+## Panel (phase 3)
+
+Reference screenshots: `docs/screenshots/panel-light.png`, `panel-dark.png`.
+
+- [ ] Right click on the tray icon: the panel fades in, 8 px upward, in under 150 ms, next to the icon.
+- [ ] Click anywhere outside: it fades out. Right click on the icon while open: it closes and stays closed.
+- [ ] Taskbar at the bottom, top, left and right (and auto-hidden): the panel sits next to it, 12 px from the edges, never off-screen.
+- [ ] Two monitors with different scaling: the panel opens on the monitor with the tray, crisp and the right size.
+- [ ] Windows 11: Mica behind the panel, rounded corners, a warm 1 px border in light and dark. Windows 10: solid colour, no glitches.
+- [ ] Windows light and dark mode: the panel follows the system.
+- [ ] Play: the icon morphs into pause, the halo breathes slowly (4 s), the status dot turns pink, the spectrum fades in.
+- [ ] Pink / brown / white: the curve morphs to the new slope (−3 / −6 / 0 dB/oct) and lies on the dashed line.
+- [ ] Volume drag is smooth, the value follows the thumb, the tray tooltip follows the value.
+- [ ] Timer 25 min while playing: "quedan 24:59" counts down here and in the tooltip; pausing cancels it; at the end the noise fades out over ~10 s.
+- [ ] Unplug headphones while the panel is open: "En pausa: se desconectaron los cascos" under the title.
+- [ ] No output device at all: the play button is disabled and the panel says there is no audio output.
+- [ ] Keyboard only: Tab reaches every control with a visible pink focus ring; arrows move within Color and Timer; Space plays/pauses; Esc closes.
+- [ ] Windows "Animation effects" off (reduced motion): no halo and no movement, only fades.
+- [ ] Scaling 100 / 150 / 200 %: text and the spectrum are crisp, nothing is clipped.
+- [ ] Footer: "Salir" fades the noise out and quits; "Ajustes" says it arrives in the next version.
+
 ## Measurements (SPEC §3.4)
 - [ ] `cargo run --release --example engine -- --check 20`: frames ≈ 100 % of expected, CPU < 1 % of the machine.
+- [ ] Memory (release, private bytes incl. WebView2), measured 2026-10-29: tray only ~21 MB; panel created and hidden ~162 MB; panel open ~215 MB. Executable: 6.0 MB.

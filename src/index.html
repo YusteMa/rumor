@@ -9,9 +9,78 @@
     <script type="module" src="./main.ts"></script>
   </head>
   <body>
-    <main class="panel">
-      <h1>Rumor</h1>
-      <p id="status"></p>
+    <main class="panel" id="panel">
+      <header class="top">
+        <span class="brand">Rumor</span>
+        <span class="status" id="status"><i class="status-dot" aria-hidden="true"></i><span id="status-text"></span></span>
+      </header>
+
+      <section class="player">
+        <button class="play" id="play" type="button" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path class="glyph glyph-a" />
+            <path class="glyph glyph-b" />
+          </svg>
+        </button>
+        <div class="player-text">
+          <h1 class="title" id="title"></h1>
+          <p class="subtitle" id="subtitle"></p>
+        </div>
+      </section>
+
+      <section class="spectrum" aria-hidden="true">
+        <canvas id="spectrum-canvas"></canvas>
+        <div class="axis">
+          <span data-freq="100">100 Hz</span>
+          <span data-freq="1000">1 kHz</span>
+          <span data-freq="10000">10 kHz</span>
+        </div>
+      </section>
+
+      <section class="field">
+        <div class="label">
+          <span id="color-label" data-i18n="labelColor"></span>
+          <span class="value" id="slope"></span>
+        </div>
+        <div class="segmented" id="colors" role="radiogroup" aria-labelledby="color-label">
+          <button type="button" role="radio" data-value="pink"><span class="name" data-i18n="colorPink"></span><span class="hint" data-i18n="hintPink"></span></button>
+          <button type="button" role="radio" data-value="brown"><span class="name" data-i18n="colorBrown"></span><span class="hint" data-i18n="hintBrown"></span></button>
+          <button type="button" role="radio" data-value="white"><span class="name" data-i18n="colorWhite"></span><span class="hint" data-i18n="hintWhite"></span></button>
+        </div>
+      </section>
+
+      <section class="field">
+        <div class="label">
+          <label for="volume" data-i18n="labelVolume"></label>
+          <output class="value" id="volume-out" for="volume"></output>
+        </div>
+        <input class="slider" id="volume" type="range" min="0" max="100" step="1" />
+      </section>
+
+      <section class="field">
+        <div class="label">
+          <span id="timer-label" data-i18n="labelTimer"></span>
+          <span class="value" id="timer-out"></span>
+        </div>
+        <div class="segmented compact" id="timers" role="radiogroup" aria-labelledby="timer-label">
+          <button type="button" role="radio" data-value="0">∞</button>
+          <button type="button" role="radio" data-value="25"></button>
+          <button type="button" role="radio" data-value="50"></button>
+          <button type="button" role="radio" data-value="90"></button>
+        </div>
+      </section>
+
+      <footer class="foot">
+        <button class="link" id="settings" type="button">
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M8 10.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" />
+            <path d="M6.9 1.5h2.2l.35 1.75 1.2.7 1.7-.57 1.1 1.9-1.35 1.18v1.38l1.35 1.18-1.1 1.9-1.7-.57-1.2.7-.35 1.75H6.9l-.35-1.75-1.2-.7-1.7.57-1.1-1.9 1.35-1.18V7.3L2.55 6.12l1.1-1.9 1.7.57 1.2-.7.35-1.75Z" />
+          </svg>
+          <span data-i18n="settings"></span>
+        </button>
+        <span class="shortcut" id="shortcut"></span>
+        <button class="link" id="quit" type="button" data-i18n="quit"></button>
+      </footer>
     </main>
   </body>
 </html>

@@ -3022,11 +3022,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "rtrb"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5974e397833d890f2f74963408e0d4a6cd8eda2f6a445ae06750291b5d7a997e"
+
+[[package]]
 name = "rumor"
 version = "0.1.0"
 dependencies = [
  "cpal",
  "log",
+ "rtrb",
  "rustfft",
  "serde",
  "serde_json",
@@ -3037,6 +3044,7 @@ dependencies = [
  "tauri-plugin-notification",
  "tauri-plugin-single-instance",
  "thiserror 2.0.21",
+ "window-vibrancy",
  "windows",
  "windows-core",
 ]

@@ -20,6 +20,7 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{BufferSize, FromSample, Sample, SampleFormat, SizedSample, StreamConfig};
 use serde::{Deserialize, Serialize};
 
+use super::analysis::{Analyzer, BANDS};
 use super::device_watch::{
     Endpoint, OutputChangePolicy, OutputKind, PauseReason, SystemEvent, SystemWatch, Verdict,
     on_output_change, resumes_on,
@@ -36,6 +37,8 @@ const FAILURE_GRACE: Duration = Duration::from_millis(300);
 const RETRY: Duration = Duration::from_secs(2);
 /// Backstop poll of the default output, in case a notification is missed.
 const DEFAULT_POLL: Duration = Duration::from_secs(1);
+/// How often the spectrum is sent to the panel (~30 fps).
+const SPECTRUM_FRAME: Duration = Duration::from_millis(33);
 /// Longest wait for a fade-out on the old output before switching.
 const SWITCH_FADE_LIMIT: Duration = Duration::from_millis(3_200);
 
@@ -99,6 +102,18 @@ struct Shared {
     config: Mutex<EngineConfig>,
     paused_for: Mutex<Option<PauseReason>>,
     output: Mutex<Option<OutputInfo>>,
+    /// The callback feeds the spectrum tap only while this is set.
+    spectrum_on: AtomicBool,
+    /// Development aid: render (and analyse) but send silence to the device.
+    muted: AtomicBool,
+    shutdown: AtomicBool,
+    tap: Mutex<Option<Tap>>,
+}
+
+/// Mono copy of the output for the spectrum, from the current stream.
+struct Tap {
+    consumer: rtrb::Consumer<f32>,
+    sample_rate: u32,
 }
 
 /// A poisoned lock only means another thread panicked mid-update of plain
@@ -112,16 +127,19 @@ pub struct AudioEngine {
     shared: Arc<Shared>,
     tx: Sender<Command>,
     thread: Option<JoinHandle<()>>,
+    spectrum_thread: Option<JoinHandle<()>>,
 }
 
 impl AudioEngine {
     /// Starts the control thread, which opens the default output. The stream
     /// is built paused unless `initial.playing` is set. `on_event` runs on the
-    /// control thread.
+    /// control thread; `on_spectrum` on the spectrum thread, ~30 times a
+    /// second while `set_spectrum(true)`.
     pub fn start(
         initial: Controls,
         config: EngineConfig,
         on_event: impl Fn(EngineEvent) + Send + 'static,
+        on_spectrum: impl Fn([f32; BANDS]) + Send + 'static,
     ) -> Result<Self, EngineError> {
         let shared = Arc::new(Shared {
             params: Params::new(&initial),
@@ -131,16 +149,25 @@ impl AudioEngine {
             config: Mutex::new(config),
             paused_for: Mutex::new(None),
             output: Mutex::new(None),
+            spectrum_on: AtomicBool::new(false),
+            muted: AtomicBool::new(false),
+            shutdown: AtomicBool::new(false),
+            tap: Mutex::new(None),
         });
         let (tx, rx) = mpsc::channel();
         let control = Control::new(shared.clone(), tx.clone(), rx, Box::new(on_event));
         let thread = std::thread::Builder::new()
             .name("rumor-audio-control".into())
             .spawn(move || control.run())?;
+        let spectrum_shared = shared.clone();
+        let spectrum_thread = std::thread::Builder::new()
+            .name("rumor-spectrum".into())
+            .spawn(move || run_spectrum(&spectrum_shared, on_spectrum))?;
         Ok(Self {
             shared,
             tx,
             thread: Some(thread),
+            spectrum_thread: Some(spectrum_thread),
         })
     }
 
@@ -195,6 +222,20 @@ impl AudioEngine {
         lock(&self.shared.output).clone()
     }
 
+    /// Turns the spectrum on while the panel is visible, off otherwise.
+    pub fn set_spectrum(&self, on: bool) {
+        self.shared.spectrum_on.store(on, Ordering::Relaxed);
+        if let Some(t) = &self.spectrum_thread {
+            t.thread().unpark();
+        }
+    }
+
+    /// Development aid (screenshots, tests): keep rendering and analysing,
+    /// but send silence to the device.
+    pub fn set_output_muted(&self, muted: bool) {
+        self.shared.muted.store(muted, Ordering::Relaxed);
+    }
+
     /// Frames rendered since start (diagnostics).
     pub fn frames_rendered(&self) -> u64 {
         self.shared.frames.load(Ordering::Relaxed)
@@ -204,7 +245,12 @@ impl AudioEngine {
 impl Drop for AudioEngine {
     fn drop(&mut self) {
         let _ = self.tx.send(Command::Shutdown);
+        self.shared.shutdown.store(true, Ordering::Relaxed);
         if let Some(thread) = self.thread.take() {
+            let _ = thread.join();
+        }
+        if let Some(thread) = self.spectrum_thread.take() {
+            thread.thread().unpark();
             let _ = thread.join();
         }
     }
@@ -520,13 +566,29 @@ impl Control {
         self.generation += 1;
         let generation = self.generation;
         self.shared.silent.store(true, Ordering::Relaxed);
+        // A quarter second of headroom; the spectrum thread drains it every 33 ms.
+        let (producer, consumer) = rtrb::RingBuffer::new(sample_rate as usize / 4);
+        *lock(&self.shared.tap) = Some(Tap {
+            consumer,
+            sample_rate,
+        });
         let shared = self.shared.clone();
         let stream = match format {
-            SampleFormat::F32 => build_stream::<f32>(device, config, renderer, shared, generation),
-            SampleFormat::F64 => build_stream::<f64>(device, config, renderer, shared, generation),
-            SampleFormat::I16 => build_stream::<i16>(device, config, renderer, shared, generation),
-            SampleFormat::I32 => build_stream::<i32>(device, config, renderer, shared, generation),
-            SampleFormat::U16 => build_stream::<u16>(device, config, renderer, shared, generation),
+            SampleFormat::F32 => {
+                build_stream::<f32>(device, config, renderer, producer, shared, generation)
+            }
+            SampleFormat::F64 => {
+                build_stream::<f64>(device, config, renderer, producer, shared, generation)
+            }
+            SampleFormat::I16 => {
+                build_stream::<i16>(device, config, renderer, producer, shared, generation)
+            }
+            SampleFormat::I32 => {
+                build_stream::<i32>(device, config, renderer, producer, shared, generation)
+            }
+            SampleFormat::U16 => {
+                build_stream::<u16>(device, config, renderer, producer, shared, generation)
+            }
             other => return Err(StreamError::Format(other)),
         }?;
 
@@ -559,6 +621,7 @@ fn build_stream<T>(
     device: &cpal::Device,
     config: StreamConfig,
     mut renderer: NoiseRenderer,
+    mut tap: rtrb::Producer<f32>,
     shared: Arc<Shared>,
     generation: u64,
 ) -> Result<cpal::Stream, cpal::Error>
@@ -572,9 +635,19 @@ where
         // The audio thread: render only.
         move |data: &mut [T], _: &cpal::OutputCallbackInfo| {
             let controls = shared.params.snapshot();
+            let feed_tap = shared.spectrum_on.load(Ordering::Relaxed);
+            let muted = shared.muted.load(Ordering::Relaxed);
             for frame in data.chunks_exact_mut(channels) {
                 let [l, r] = renderer.next_frame(&controls);
-                write_frame(frame, l, r);
+                if feed_tap {
+                    // Wait-free; if the analyser fell behind, drop the sample.
+                    let _ = tap.push(0.5 * (l + r));
+                }
+                if muted {
+                    write_frame(frame, 0.0, 0.0);
+                } else {
+                    write_frame(frame, l, r);
+                }
             }
             shared
                 .silent
@@ -606,5 +679,46 @@ fn write_frame<T: Sample + FromSample<f32>>(frame: &mut [T], l: f32, r: f32) {
             rest.fill(T::EQUILIBRIUM);
         }
         [] => {}
+    }
+}
+
+/// The spectrum thread: sleeps while the panel is hidden, otherwise drains
+/// the tap and analyses ~30 times a second.
+fn run_spectrum(shared: &Shared, on_spectrum: impl Fn([f32; BANDS])) {
+    let mut analyzer: Option<Analyzer> = None;
+    while !shared.shutdown.load(Ordering::Relaxed) {
+        if !shared.spectrum_on.load(Ordering::Relaxed) {
+            if let Some(a) = &mut analyzer {
+                a.reset();
+            }
+            std::thread::park_timeout(Duration::from_secs(1));
+            continue;
+        }
+        std::thread::sleep(SPECTRUM_FRAME);
+
+        let mut fresh = 0usize;
+        {
+            let mut tap = lock(&shared.tap);
+            let Some(tap) = tap.as_mut() else { continue };
+            let sample_rate = tap.sample_rate as f32;
+            if analyzer
+                .as_ref()
+                .is_none_or(|a| a.sample_rate() != sample_rate)
+            {
+                analyzer = Some(Analyzer::new(sample_rate));
+            }
+            let Some(a) = analyzer.as_mut() else { continue };
+            while let Ok(x) = tap.consumer.pop() {
+                a.push(x);
+                fresh += 1;
+            }
+        }
+        let Some(a) = analyzer.as_mut() else { continue };
+        if fresh == 0 {
+            // Paused: start clean next time instead of mixing in stale audio.
+            a.reset();
+        } else if let Some(bands) = a.bands() {
+            on_spectrum(bands);
+        }
     }
 }

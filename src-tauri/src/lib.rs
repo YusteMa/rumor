@@ -31,6 +31,16 @@ pub fn run() {
         )
         .plugin(tauri_plugin_notification::init())
         .plugin(shortcut::plugin())
+        .invoke_handler(tauri::generate_handler![
+            commands::get_state,
+            commands::toggle,
+            commands::set_playing,
+            commands::set_color,
+            commands::set_volume,
+            commands::set_timer,
+            commands::hide_panel,
+            commands::quit,
+        ])
         .setup(|app| state::setup(app.handle()))
         .build(tauri::generate_context!());
 

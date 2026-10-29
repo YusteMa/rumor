@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-set-playing"
+description = "Enables the set_playing command without any pre-configured scope."
+commands.allow = ["set_playing"]
+
+[[permission]]
+identifier = "deny-set-playing"
+description = "Denies the set_playing command without any pre-configured scope."
+commands.deny = ["set_playing"]

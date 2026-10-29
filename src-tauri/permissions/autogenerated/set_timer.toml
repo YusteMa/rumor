@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-set-timer"
+description = "Enables the set_timer command without any pre-configured scope."
+commands.allow = ["set_timer"]
+
+[[permission]]
+identifier = "deny-set-timer"
+description = "Denies the set_timer command without any pre-configured scope."
+commands.deny = ["set_timer"]

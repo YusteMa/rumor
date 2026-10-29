@@ -60,6 +60,7 @@ Cada fase termina **compilando, con los tests en verde y con un commit**. No se 
 
 ### Fase 5 — Pulido y release
 - Iconos definitivos (app, bandeja e instalador).
+  - Revisar el cambio de icono de la bandeja según el feedback de la prueba de la Fase 2.
 - `docs/QA.md` completo y pasado a mano.
 - README final con GIF, capturas y aviso de SmartScreen.
 - Workflow de release con `tauri-action`: al hacer push de un tag `v*` → pre-release con `.exe` (NSIS) y `.msi`.

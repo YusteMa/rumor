@@ -1,9 +1,85 @@
-import es from "./i18n/es.json";
-import en from "./i18n/en.json";
+// Panel entry point: wires Rust events to the UI and UI actions to commands.
+// The panel never holds state of its own (CLAUDE.md rule 3).
 
-// Phase 0 placeholder: proves the WebView, the bundler and i18n are wired up.
-// The real panel (Phase 3) only talks to Rust through `invoke` and events.
-const strings = navigator.language.toLowerCase().startsWith("es") ? es : en;
+import { backend, isTauri, type PanelState } from "./api";
+import { applyStatic, setLang } from "./i18n";
+import { colors } from "./ui/colors";
+import { footer } from "./ui/footer";
+import { player } from "./ui/player";
+import { Spectrum } from "./ui/spectrum";
+import { timer } from "./ui/timer";
+import { volume } from "./ui/volume";
 
-const status = document.getElementById("status");
-if (status) status.textContent = strings.skeletonReady;
+const api = await backend;
+const panel = document.getElementById("panel") as HTMLElement;
+const spectrum = new Spectrum(document.getElementById("spectrum-canvas") as HTMLCanvasElement);
+
+const ui = {
+  player: player(() => api.toggle()),
+  colors: colors((c) => api.setColor(c)),
+  volume: volume((v) => api.setVolume(v)),
+  timer: timer((m) => api.setTimer(m)),
+  footer: footer(() => api.quit()),
+};
+
+let state: PanelState | null = null;
+let lang: string | null = null;
+let mica: boolean | null = null;
+
+function render(s: PanelState): void {
+  state = s;
+  if (s.lang !== lang) {
+    lang = s.lang;
+    setLang(s.lang);
+    applyStatic();
+    ui.timer.localise();
+    ui.footer.localise();
+  }
+  if (s.mica !== mica) {
+    mica = s.mica;
+    document.documentElement.toggleAttribute("data-mica", s.mica);
+    spectrum.refreshPalette();
+  }
+  ui.player.render(s);
+  ui.colors.render(s);
+  ui.volume.render(s);
+  ui.timer.render(s);
+  ui.footer.render(s);
+  spectrum.setColor(s.color);
+  spectrum.setPlaying(s.playing);
+}
+
+api.onState(render);
+api.onSpectrum((bands) => spectrum.push(bands));
+api.onTimerTick((remaining) => {
+  if (state) ui.timer.render({ ...state, timerRemaining: remaining });
+});
+api.onShown(() => {
+  panel.classList.remove("is-closing");
+  panel.classList.add("is-open");
+  spectrum.start();
+  void api.getState().then((s) => s && render(s));
+});
+api.onHiding(() => {
+  panel.classList.remove("is-open");
+  panel.classList.add("is-closing");
+  spectrum.stop();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    void api.hide();
+  } else if (e.code === "Space" && !(e.target instanceof HTMLButtonElement)) {
+    // Buttons handle Space themselves; anywhere else it plays or pauses.
+    e.preventDefault();
+    void api.toggle();
+  }
+});
+
+if (isTauri) {
+  // A native flyout, not a web page.
+  document.addEventListener("contextmenu", (e) => e.preventDefault());
+}
+
+const initial = await api.getState();
+if (initial) render(initial);

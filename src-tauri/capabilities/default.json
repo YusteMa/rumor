@@ -1,7 +1,18 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Minimal permissions for the Rumor window",
-  "windows": ["main"],
-  "permissions": ["core:default"]
+  "description": "The panel: listen to state events and call the panel commands, nothing else",
+  "windows": ["panel"],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "allow-get-state",
+    "allow-toggle",
+    "allow-set-playing",
+    "allow-set-color",
+    "allow-set-volume",
+    "allow-set-timer",
+    "allow-hide-panel",
+    "allow-quit"
+  ]
 }

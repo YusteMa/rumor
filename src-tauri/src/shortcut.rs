@@ -17,6 +17,8 @@ const TOGGLE_CANDIDATES: [&str; 3] = ["Ctrl+Alt+P", "Ctrl+Alt+N", "Ctrl+Shift+Al
 #[derive(Default)]
 pub struct Bindings {
     toggle: Mutex<Option<(String, Shortcut)>>,
+    /// The preferred toggle shortcut, if another app owns it.
+    taken: Mutex<Option<String>>,
 }
 
 pub fn plugin() -> TauriPlugin<Wry> {
@@ -40,7 +42,13 @@ pub fn plugin() -> TauriPlugin<Wry> {
 
 pub fn register_defaults(app: &AppHandle) {
     app.manage(Bindings::default());
-    let Some(used) = TOGGLE_CANDIDATES.iter().find(|label| try_bind(app, label)) else {
+    let used = TOGGLE_CANDIDATES.iter().find(|label| try_bind(app, label));
+    if used != Some(&TOGGLE_CANDIDATES[0]) {
+        if let Ok(mut taken) = app.state::<Bindings>().taken.lock() {
+            *taken = Some(TOGGLE_CANDIDATES[0].to_owned());
+        }
+    }
+    let Some(used) = used else {
         log::warn!("no free toggle shortcut");
         let strings = &app.state::<AppState>().strings;
         let body = strings.format("shortcutTakenNone", &[("taken", TOGGLE_CANDIDATES[0])]);
@@ -82,7 +90,13 @@ fn try_bind(app: &AppHandle, label: &str) -> bool {
     }
 }
 
-/// The toggle shortcut in use, for the tooltip and (later) Settings.
+/// The preferred toggle shortcut when another app owns it.
+pub fn preferred_taken(app: &AppHandle) -> Option<String> {
+    let bindings = app.try_state::<Bindings>()?;
+    bindings.taken.lock().ok()?.clone()
+}
+
+/// The toggle shortcut in use, for the panel and (later) Settings.
 pub fn toggle_label(app: &AppHandle) -> Option<String> {
     let bindings = app.try_state::<Bindings>()?;
     let toggle = bindings.toggle.lock().ok()?;

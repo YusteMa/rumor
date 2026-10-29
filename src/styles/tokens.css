@@ -4,11 +4,13 @@
   /* Colour: warm neutrals and a single dusty-pink accent. */
   --bg: #faf7f5;
   --surface: #ffffff;
+  --surface-hover: #f6f1ee;
   --ink: #2b2523;
   --muted: #857a76;
   --line: #ece4e0;
   --accent: #d4728c;
   --accent-soft: #f7e1e6;
+  --on-accent: #ffffff;
 
   /* Type: the Windows system font, 0 KB and native. */
   --font: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
@@ -18,6 +20,9 @@
   --text-md: 16px;
   --text-lg: 20px;
   --text-xl: 28px;
+  --weight-regular: 400;
+  --weight-semibold: 600;
+  --leading: 1.35;
 
   /* Space: multiples of 4 px. */
   --space-1: 4px;
@@ -30,16 +35,47 @@
 
   /* Shape. */
   --radius-card: 12px;
+  --radius-control: 8px;
   --radius-pill: 999px;
-  --border: 1px solid var(--line);
+  --border-width: 1px;
+  --border: var(--border-width) solid var(--line);
+  --focus-ring: 2px solid var(--accent);
+  --focus-offset: 2px;
+
+  /* Component sizes. */
+  --play-size: 72px;
+  --play-glyph: 28px;
+  --halo-spread: 8px;
+  --spectrum-height: 92px;
+  --track-height: 4px;
+  --thumb-size: 18px;
+  --thumb-inner: 8px;
+  --dot-size: 6px;
+  --icon-size: 16px;
+  --icon-stroke: 1.2;
 
   /* Motion. */
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
   --dur-press: 120ms;
   --dur-open: 180ms;
   --dur-close: 120ms;
   --dur-max: 250ms;
   --dur-breathe: 4s;
+  --open-offset: 8px;
+  --press-scale: 0.96;
+  --hover-scale: 1.03;
+  --thumb-hover-scale: 1.1;
+  --breathe-min: 0.92;
+  --breathe-max: 1.06;
+  --breathe-dim: 0.7;
+
+  /* Spectrum drawing (read by the canvas). */
+  /* dB around the 1 kHz level; brown climbs ~34 dB by 20 Hz. */
+  --spectrum-db-top: 36;
+  --spectrum-db-bottom: -30;
+  --spectrum-line: 1.5px;
+  --spectrum-dash: 3px;
 
   color-scheme: light;
 }
@@ -48,11 +84,13 @@
   :root:not([data-theme="light"]) {
     --bg: #1c1a19;
     --surface: #262322;
+    --surface-hover: #2e2a29;
     --ink: #f2ece9;
     --muted: #a39793;
     --line: #38322f;
     --accent: #e8899f;
     --accent-soft: #3d2a2f;
+    --on-accent: #1c1a19;
     color-scheme: dark;
   }
 }
@@ -60,16 +98,45 @@
 :root[data-theme="dark"] {
   --bg: #1c1a19;
   --surface: #262322;
+  --surface-hover: #2e2a29;
   --ink: #f2ece9;
   --muted: #a39793;
   --line: #38322f;
   --accent: #e8899f;
   --accent-soft: #3d2a2f;
+  --on-accent: #1c1a19;
   color-scheme: dark;
+}
+
+/* On Mica the backdrop shows through a warm veil; cards stay readable. */
+:root[data-mica] {
+  --bg: rgb(250 247 245 / 0.62);
+  --surface: rgb(255 255 255 / 0.7);
+  --surface-hover: rgb(255 255 255 / 0.9);
+  --line: rgb(43 37 35 / 0.09);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-mica]:not([data-theme="light"]) {
+    --bg: rgb(28 26 25 / 0.58);
+    --surface: rgb(255 255 255 / 0.045);
+    --surface-hover: rgb(255 255 255 / 0.075);
+    --line: rgb(242 236 233 / 0.09);
+  }
+}
+
+:root[data-mica][data-theme="dark"] {
+  --bg: rgb(28 26 25 / 0.58);
+  --surface: rgb(255 255 255 / 0.045);
+  --surface-hover: rgb(255 255 255 / 0.075);
+  --line: rgb(242 236 233 / 0.09);
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root {
-    --dur-breathe: 0s;
+    --open-offset: 0px;
+    --press-scale: 1;
+    --hover-scale: 1;
+    --thumb-hover-scale: 1;
   }
 }

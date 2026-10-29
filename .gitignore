@@ -17,3 +17,6 @@ src-tauri/gen/schemas
 Thumbs.db
 *.suo
 *.sw?
+
+# Local Claude Code config
+.claude/

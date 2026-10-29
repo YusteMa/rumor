@@ -27,8 +27,8 @@ tauri-plugin-global-shortcut = "2.4.1"
 tauri-plugin-single-instance = "2.5.5"
 tauri-plugin-notification = "2.8.0"
 tauri-plugin-log = "2.10.1"
-
-[dev-dependencies]
+window-vibrancy = "0.8.1"
+rtrb = "0.4.1"
 rustfft = "6.4.1"
 
 # The spectral tests run minutes of noise through FFTs; keep them fast in debug.
@@ -48,6 +48,7 @@ strip = true
 windows = { version = "0.62.2", features = [
   "Win32_Foundation",
   "Win32_Globalization",
+  "Win32_Graphics_Dwm",
   "Win32_Media_Audio",
   "Win32_System_Com",
   "Win32_System_Power",
