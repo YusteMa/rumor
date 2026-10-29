@@ -165,19 +165,20 @@ El panel solo enseña lo que usas a diario. **Todo lo demás vive en Ajustes**, 
 
 | Sección | Opciones |
 |---|---|
-| **Sonido** | Color por defecto · ajuste fino de tono (v0.2) · duración del fundido (0,2–3 s) · volumen máximo permitido |
-| **Reproducción** | Si se desconectan los cascos (§3.3) · reanudar al reconectar · empezar sonando al iniciar · recordar el último estado |
+| **Sonido** | Color por defecto · ajuste fino de tono (v0.2) · duración del fundido (0,2–3 s) · volumen máximo permitido (el 100 % del slider equivale a ese máximo) |
+| **Reproducción** | Si se desconectan los cascos (§3.3) · reanudar al reconectar · al iniciar Rumor: no sonar *(por defecto)* / sonar siempre / como lo dejé |
 | **Temporizador** | Tiempos rápidos editables (por defecto 25/50/90) · fundido final largo (unos 10 s) · notificar al acabar |
 | **Módulos** | Sonido · Estudio (§4.3c) |
 | **Estudio** | Modo por defecto (cronómetro o Pomodoro) · tiempos del Pomodoro (trabajo, descanso, descanso largo, ciclos) · vincular con el ruido · qué hace el ruido en los descansos · detección de inactividad y minutos · etiquetas (crear, renombrar, colores) · inicio de la semana (lunes) |
 | **Atajos** | Alternar ruido (`Ctrl+Alt+P`) · cronómetro (`Ctrl+Alt+T`) · subir y bajar volumen · siguiente color · abrir panel. Se graban pulsando la combinación |
 | **Bandeja** | Acción del clic izquierdo · mostrar el tiempo restante en el tooltip |
-| **Apariencia** | Tema: sistema, claro u oscuro · acento: rosa o el del sistema · efecto Mica · mostrar espectro · reducir animaciones |
-| **Inicio** | Iniciar con Windows · empezar minimizado en la bandeja |
+| **Apariencia** | Tema: sistema, claro u oscuro · acento: el del ruido *(por defecto)* o el del sistema · efecto Mica · mostrar espectro · reducir animaciones |
+| **Inicio** | Iniciar con Windows |
 | **Avanzado** | Dispositivo de salida fijo (o "el predeterminado de Windows") · tamaño de buffer y latencia · info del dispositivo (frecuencia, canales) · **exportar/importar ajustes (JSON)** · abrir la carpeta de logs · restablecer todo |
 | **Acerca de** | Versión · enlace a GitHub · licencia · cómo reportar un fallo |
 
 - Los cambios se aplican **al instante**, sin botón de "Guardar".
+- Decidido el 2026-10-29: el volumen máximo escala el slider; "empezar sonando" y "recordar el último estado" se funden en una sola opción; "empezar minimizado" se elimina (Rumor siempre arranca en la bandeja); el acento puede ser el del ruido o el del sistema. Las secciones **Módulos** y **Estudio** y el atajo del cronómetro llegan con la Fase 3b.
 - Idioma: **Español / English**, detectado del sistema (también en Ajustes → Apariencia).
 
 ### 4.5 Diseño visual
