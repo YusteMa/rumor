@@ -2,6 +2,10 @@
 
 Guía para Claude Code en este repositorio. **Lee `SPEC.md` y `ROADMAP.md` antes de tocar nada.**
 
+## Prioridades (por encima de todo lo demás)
+1. **La calidad de sonido es la prioridad número uno**, por encima de cualquier función. Ante la duda, se recorta una función antes que tocar el sonido.
+2. **Tiene que sentirse premium:** cada detalle visual pulido, nada que parezca hecho deprisa.
+
 ## Qué es
 App de bandeja para Windows que genera ruido rosa, marrón y blanco en tiempo real. Tauri v2 + motor de audio en Rust (`cpal`) + panel en TypeScript sin framework. Diseño de referencia: `docs/prototype.html`.
 

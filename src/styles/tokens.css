@@ -1,4 +1,5 @@
-/* Theme tokens, taken from docs/prototype.html. */
+/* Theme tokens. Colours come from docs/prototype.html; type is the Windows
+   system font (no bundled or remote fonts). */
 :root {
   --bg: #f6eef0;
   --surface: #fffafb;
@@ -7,8 +8,9 @@
   --line: #e6d5db;
   --accent: #d9547e;
   --accent-soft: #f3c9d6;
-  --display: "Bricolage Grotesque", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  --display: "Segoe UI Variable Display", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --text: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --mono: "Cascadia Mono", ui-monospace, Consolas, monospace;
   color-scheme: light;
 }
 
