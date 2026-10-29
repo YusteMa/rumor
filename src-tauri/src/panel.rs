@@ -31,6 +31,10 @@ const CLOSE_MS: u64 = 120;
 /// A click on the tray icon blurs the panel just before the click arrives;
 /// within this window that click must not reopen it.
 const REOPEN_GUARD: Duration = Duration::from_millis(300);
+/// After a tray click, Explorer takes the focus back once it finishes
+/// handling the click, a few ms after the panel appeared. A focus loss this
+/// soon after opening is that, not the user clicking away: refocus instead.
+const FOCUS_GUARD: Duration = Duration::from_millis(250);
 /// How long a closed panel is kept before its webview is destroyed.
 const IDLE_TTL: Duration = Duration::from_secs(5 * 60);
 
@@ -51,6 +55,8 @@ struct Panel {
     pending: Mutex<Option<(Option<Rect>, Instant)>>,
     /// When the current open was requested, to log how long it took to show.
     requested: Mutex<Option<Instant>>,
+    /// When the panel was last shown, for `FOCUS_GUARD`.
+    shown_at: Mutex<Option<Instant>>,
 }
 
 fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
@@ -94,6 +100,7 @@ pub fn init(app: &AppHandle) {
         life: Mutex::new(Life::Absent),
         pending: Mutex::new(None),
         requested: Mutex::new(None),
+        shown_at: Mutex::new(None),
     });
 }
 
@@ -153,11 +160,83 @@ fn build(app: &AppHandle) -> tauri::Result<()> {
     let handle = app.clone();
     let themed = window.clone();
     window.on_window_event(move |event| match event {
-        WindowEvent::Focused(false) => hide(&handle),
+        WindowEvent::Focused(true) => log::debug!("panel focused"),
+        WindowEvent::Focused(false) => on_blur(&handle),
         WindowEvent::ThemeChanged(theme) => set_border(&themed, *theme),
         _ => {}
     });
     Ok(())
+}
+
+/// The panel lost the focus: close it, unless it has only just opened (see
+/// `FOCUS_GUARD`), in which case take the focus back.
+fn on_blur(app: &AppHandle) {
+    let Some(panel) = app.try_state::<Panel>() else {
+        return;
+    };
+    let since_shown = lock(&panel.shown_at).map(|t| t.elapsed());
+    if panel.open.load(Ordering::Relaxed) && since_shown.is_some_and(|d| d < FOCUS_GUARD) {
+        log::debug!(
+            "panel lost focus {} ms after opening; taking it back",
+            since_shown.map_or(0, |d| d.as_millis())
+        );
+        if let Some(window) = app.get_webview_window(LABEL) {
+            bring_to_front(app, &window);
+        }
+        return;
+    }
+    log::debug!(
+        "panel lost focus after {} ms; closing",
+        since_shown.map_or(0, |d| d.as_millis())
+    );
+    hide(app);
+}
+
+/// Activates the panel even though Explorer owns the foreground after a tray
+/// click. Windows only lets the foreground thread hand the foreground over,
+/// so for a moment our thread shares Explorer's input state
+/// (`AttachThreadInput`), which makes `SetForegroundWindow` succeed.
+fn bring_to_front(app: &AppHandle, window: &WebviewWindow) {
+    #[cfg(windows)]
+    {
+        let Ok(hwnd) = window.hwnd() else { return };
+        let raw = hwnd.0 as isize;
+        // The attach must happen on the window's own (main) thread.
+        let result = app.run_on_main_thread(move || {
+            use windows::Win32::Foundation::HWND;
+            use windows::Win32::System::Threading::{AttachThreadInput, GetCurrentThreadId};
+            use windows::Win32::UI::WindowsAndMessaging::{
+                BringWindowToTop, GetForegroundWindow, GetWindowThreadProcessId,
+                SetForegroundWindow,
+            };
+
+            let hwnd = HWND(raw as _);
+            unsafe {
+                let foreground = GetForegroundWindow();
+                if foreground == hwnd {
+                    return;
+                }
+                let ours = GetCurrentThreadId();
+                let theirs = GetWindowThreadProcessId(foreground, None);
+                let attached = theirs != 0
+                    && theirs != ours
+                    && AttachThreadInput(ours, theirs, true).as_bool();
+                let ok = SetForegroundWindow(hwnd).as_bool();
+                let _ = BringWindowToTop(hwnd);
+                if attached {
+                    let _ = AttachThreadInput(ours, theirs, false);
+                }
+                log::debug!("panel to foreground: {ok} (attached: {attached})");
+            }
+        });
+        if let Err(e) = result {
+            log::warn!("panel foreground: {e}");
+        }
+    }
+    // Keyboard focus into the page, so Space and Esc work at once.
+    let _ = window.set_focus();
+    #[cfg(not(windows))]
+    let _ = app;
 }
 
 /// The page has loaded and rendered its first state (`panel_ready`).
@@ -373,10 +452,11 @@ fn show(app: &AppHandle, anchor: Option<Rect>, clicked: Instant) {
     set_low_memory(app, false);
     place(app, &window, anchor);
     emit_state(app);
+    *lock(&panel.shown_at) = Some(Instant::now());
     if let Err(e) = window.show() {
         log::warn!("panel show: {e}");
     }
-    let _ = window.set_focus();
+    bring_to_front(app, &window);
     let _ = window.emit_to(LABEL, "panel-shown", ());
     if let Some(state) = app.try_state::<AppState>() {
         state.engine.set_spectrum(true);
