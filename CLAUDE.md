@@ -34,6 +34,8 @@ rumor/
 │  │  ├─ state.rs            # AppState compartido
 │  │  ├─ commands.rs         # #[tauri::command] expuestos al panel
 │  │  ├─ tray.rs
+│  │  ├─ taskbar.rs          # tema claro/oscuro de la barra (tinta del icono)
+│  │  ├─ i18n.rs             # textos de Rust, leídos de src/i18n/*.json
 │  │  ├─ shortcut.rs
 │  │  ├─ timer.rs
 │  │  ├─ settings.rs
@@ -52,10 +54,11 @@ rumor/
 │  │     ├─ idle.rs          # GetLastInputInfo
 │  │     └─ db.rs            # SQLite: sessions, tags, migraciones
 │  ├─ tests/dsp.rs           # tests espectrales
-│  ├─ icons/
+│  ├─ icons/                 # tray/: iconos de bandeja generados por scripts/gen-tray-icons.mjs
 │  ├─ capabilities/default.json
 │  └─ tauri.conf.json
 ├─ docs/  (prototype.html, QA.md)
+├─ scripts/                  # generadores (iconos de bandeja)
 ├─ .github/  (workflows/ci.yml, workflows/release.yml, ISSUE_TEMPLATE/)
 ├─ SPEC.md  ROADMAP.md  README.md  LICENSE  CLAUDE.md
 ```

@@ -1,3 +1,18 @@
 {
-  "skeletonReady": "Skeleton ready. The audio engine arrives in phase 1."
+  "skeletonReady": "Skeleton ready. The panel arrives in phase 3.",
+  "colorPink": "Pink",
+  "colorBrown": "Brown",
+  "colorWhite": "White",
+  "trayPlaying": "Rumor · {color} · {volume}%",
+  "trayPaused": "Rumor · Paused",
+  "pausedHeadphones": "Paused: headphones disconnected",
+  "pausedNoOutput": "Paused: no audio output",
+  "pausedOutputChanged": "Paused: the audio output changed",
+  "menuPlay": "Play",
+  "menuPause": "Pause",
+  "menuQuit": "Quit Rumor",
+  "shortcutTakenTitle": "Shortcut in use",
+  "shortcutTakenFallback": "{taken} is already used by another app, so Rumor will use {used}. You'll be able to change it in Settings.",
+  "shortcutTakenNone": "{taken} is already used by another app. You'll be able to pick another shortcut in Settings.",
+  "alreadyRunning": "Rumor is already in the tray. Click its icon to play or pause."
 }

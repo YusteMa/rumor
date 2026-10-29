@@ -284,6 +284,6 @@ El panel solo enseña lo que usas a diario. **Todo lo demás vive en Ajustes**, 
 | 4 | Espectro en el panel | **Sí** | Cerrada (2026-10-29) |
 | 5 | Idioma del repo | **README en inglés con sección en español**; código y commits en inglés | Cerrada (2026-10-29) |
 | 6 | Windows 10 | **Soportado** (sin Mica, color sólido) | Cerrada (2026-10-29) |
-| 7 | Al desconectar los cascos | **Pausar si pasa a altavoces** (alternativas: pausar siempre, seguir) | Recomendada; ya es el valor por defecto en §3.3 |
-| 8 | Modo de estudio por defecto | **Cronómetro** (alternativa: Pomodoro) | Recomendada; ya es el valor por defecto en §4.3b |
-| 9 | Vincular estudio con el ruido | **Sí** | Recomendada; ya es el valor por defecto en §4.3b |
+| 7 | Al desconectar los cascos | **Pausar si pasa a altavoces** | Cerrada (2026-10-29) |
+| 8 | Modo de estudio por defecto | **Cronómetro** | Cerrada (2026-10-29) |
+| 9 | Vincular estudio con el ruido | **Sí** | Cerrada (2026-10-29) |

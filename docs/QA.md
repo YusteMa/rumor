@@ -44,5 +44,23 @@ Default policy is `policy pause`.
 - [ ] Same with hibernate.
 - [ ] Paused for a while: `powercfg /requests` shows no audio stream from Rumor (the PC can sleep).
 
-### Measurements (SPEC §3.4)
+## Tray and shortcut (phase 2)
+
+Run `npm run tauri dev` (or the installed build). No window should open.
+
+- [ ] The icon appears in the tray in under a second; idle = short level bars, dimmed.
+- [ ] Left click: noise fades in and the icon becomes the "waves"; left click again: fades out, idle icon.
+- [ ] Tooltip while playing: `Rumor · Rosa · 40 %` (English: `Rumor · Pink · 40%`); paused: `Rumor · En pausa`.
+- [ ] Unplug / switch off headphones while playing: idle icon, tooltip `Rumor · En pausa: se desconectaron los cascos`.
+- [ ] Right click: menu with "Pausar/Reproducir  Ctrl+Alt+P" and "Salir de Rumor"; the first item follows the state.
+- [ ] `Ctrl+Alt+P` toggles from any app, including a full-screen one.
+- [ ] Spanish keyboard: typing with AltGr in an editor (`AltGr+E` = €, `AltGr+2` = @) still works and never toggles Rumor.
+- [ ] Shortcut taken: register `Ctrl+Alt+P` in another app first (e.g. an AutoHotkey script `^!p::return`), start Rumor → notification says it uses `Ctrl+Alt+N`, and the menu shows it.
+- [ ] Launch Rumor a second time: no second icon; a notification says it's already in the tray.
+- [ ] "Salir de Rumor" while playing: the noise fades out, then the icon disappears. No click.
+- [ ] Switch Windows between light and dark mode: the icon ink follows within a second.
+- [ ] Display scaling 100 / 150 / 200 %: the icon is crisp (restart Rumor after changing it).
+- [ ] Task Manager: Rumor with no panel uses ~20 MB of RAM and ~0 % CPU while paused.
+
+## Measurements (SPEC §3.4)
 - [ ] `cargo run --release --example engine -- --check 20`: frames ≈ 100 % of expected, CPU < 1 % of the machine.

@@ -1,3 +1,18 @@
 {
-  "skeletonReady": "Esqueleto listo. El motor de audio llega en la fase 1."
+  "skeletonReady": "Esqueleto listo. El panel llega en la fase 3.",
+  "colorPink": "Rosa",
+  "colorBrown": "Marrón",
+  "colorWhite": "Blanco",
+  "trayPlaying": "Rumor · {color} · {volume} %",
+  "trayPaused": "Rumor · En pausa",
+  "pausedHeadphones": "En pausa: se desconectaron los cascos",
+  "pausedNoOutput": "En pausa: no hay salida de audio",
+  "pausedOutputChanged": "En pausa: cambió la salida de audio",
+  "menuPlay": "Reproducir",
+  "menuPause": "Pausar",
+  "menuQuit": "Salir de Rumor",
+  "shortcutTakenTitle": "Atajo ocupado",
+  "shortcutTakenFallback": "{taken} ya lo usa otra aplicación, así que Rumor usará {used}. Podrás cambiarlo en Ajustes.",
+  "shortcutTakenNone": "{taken} ya lo usa otra aplicación. Podrás elegir otro atajo en Ajustes.",
+  "alreadyRunning": "Rumor ya está en la bandeja. Haz clic en el icono para reproducir o pausar."
 }
