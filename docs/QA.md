@@ -66,7 +66,7 @@ Reference screenshots: `docs/screenshots/panel-light.png`, `panel-dark.png`, `ac
 
 - [ ] Right click on the tray icon: the panel fades in, 8 px upward, in under 150 ms, next to the icon.
 - [ ] Click anywhere outside: it fades out. Right click on the icon while open: it closes and stays closed.
-- [ ] Real clicks, not a script: right click opens the panel and it stays open, with the hover first and with a fast click straight onto the icon. Ten right clicks in a row alternate open / closed every time. Alternating left and right clicks: left toggles the noise (closing the panel if open), right opens it. Also with the icon inside the tray overflow (^) flyout.
+- [ ] Real clicks, not a script: right click opens the panel and it stays open, with the hover first and with a fast click straight onto the icon. Ten right clicks in a row alternate open / closed every time. Alternating left and right clicks: left toggles the noise (closing the panel if open), right opens it. Also with the icon inside the hidden-icons (^) flyout, which is where Windows 11 puts new icons: Explorer takes the focus back later there. The panel must never come up empty.
 - [ ] Taskbar at the bottom, top, left and right (and auto-hidden): the panel sits next to it, 12 px from the edges, never off-screen.
 - [ ] Two monitors with different scaling: the panel opens on the monitor with the tray, crisp and the right size.
 - [ ] Windows 11: Mica behind the panel, rounded corners, a warm 1 px border in light and dark. Windows 10: solid colour, no glitches.

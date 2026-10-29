@@ -8,7 +8,7 @@
 //! icon, so it is usually ready by the time the click lands; while hidden it
 //! asks WebView2 for low memory; after five minutes closed it is destroyed.
 
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering};
 use std::sync::{Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
@@ -31,10 +31,16 @@ const CLOSE_MS: u64 = 120;
 /// A click on the tray icon blurs the panel just before the click arrives;
 /// within this window that click must not reopen it.
 const REOPEN_GUARD: Duration = Duration::from_millis(300);
-/// After a tray click, Explorer takes the focus back once it finishes
-/// handling the click, a few ms after the panel appeared. A focus loss this
-/// soon after opening is that, not the user clicking away: refocus instead.
-const FOCUS_GUARD: Duration = Duration::from_millis(250);
+/// After a tray click Explorer takes the foreground back once it has handled
+/// the click: within ~100 ms for a pinned icon, later when the icon sits in
+/// the hidden-icons flyout, which closes with an animation first. A loss to
+/// another window this soon after opening is that, not the user clicking
+/// away, so the panel takes the foreground back (at most `MAX_REFOCUS` times).
+const FOCUS_GUARD: Duration = Duration::from_millis(500);
+/// Times the panel may take the foreground back within `FOCUS_GUARD`.
+const MAX_REFOCUS: u8 = 2;
+/// Wait before judging a focus loss, so the foreground window is settled.
+const BLUR_SETTLE: Duration = Duration::from_millis(40);
 /// How long a closed panel is kept before its webview is destroyed.
 const IDLE_TTL: Duration = Duration::from_secs(5 * 60);
 
@@ -57,6 +63,8 @@ struct Panel {
     requested: Mutex<Option<Instant>>,
     /// When the panel was last shown, for `FOCUS_GUARD`.
     shown_at: Mutex<Option<Instant>>,
+    /// Foreground take-backs since it was shown, up to `MAX_REFOCUS`.
+    refocused: AtomicU8,
 }
 
 fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
@@ -101,6 +109,7 @@ pub fn init(app: &AppHandle) {
         pending: Mutex::new(None),
         requested: Mutex::new(None),
         shown_at: Mutex::new(None),
+        refocused: AtomicU8::new(0),
     });
 }
 
@@ -168,75 +177,105 @@ fn build(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
-/// The panel lost the focus: close it, unless it has only just opened (see
-/// `FOCUS_GUARD`), in which case take the focus back.
+/// The panel's window lost the focus. That also happens when the focus just
+/// moves into the webview inside it, so look at which window is actually in
+/// front once Windows has settled, and only close for another app's window.
 fn on_blur(app: &AppHandle) {
+    let app = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(BLUR_SETTLE);
+        let handle = app.clone();
+        let _ = app.run_on_main_thread(move || decide_blur(&handle));
+    });
+}
+
+fn decide_blur(app: &AppHandle) {
     let Some(panel) = app.try_state::<Panel>() else {
         return;
     };
-    let since_shown = lock(&panel.shown_at).map(|t| t.elapsed());
-    if panel.open.load(Ordering::Relaxed) && since_shown.is_some_and(|d| d < FOCUS_GUARD) {
+    if !panel.open.load(Ordering::Relaxed) {
+        return;
+    }
+    let since = lock(&panel.shown_at).map_or(Duration::MAX, |t| t.elapsed());
+    if foreground_is_ours() {
         log::debug!(
-            "panel lost focus {} ms after opening; taking it back",
-            since_shown.map_or(0, |d| d.as_millis())
+            "panel focus moved inside Rumor ({} ms after opening)",
+            since.as_millis()
+        );
+        return;
+    }
+    // Right after a tray click Explorer takes the foreground back once it has
+    // finished with the click: take it back, a bounded number of times.
+    if since < FOCUS_GUARD && panel.refocused.fetch_add(1, Ordering::Relaxed) < MAX_REFOCUS {
+        log::debug!(
+            "another window took the foreground {} ms after opening; taking it back",
+            since.as_millis()
         );
         if let Some(window) = app.get_webview_window(LABEL) {
-            bring_to_front(app, &window);
+            bring_to_front(&window);
         }
         return;
     }
     log::debug!(
-        "panel lost focus after {} ms; closing",
-        since_shown.map_or(0, |d| d.as_millis())
+        "panel lost the foreground after {} ms; closing",
+        since.as_millis()
     );
     hide(app);
+}
+
+/// Whether the foreground window belongs to this process (the panel or the
+/// webview inside it).
+fn foreground_is_ours() -> bool {
+    #[cfg(windows)]
+    {
+        use windows::Win32::UI::WindowsAndMessaging::{
+            GetForegroundWindow, GetWindowThreadProcessId,
+        };
+        let mut pid = 0u32;
+        unsafe {
+            GetWindowThreadProcessId(GetForegroundWindow(), Some(&mut pid));
+        }
+        pid == std::process::id()
+    }
+    #[cfg(not(windows))]
+    false
 }
 
 /// Activates the panel even though Explorer owns the foreground after a tray
 /// click. Windows only lets the foreground thread hand the foreground over,
 /// so for a moment our thread shares Explorer's input state
-/// (`AttachThreadInput`), which makes `SetForegroundWindow` succeed.
-fn bring_to_front(app: &AppHandle, window: &WebviewWindow) {
+/// (`AttachThreadInput`), which makes `SetForegroundWindow` succeed. Must run
+/// on the main thread, which owns the window.
+fn bring_to_front(window: &WebviewWindow) {
     #[cfg(windows)]
     {
-        let Ok(hwnd) = window.hwnd() else { return };
-        let raw = hwnd.0 as isize;
-        // The attach must happen on the window's own (main) thread.
-        let result = app.run_on_main_thread(move || {
-            use windows::Win32::Foundation::HWND;
-            use windows::Win32::System::Threading::{AttachThreadInput, GetCurrentThreadId};
-            use windows::Win32::UI::WindowsAndMessaging::{
-                BringWindowToTop, GetForegroundWindow, GetWindowThreadProcessId,
-                SetForegroundWindow,
-            };
+        use windows::Win32::Foundation::HWND;
+        use windows::Win32::System::Threading::{AttachThreadInput, GetCurrentThreadId};
+        use windows::Win32::UI::WindowsAndMessaging::{
+            BringWindowToTop, GetForegroundWindow, GetWindowThreadProcessId, SetForegroundWindow,
+        };
 
-            let hwnd = HWND(raw as _);
-            unsafe {
-                let foreground = GetForegroundWindow();
-                if foreground == hwnd {
-                    return;
-                }
-                let ours = GetCurrentThreadId();
-                let theirs = GetWindowThreadProcessId(foreground, None);
-                let attached = theirs != 0
-                    && theirs != ours
-                    && AttachThreadInput(ours, theirs, true).as_bool();
-                let ok = SetForegroundWindow(hwnd).as_bool();
-                let _ = BringWindowToTop(hwnd);
-                if attached {
-                    let _ = AttachThreadInput(ours, theirs, false);
-                }
-                log::debug!("panel to foreground: {ok} (attached: {attached})");
+        let Ok(hwnd) = window.hwnd() else { return };
+        let hwnd = HWND(hwnd.0 as _);
+        unsafe {
+            let foreground = GetForegroundWindow();
+            if foreground == hwnd {
+                return;
             }
-        });
-        if let Err(e) = result {
-            log::warn!("panel foreground: {e}");
+            let ours = GetCurrentThreadId();
+            let theirs = GetWindowThreadProcessId(foreground, None);
+            let attached =
+                theirs != 0 && theirs != ours && AttachThreadInput(ours, theirs, true).as_bool();
+            let ok = SetForegroundWindow(hwnd).as_bool();
+            let _ = BringWindowToTop(hwnd);
+            if attached {
+                let _ = AttachThreadInput(ours, theirs, false);
+            }
+            log::debug!("panel to foreground: {ok} (attached: {attached})");
         }
     }
-    // Keyboard focus into the page, so Space and Esc work at once.
-    let _ = window.set_focus();
     #[cfg(not(windows))]
-    let _ = app;
+    let _ = window;
 }
 
 /// The page has loaded and rendered its first state (`panel_ready`).
@@ -319,50 +358,36 @@ fn set_border(window: &WebviewWindow, theme: Theme) {
     let _ = (window, theme);
 }
 
-/// Asks WebView2 to trim its memory while the panel is hidden.
+/// Hints WebView2 to trim its memory while the panel is hidden. Only a
+/// hint: the webview stays visible to WebView2 and is never suspended, so it
+/// always paints the moment the window shows. (Suspending it saved ~4 % and
+/// could leave the panel blank; destroying it after `IDLE_TTL` is what frees
+/// the memory.)
 fn set_low_memory(app: &AppHandle, low: bool) {
     let Some(window) = app.get_webview_window(LABEL) else {
         return;
     };
     #[cfg(windows)]
     {
-        // Hiding the window doesn't tell WebView2; it only trims memory once
-        // the controller itself is invisible, and frees most of it suspended.
         let result = window.with_webview(move |webview| {
             use webview2_com::Microsoft::Web::WebView2::Win32::{
                 COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW,
-                COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL, ICoreWebView2_3, ICoreWebView2_19,
+                COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL, ICoreWebView2_19,
             };
-            use webview2_com::TrySuspendCompletedHandler;
             use windows_core::Interface;
 
-            let controller = webview.controller();
+            let level = if low {
+                COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW
+            } else {
+                COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL
+            };
             unsafe {
-                let Ok(core) = controller.CoreWebView2() else {
-                    return;
-                };
-                let core3 = core.cast::<ICoreWebView2_3>().ok();
-                let core19 = core.cast::<ICoreWebView2_19>().ok();
-                if low {
-                    let _ = controller.SetIsVisible(false);
-                    if let Some(c) = &core19 {
-                        let _ =
-                            c.SetMemoryUsageTargetLevel(COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW);
-                    }
-                    if let Some(c) = &core3 {
-                        let done = TrySuspendCompletedHandler::create(Box::new(|_, _| Ok(())));
-                        let _ = c.TrySuspend(&done);
-                    }
-                } else {
-                    if let Some(c) = &core3 {
-                        let _ = c.Resume();
-                    }
-                    if let Some(c) = &core19 {
-                        let _ = c.SetMemoryUsageTargetLevel(
-                            COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL,
-                        );
-                    }
-                    let _ = controller.SetIsVisible(true);
+                if let Ok(core) = webview
+                    .controller()
+                    .CoreWebView2()
+                    .and_then(|c| c.cast::<ICoreWebView2_19>())
+                {
+                    let _ = core.SetMemoryUsageTargetLevel(level);
                 }
             }
         });
@@ -453,10 +478,14 @@ fn show(app: &AppHandle, anchor: Option<Rect>, clicked: Instant) {
     place(app, &window, anchor);
     emit_state(app);
     *lock(&panel.shown_at) = Some(Instant::now());
+    panel.refocused.store(0, Ordering::Relaxed);
     if let Err(e) = window.show() {
         log::warn!("panel show: {e}");
     }
-    bring_to_front(app, &window);
+    let front = window.clone();
+    let _ = app.run_on_main_thread(move || bring_to_front(&front));
+    // Keyboard focus into the page, so Space and Esc work at once.
+    let _ = window.set_focus();
     let _ = window.emit_to(LABEL, "panel-shown", ());
     if let Some(state) = app.try_state::<AppState>() {
         state.engine.set_spectrum(true);
