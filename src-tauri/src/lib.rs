@@ -9,6 +9,7 @@ mod panel;
 mod settings;
 mod shortcut;
 mod state;
+mod study;
 mod timer;
 mod tray;
 
