@@ -15,8 +15,15 @@ use crate::state::AppState;
 use crate::taskbar;
 
 pub const LABEL: &str = "settings";
-const WIDTH: f64 = 560.0;
+/// Opening size, in logical pixels: room for text and control side by side.
+const WIDTH: f64 = 720.0;
 const HEIGHT: f64 = 640.0;
+/// Smallest size: below it rows would stop fitting (controls already wrap
+/// under their text from here up to about WIDTH).
+const MIN_WIDTH: f64 = 520.0;
+const MIN_HEIGHT: f64 = 440.0;
+/// Kept free around the window inside the work area (title bar and air).
+const SCREEN_MARGIN: f64 = 48.0;
 
 /// Whether Mica is actually behind the window (fails on Windows 10).
 static MICA: AtomicBool = AtomicBool::new(false);
@@ -66,6 +73,27 @@ fn apply_mica(window: &WebviewWindow, appearance: &Appearance) {
     MICA.store(on, Ordering::Relaxed);
 }
 
+/// Opening and minimum sizes that fit the monitor under the cursor at any
+/// scaling (a 1080p screen at 200 % has only ~960 × 516 logical pixels).
+fn fitted_sizes(app: &AppHandle) -> ((f64, f64), (f64, f64)) {
+    let monitor = app
+        .cursor_position()
+        .ok()
+        .and_then(|p| app.monitor_from_point(p.x, p.y).ok().flatten())
+        .or_else(|| app.primary_monitor().ok().flatten());
+    let Some(monitor) = monitor else {
+        return ((WIDTH, HEIGHT), (MIN_WIDTH, MIN_HEIGHT));
+    };
+    let work = monitor
+        .work_area()
+        .size
+        .to_logical::<f64>(monitor.scale_factor());
+    let room = (work.width - SCREEN_MARGIN, work.height - SCREEN_MARGIN);
+    let min = (MIN_WIDTH.min(room.0), MIN_HEIGHT.min(room.1));
+    let size = (WIDTH.min(room.0).max(min.0), HEIGHT.min(room.1).max(min.1));
+    (size, min)
+}
+
 pub fn open(app: &AppHandle) {
     if let Some(window) = app.get_webview_window(LABEL) {
         let _ = window.unminimize();
@@ -81,10 +109,11 @@ pub fn open(app: &AppHandle) {
         };
         let appearance = state.settings().appearance;
         let title = state.strings().get("settingsTitle").to_owned();
+        let ((width, height), (min_width, min_height)) = fitted_sizes(&app);
         let built = WebviewWindowBuilder::new(&app, LABEL, WebviewUrl::App("settings.html".into()))
             .title(title)
-            .inner_size(WIDTH, HEIGHT)
-            .min_inner_size(WIDTH, HEIGHT)
+            .inner_size(width, height)
+            .min_inner_size(min_width, min_height)
             .maximizable(false)
             .transparent(true)
             .theme(theme_of(appearance.theme))

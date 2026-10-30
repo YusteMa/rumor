@@ -14,6 +14,7 @@ import {
   type ShortcutError,
 } from "./settings-api";
 import { applyAccent } from "./ui/accent";
+import { dropdown } from "./ui/dropdown";
 
 type Key = Parameters<typeof t>[0];
 
@@ -50,9 +51,9 @@ interface Row {
 /** `stack` puts the control under the text, full width (sliders, long lists). */
 function row(label: Key, hint: Key | null, control: HTMLElement, stack = false): Row {
   // The label points at the real control, even inside a wrapper.
-  const target = control.matches("input, select, button")
+  const target = control.matches("input, button")
     ? control
-    : (control.querySelector("input, select, button") ?? control);
+    : (control.querySelector("input, button") ?? control);
   target.id ||= `c-${Math.random().toString(36).slice(2)}`;
   const error = el("span", { className: "row-error", hidden: true });
   error.setAttribute("role", "alert");
@@ -75,14 +76,10 @@ function select<T extends string>(
   options: [T, string][],
   get: (s: Settings) => T,
   set: (v: T) => Patch<Settings>,
-): HTMLSelectElement {
-  const node = el("select", { className: "select" });
-  for (const [value, label] of options) node.append(el("option", { value, textContent: label }));
-  node.addEventListener("change", () => send(set(node.value as T)));
-  syncs.push((v) => {
-    node.value = get(v.settings);
-  });
-  return node;
+): HTMLButtonElement {
+  const dd = dropdown(options, (v) => send(set(v)));
+  syncs.push((v) => dd.setValue(get(v.settings)));
+  return dd.node;
 }
 
 function toggle(get: (s: Settings) => boolean, set: (on: boolean) => Patch<Settings>): HTMLButtonElement {
@@ -324,16 +321,13 @@ const SECTIONS: { id: string; title: Key; build: () => Node[] }[] = [
     id: "advanced",
     title: "secAdvanced",
     build: () => {
-      const device = el("select", { className: "select" });
-      const fill = (outputs: Endpoint[]) => {
-        device.replaceChildren(el("option", { value: "", textContent: t("deviceDefault") }), ...outputs.map((o) => el("option", { value: o.id, textContent: o.name })));
-        if (view) device.value = view.settings.advanced.outputDevice ?? "";
-      };
-      void api.listOutputs().then(fill);
-      device.addEventListener("change", () => send({ advanced: { outputDevice: device.value || null } }));
-      syncs.push((v) => {
-        device.value = v.settings.advanced.outputDevice ?? "";
+      // "" is Windows' default output.
+      const device = dropdown<string>([["", t("deviceDefault")]], (id) => send({ advanced: { outputDevice: id || null } }));
+      void api.listOutputs().then((outputs: Endpoint[]) => {
+        device.setOptions([["", t("deviceDefault")], ...outputs.map((o): [string, string] => [o.id, o.name])]);
+        if (view) device.setValue(view.settings.advanced.outputDevice ?? "");
       });
+      syncs.push((v) => device.setValue(v.settings.advanced.outputDevice ?? ""));
 
       const info = el("span", { className: "row-value selectable" });
       syncs.push((v) => {
@@ -381,7 +375,7 @@ const SECTIONS: { id: string; title: Key; build: () => Node[] }[] = [
 
       return [
         card(
-          row("optDevice", "hintDevice", device, true),
+          row("optDevice", "hintDevice", device.node, true),
           row("optBuffer", "hintBuffer", select([["auto", t("bufferAuto")], ["ms10", t("bufferMs", { n: 10 })], ["ms20", t("bufferMs", { n: 20 })], ["ms50", t("bufferMs", { n: 50 })]], (s) => s.advanced.buffer, (v) => ({ advanced: { buffer: v } }))),
           row("optDeviceInfo", null, info, true),
         ),

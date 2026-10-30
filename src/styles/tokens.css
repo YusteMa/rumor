@@ -34,6 +34,10 @@
   --accent: var(--accent-pink);
   --accent-soft: var(--accent-pink-soft);
   --on-accent: #ffffff;
+  /* Pop-ups (dropdown lists) stay opaque, also over Mica, so they always read. */
+  --surface-raised: #ffffff;
+  --raised-hover: #f4eeeb;
+  --shadow-popup: 0 8px 24px rgb(43 37 35 / 0.14), 0 2px 6px rgb(43 37 35 / 0.08);
 
   /* Type: the Windows system font, 0 KB and native. */
   --font: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
@@ -91,6 +95,20 @@
   --switch-inset: 3px;
   --switch-travel: 18px;
   --icon-stroke: 1.2;
+  /* Content never stretches past this; explanations wrap at a reading width
+     and keep at least --row-text-min beside their control, or the control
+     moves under them. */
+  --content-max: 720px;
+  --measure: 52ch;
+  --row-text-min: 220px;
+  /* Dropdown. */
+  --chevron-size: 12px;
+  --chevron-stroke: 1.5;
+  --option-height: 32px;
+  --popup-gap: 4px;
+  --popup-max-height: 264px;
+  --selected-bar-width: 3px;
+  --selected-bar-height: 16px;
 
   /* Motion. */
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -135,6 +153,9 @@
     --accent-white: #afbacb;
     --accent-white-soft: #2b3038;
     --on-accent: #1c1a19;
+    --surface-raised: #2c2827;
+    --raised-hover: #38332f;
+    --shadow-popup: 0 8px 24px rgb(0 0 0 / 0.42), 0 2px 6px rgb(0 0 0 / 0.3);
     color-scheme: dark;
   }
 }
@@ -153,6 +174,9 @@
   --accent-white: #afbacb;
   --accent-white-soft: #2b3038;
   --on-accent: #1c1a19;
+  --surface-raised: #2c2827;
+  --raised-hover: #38332f;
+  --shadow-popup: 0 8px 24px rgb(0 0 0 / 0.42), 0 2px 6px rgb(0 0 0 / 0.3);
   color-scheme: dark;
 }
 

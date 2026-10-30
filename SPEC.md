@@ -123,7 +123,7 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
   1. Botón grande de play/pausa.
   2. Color: **Rosa / Marrón / Blanco**.
   3. Volumen.
-  4. Temporizador: **∞ / 25 / 50 / 90 min**, con cuenta atrás visible.
+  4. Temporizador: **∞ / 25 / 50 / 90 min**, con cuenta atrás visible. Solo elegir un tiempo la reinicia; **pausar la congela y reproducir la continúa**. Cambiar de color o de volumen no la toca.
   5. Espectro en vivo (Rust envía unos 30 frames/s de bandas por evento; **solo con el panel visible**).
   6. Pie: ⚙ Ajustes · Salir.
 - **Accesible:** navegable con teclado, foco visible, `Espacio` alterna y `Esc` cierra.

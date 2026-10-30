@@ -121,9 +121,21 @@ function mockBackend(): Backend {
     },
     systemAccent: params.get("accent") === "system" ? "#0078d4" : null,
   };
+  // Same rule as timer.rs: choosing restarts, pausing freezes, playing continues.
   let deadline = 0;
+  let frozen = 0;
   const arm = () => {
+    frozen = 0;
     deadline = state.playing && state.timerMinutes ? Date.now() + state.timerMinutes * 60_000 : 0;
+  };
+  const onPlaying = () => {
+    if (state.playing && state.timerMinutes && !deadline) {
+      deadline = Date.now() + (frozen || state.timerMinutes * 60_000);
+      frozen = 0;
+    } else if (!state.playing && deadline) {
+      frozen = Math.max(0, deadline - Date.now());
+      deadline = 0;
+    }
   };
   arm();
   const listeners = { state: [] as ((s: PanelState) => void)[], spectrum: [] as ((b: number[]) => void)[] };
@@ -138,7 +150,8 @@ function mockBackend(): Backend {
     listeners.spectrum.forEach((cb) => cb(bands));
   }, 33);
   setInterval(() => {
-    state.timerRemaining = deadline ? Math.max(0, Math.ceil((deadline - Date.now()) / 1000)) : null;
+    const left = deadline ? deadline - Date.now() : frozen;
+    state.timerRemaining = deadline || frozen ? Math.max(0, Math.ceil(left / 1000)) : null;
     emit();
   }, 1000);
   return {
@@ -146,7 +159,7 @@ function mockBackend(): Backend {
     toggle: async () => {
       state.playing = !state.playing;
       state.pausedFor = null;
-      arm();
+      onPlaying();
       emit();
     },
     setColor: async (c) => {

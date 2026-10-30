@@ -76,7 +76,8 @@ Reference screenshots: `docs/screenshots/panel-light.png`, `panel-dark.png`, `ac
 - [ ] The accent follows the noise (dusty pink, toasted caramel, blue-grey pearl) on play, halo, curve, selection, slider and focus ring, crossfading in ~300 ms together with the curve. Text stays neutral; the tray icon stays monochrome.
 - [ ] Panel lifecycle: hover the tray icon for half a second, then right click: the panel appears at once. Close it and wait 5 minutes: Task Manager shows Rumor back near 5 MB (WebView2 processes gone). Hovering again rebuilds it.
 - [ ] Volume drag is smooth, the value follows the thumb, the tray tooltip follows the value.
-- [ ] Timer 25 min while playing: "quedan 24:59" counts down here and in the tooltip; pausing cancels it; at the end the noise fades out over ~10 s.
+- [ ] Timer 25 min while playing: "quedan 24:59" counts down here and in the tooltip; at the end the noise fades out over ~10 s.
+- [ ] Timer and colour: with 25 min counting down, switch pink → brown → white: the countdown carries on. Pause: it freezes (also in the tooltip); play: it continues from there. Only picking a time (or ∞) restarts it.
 - [ ] Unplug headphones while the panel is open: "En pausa: se desconectaron los cascos" under the title.
 - [ ] No output device at all: the play button is disabled and the panel says there is no audio output.
 - [ ] Keyboard only: Tab reaches every control with a visible pink focus ring; arrows move within Color and Timer; Space plays/pauses; Esc closes.
@@ -99,6 +100,8 @@ Open it from the panel (⚙ Ajustes). Every change must apply at once, without a
 - [ ] Startup: "Iniciar con Windows" on → Rumor starts after signing in again; off → it doesn't.
 - [ ] Advanced: pick a fixed output → noise moves there; unplug it → pauses, never falls back to the speakers; buffer 10/20/50 ms plays clean; export then import gives the same settings; a non-settings JSON is refused with a message; reset asks first and keeps colour/volume/timer; "Abrir carpeta" opens the logs.
 - [ ] Settings looks right in light and dark, at 100/150/200 % scaling, and with the keyboard only.
+- [ ] Dropdowns (no native lists): open with a click, Enter, Space or ↓; ↑ ↓ Home End move; a letter jumps (again cycles); Enter or Tab chooses; Esc closes without changing; a click outside closes. The list is opaque and readable in light and dark, with Mica on and off, and opens upwards near the bottom.
+- [ ] Window size: at 200 % on a 1080p screen it opens fully on screen; it can't be made smaller than 520 × 440. Narrow: the dropdowns move under their explanation instead of squeezing it; wide: the content stops at 720 px and the explanations keep a reading width.
 - [ ] Volume per output: 30 % on headphones, switch to speakers and set 60 %, switch back: 30 % again, smoothly (no jump or click); with "Volumen de cada salida" off the volume stays put.
 - [ ] Lock (Win+L) while playing on headphones: it pauses; unlock: it plays again. Lock on headphones, take them off, unlock: stays paused, nothing from the speakers. "Pausar": stays paused after unlock. "No hacer nada": keeps playing while locked. Paused before locking: unlock never starts it.
 - [ ] Mono: one earbud in, mono on: the noise sounds the same and just as loud; switching mono on and off while playing never clicks.
