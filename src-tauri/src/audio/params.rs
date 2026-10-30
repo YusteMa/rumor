@@ -34,6 +34,8 @@ pub struct Params {
     fade_in_ms: AtomicF32,
     fade_out_ms: AtomicF32,
     mono: AtomicBool,
+    duck: AtomicBool,
+    bell: AtomicU32,
 }
 
 impl Params {
@@ -45,6 +47,8 @@ impl Params {
             fade_in_ms: AtomicF32::new(initial.fade_in_ms),
             fade_out_ms: AtomicF32::new(initial.fade_out_ms),
             mono: AtomicBool::new(initial.mono),
+            duck: AtomicBool::new(initial.duck),
+            bell: AtomicU32::new(initial.bell),
         }
     }
 
@@ -81,6 +85,15 @@ impl Params {
         self.mono.store(mono, Ordering::Relaxed);
     }
 
+    pub fn set_duck(&self, duck: bool) {
+        self.duck.store(duck, Ordering::Relaxed);
+    }
+
+    /// Strikes the bell once (the renderer acts on each new value).
+    pub fn ring(&self) {
+        self.bell.fetch_add(1, Ordering::Relaxed);
+    }
+
     pub fn playing(&self) -> bool {
         self.playing.load(Ordering::Relaxed)
     }
@@ -95,6 +108,8 @@ impl Params {
             fade_in_ms: self.fade_in_ms.load(),
             fade_out_ms: self.fade_out_ms.load(),
             mono: self.mono.load(Ordering::Relaxed),
+            duck: self.duck.load(Ordering::Relaxed),
+            bell: self.bell.load(Ordering::Relaxed),
         }
     }
 }
@@ -112,6 +127,8 @@ mod tests {
         p.set_fade_in_ms(2_000.0);
         p.set_fade_out_ms(10_000.0);
         p.set_mono(true);
+        p.set_duck(true);
+        p.ring();
         assert_eq!(
             p.snapshot(),
             Controls {
@@ -121,6 +138,8 @@ mod tests {
                 fade_in_ms: 2_000.0,
                 fade_out_ms: 10_000.0,
                 mono: true,
+                duck: true,
+                bell: 1,
             }
         );
     }

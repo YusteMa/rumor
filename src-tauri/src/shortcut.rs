@@ -66,6 +66,7 @@ pub fn plugin() -> TauriPlugin<Wry> {
                 Some(ShortcutAction::VolumeDown) => state::nudge_volume(app, false),
                 Some(ShortcutAction::NextColor) => state::next_color(app),
                 Some(ShortcutAction::OpenPanel) => panel::open(app, None),
+                Some(ShortcutAction::Study) => state::study_toggle(app),
                 None => {}
             }
         })
@@ -112,11 +113,16 @@ pub fn register_all(app: &AppHandle) {
     *lock(&bindings.taken) = None;
     lock(&bindings.failed).clear();
 
-    let saved = app.state::<AppState>().settings().shortcuts;
+    let settings = app.state::<AppState>().settings();
+    let saved = settings.shortcuts;
     for action in ShortcutAction::ALL {
         let Some(label) = saved.get(action) else {
             continue;
         };
+        // Without "Modo estudio" no trace of the stopwatch, shortcut included.
+        if action == ShortcutAction::Study && !settings.study.enabled {
+            continue;
+        }
         // The default toggle shortcut falls back to an alternative if taken.
         let candidates: Vec<&str> =
             if action == ShortcutAction::Toggle && label == TOGGLE_CANDIDATES[0] {

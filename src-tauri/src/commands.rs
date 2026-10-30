@@ -13,6 +13,9 @@ use crate::settings::{Settings, ShortcutAction};
 use crate::settings_window::{self, SettingsView};
 use crate::shortcut::{self, ShortcutError};
 use crate::state::{self, PanelState};
+use crate::study::StudyView;
+use crate::study::db::Tag;
+use crate::study::machine::Mode;
 
 #[tauri::command]
 pub fn get_state(app: AppHandle) -> Option<PanelState> {
@@ -44,6 +47,65 @@ pub fn set_volume(app: AppHandle, volume: f32) {
 #[tauri::command]
 pub fn set_timer(app: AppHandle, minutes: u32) {
     state::set_timer(&app, minutes);
+}
+
+/// The stopwatch's play/pause (SPEC §4.3b).
+#[tauri::command]
+pub fn study_toggle(app: AppHandle) {
+    state::study_toggle(&app);
+}
+
+/// Ends the session and stores it.
+#[tauri::command]
+pub fn study_finish(app: AppHandle) {
+    state::study_finish(&app);
+}
+
+/// Only between sessions.
+#[tauri::command]
+pub fn study_set_mode(app: AppHandle, mode: Mode) {
+    state::study_set_mode(&app, mode);
+}
+
+/// `tag` = `None` for no tag.
+#[tauri::command]
+pub fn study_set_tag(app: AppHandle, tag: Option<i64>) {
+    state::study_set_tag(&app, tag);
+}
+
+/// "¿Seguías estudiando?": `keep` = "Sí, contar", otherwise the idle time
+/// is taken out.
+#[tauri::command]
+pub fn study_resolve_idle(app: AppHandle, keep: bool) {
+    state::study_resolve_idle(&app, keep);
+}
+
+/// Session, today and this week; `None` with "Modo estudio" off.
+#[tauri::command]
+pub fn study_totals(app: AppHandle) -> Option<StudyView> {
+    state::study_view(&app)
+}
+
+#[tauri::command]
+pub fn tags_list(app: AppHandle) -> Vec<Tag> {
+    state::tags(&app)
+}
+
+/// Creates a tag (`id` = `None`) or renames / recolours one.
+#[tauri::command]
+pub fn tags_upsert(
+    app: AppHandle,
+    id: Option<i64>,
+    name: String,
+    color: String,
+) -> Result<Tag, String> {
+    state::tags_upsert(&app, id, &name, &color).map_err(|e| e.to_string())
+}
+
+/// Its sessions are kept, untagged.
+#[tauri::command]
+pub fn tags_delete(app: AppHandle, id: i64) -> Result<(), String> {
+    state::tags_delete(&app, id).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

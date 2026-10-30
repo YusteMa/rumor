@@ -26,6 +26,8 @@ pub const LABEL: &str = "panel";
 /// Logical size; the content is laid out for exactly this.
 const WIDTH: f64 = 360.0;
 const HEIGHT: f64 = 540.0;
+/// Room for the study card, with "Modo estudio" on (SPEC §4.3c).
+const STUDY_HEIGHT: f64 = 124.0;
 /// Gap between the panel, the taskbar and the screen edge (logical px).
 const MARGIN: f64 = 12.0;
 /// Must match `--dur-close` in tokens.css: the UI fades out, then we hide.
@@ -157,7 +159,7 @@ fn build(app: &AppHandle) -> tauri::Result<()> {
         .is_none_or(|s| s.settings().appearance.mica);
     let window = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("index.html".into()))
         .title("Rumor")
-        .inner_size(WIDTH, HEIGHT)
+        .inner_size(WIDTH, height(app))
         .resizable(false)
         .maximizable(false)
         .minimizable(false)
@@ -578,7 +580,7 @@ fn place(app: &AppHandle, window: &WebviewWindow, anchor: Option<Rect>) {
     };
 
     let scale = monitor.scale_factor();
-    let (w, h) = (WIDTH * scale, HEIGHT * scale);
+    let (w, h) = (WIDTH * scale, height(app) * scale);
     let m = MARGIN * scale;
     let mon_pos = monitor.position();
     let mon_size = monitor.size();
@@ -635,6 +637,23 @@ fn place(app: &AppHandle, window: &WebviewWindow, anchor: Option<Rect>) {
     }
 }
 
+/// Logical height: taller with the study card.
+fn height(app: &AppHandle) -> f64 {
+    let study = app
+        .try_state::<AppState>()
+        .is_some_and(|s| s.settings().study.enabled);
+    if study { HEIGHT + STUDY_HEIGHT } else { HEIGHT }
+}
+
+/// "Modo estudio" was switched: the card comes or goes.
+pub fn resize(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window(LABEL) {
+        if let Err(e) = window.set_size(tauri::LogicalSize::new(WIDTH, height(app))) {
+            log::warn!("panel size: {e}");
+        }
+    }
+}
+
 pub fn emit_state(app: &AppHandle) {
     if !is_open(app) {
         return;
@@ -658,5 +677,25 @@ struct TimerTick {
 pub fn emit_timer_tick(app: &AppHandle, remaining: Option<u64>) {
     if is_open(app) {
         let _ = app.emit_to(LABEL, "timer-tick", TimerTick { remaining });
+    }
+}
+
+/// The study card's numbers, once a second while visible.
+pub fn emit_study_tick(app: &AppHandle, view: &crate::study::StudyView) {
+    if is_open(app) {
+        let _ = app.emit_to(LABEL, "study-tick", view);
+    }
+}
+
+#[derive(Clone, Serialize)]
+struct StudyIdle {
+    minutes: u64,
+}
+
+/// The idle question is waiting (the panel shows it next time it is open;
+/// it is never opened for it).
+pub fn emit_study_idle(app: &AppHandle, minutes: u64) {
+    if is_open(app) {
+        let _ = app.emit_to(LABEL, "study-idle", StudyIdle { minutes });
     }
 }

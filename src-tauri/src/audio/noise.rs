@@ -9,6 +9,7 @@ use std::f32::consts::{FRAC_1_SQRT_2, TAU};
 
 use serde::{Deserialize, Serialize};
 
+use super::bell::Bowl;
 use super::smoothing::{
     OnePole, Ramp, equal_power, fade_curve, soft_clip, step_per_sample, volume_gain,
 };
@@ -28,6 +29,15 @@ pub const VOLUME_SMOOTHING_MS: f32 = 30.0;
 /// colour with the highest peaks for a given loudness, stays clear of the soft
 /// clipper's knee.
 pub const TARGET_K_RMS_DB: f32 = -24.0;
+/// Pomodoro breaks "bajar a la mitad": −10 dB, which sounds half as loud.
+pub const DUCK_DB: f32 = -10.0;
+/// The duck glides in dB over this, in and out.
+pub const DUCK_MS: f32 = 2_500.0;
+/// The bell's peak at full volume (−12 dBFS): above the noise, not over it.
+pub const BELL_PEAK: f32 = 0.25;
+/// The bell follows the volume, but never gets quieter than at this slider
+/// position, so it is heard with the noise very low or paused.
+pub const BELL_MIN_VOLUME: f32 = 0.25;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -320,6 +330,10 @@ pub struct Controls {
     pub fade_out_ms: f32,
     /// Both channels carry the same signal, for a single earbud.
     pub mono: bool,
+    /// Lowered to `DUCK_DB` (Pomodoro breaks).
+    pub duck: bool,
+    /// Bumped to strike the bell once.
+    pub bell: u32,
 }
 
 impl Default for Controls {
@@ -331,12 +345,15 @@ impl Default for Controls {
             fade_in_ms: FADE_IN_MS,
             fade_out_ms: FADE_OUT_MS,
             mono: false,
+            duck: false,
+            bell: 0,
         }
     }
 }
 
 /// The whole signal chain: generators → colour crossfade → loudness
-/// normalisation → fade → smoothed volume → soft clip.
+/// normalisation → fade → smoothed volume → duck, plus the bell on top →
+/// mono → soft clip.
 #[derive(Clone, Debug)]
 pub struct NoiseRenderer {
     channels: [Channel; 2],
@@ -346,8 +363,14 @@ pub struct NoiseRenderer {
     volume: OnePole,
     /// 0 = stereo, 1 = mono.
     mono: Ramp,
+    /// 0 = full level, 1 = ducked.
+    duck: Ramp,
+    bell: Bowl,
+    /// The last `Controls::bell` acted on.
+    bell_seen: u32,
     crossfade_step: f32,
     mono_step: f32,
+    duck_step: f32,
     fs: f32,
 }
 
@@ -374,6 +397,10 @@ impl NoiseRenderer {
             fade: Ramp::new(0.0),
             mono: Ramp::new(if initial.mono { 1.0 } else { 0.0 }),
             mono_step: step_per_sample(MONO_BLEND_MS, fs),
+            duck: Ramp::new(if initial.duck { 1.0 } else { 0.0 }),
+            duck_step: step_per_sample(DUCK_MS, fs),
+            bell: Bowl::new(fs),
+            bell_seen: initial.bell,
             volume: OnePole::new(VOLUME_SMOOTHING_MS, fs, volume_gain(initial.volume)),
             crossfade_step: step_per_sample(CROSSFADE_MS, fs),
             fs,
@@ -394,12 +421,26 @@ impl NoiseRenderer {
         } else {
             self.fade.next(0.0, step_per_sample(c.fade_out_ms, self.fs))
         };
-        let gain = fade_curve(fade) * self.volume.next(volume_gain(c.volume));
+        let duck = match self
+            .duck
+            .next(if c.duck { 1.0 } else { 0.0 }, self.duck_step)
+        {
+            0.0 => 1.0,
+            d => (DUCK_DB * d * std::f32::consts::LN_10 / 20.0).exp(),
+        };
+        let gain = fade_curve(fade) * self.volume.next(volume_gain(c.volume)) * duck;
+
+        if c.bell != self.bell_seen {
+            self.bell_seen = c.bell;
+            self.bell
+                .strike(BELL_PEAK * volume_gain(c.volume.max(BELL_MIN_VOLUME)));
+        }
+        let bell = self.bell.sample();
 
         let mut raw = [0.0f32; 2];
         for (o, channel) in raw.iter_mut().zip(&mut self.channels) {
             let s = channel.sample();
-            *o = (s[0] * weights[0] + s[1] * weights[1] + s[2] * weights[2]) * gain;
+            *o = (s[0] * weights[0] + s[1] * weights[1] + s[2] * weights[2]) * gain + bell;
         }
         // Mono before the clipper, so the sum never goes past −3 dBFS. The
         // two channels are uncorrelated, so (L + R)/√2 is as loud as each.
@@ -416,10 +457,15 @@ impl NoiseRenderer {
         raw.map(soft_clip)
     }
 
-    /// True once a fade-out has fully finished: the output is exact zeros and
-    /// the stream can be paused.
+    /// True once a fade-out has fully finished and the bell isn't ringing:
+    /// the output is exact zeros and the stream can be paused.
     pub fn is_silent(&self) -> bool {
-        self.fade.value() == 0.0
+        self.fade.value() == 0.0 && self.bell.is_done()
+    }
+
+    /// The last bell strike (`Controls::bell`) acted on.
+    pub fn bell_seen(&self) -> u32 {
+        self.bell_seen
     }
 
     /// Current overall gain (fade × smoothed volume), for click tests.

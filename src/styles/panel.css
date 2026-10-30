@@ -305,6 +305,225 @@ body {
   padding: var(--space-1);
 }
 
+/* ---- Study card (SPEC §4.3b) -------------------------------------------------- */
+
+.study {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.study[hidden],
+.study [hidden] {
+  display: none;
+}
+
+.study .label {
+  align-items: center;
+  min-height: var(--control-height-sm);
+}
+
+.study-head {
+  display: inline-flex;
+  gap: var(--space-2);
+}
+
+.segmented.mini {
+  padding: 0;
+  gap: 0;
+  border-radius: var(--radius-control);
+}
+
+.segmented.mini button {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+}
+
+.study-body {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Play/pause inside the ring: secondary to the noise's big play button. */
+.study-play {
+  position: relative;
+  flex: none;
+  width: var(--study-ring);
+  height: var(--study-ring);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink);
+  transition:
+    background-color var(--dur-press) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+
+.study-play:hover {
+  background: var(--surface-hover);
+}
+
+.study-play:active {
+  transform: scale(var(--press-scale));
+}
+
+.study-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  overflow: visible;
+}
+
+.ring-track,
+.ring-fill {
+  fill: none;
+  stroke-width: var(--study-ring-stroke);
+}
+
+.ring-track {
+  stroke: var(--line);
+}
+
+.ring-fill {
+  stroke: var(--accent);
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  stroke-linecap: round;
+  opacity: 0;
+  transition:
+    stroke-dashoffset var(--dur-max) var(--ease-out),
+    stroke var(--dur-max) var(--ease-out),
+    opacity var(--dur-max) var(--ease-out);
+}
+
+/* Only a Pomodoro phase in progress fills the ring. */
+.study.has-phase .ring-fill {
+  opacity: 1;
+}
+
+.study.is-break .ring-fill {
+  stroke: var(--muted);
+}
+
+.study-glyph {
+  width: var(--study-glyph);
+  height: var(--study-glyph);
+  fill: currentColor;
+  overflow: visible;
+}
+
+/* The same play ▶ / pause ❚❚ morph as the main button. */
+.sglyph {
+  transition: d var(--dur-max) var(--ease-out);
+}
+
+.sglyph-a {
+  d: path("M8 5 L13 8.2 L13 15.8 L8 19 Z");
+}
+
+.sglyph-b {
+  d: path("M13 8.2 L19 12 L19 12 L13 15.8 Z");
+}
+
+.study.is-running .sglyph-a {
+  d: path("M6.5 5 L10.5 5 L10.5 19 L6.5 19 Z");
+}
+
+.study.is-running .sglyph-b {
+  d: path("M13.5 5 L17.5 5 L17.5 19 L13.5 19 Z");
+}
+
+.study-time {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+}
+
+.study:not(.is-running) .study-time {
+  color: var(--muted);
+}
+
+.study-tag {
+  display: contents;
+}
+
+/* The tag picker: a coloured dot before the name. */
+.select.compact {
+  --tag: transparent;
+  height: var(--control-height-sm);
+  width: var(--tag-select-width);
+  padding-left: var(--space-2);
+  font-size: var(--text-xs);
+}
+
+.select.compact.no-tag::before {
+  display: none;
+}
+
+.select.compact .select-label {
+  flex: 1;
+}
+
+.select.compact::before {
+  content: "";
+  flex: none;
+  width: var(--tag-dot);
+  height: var(--tag-dot);
+  border-radius: var(--radius-pill);
+  background: var(--tag);
+}
+
+.study-totals {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+/* "¿Seguías estudiando?": in place of the time, same height. */
+.study-idle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.study-idle p {
+  margin: 0;
+  font-size: var(--text-xs);
+}
+
+.study-idle-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.chip {
+  height: var(--control-height-sm);
+  padding: 0 var(--space-3);
+  border: var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font-size: var(--text-xs);
+  transition: background-color var(--dur-press) var(--ease-out);
+}
+
+.chip:hover {
+  background: var(--surface-hover);
+}
+
+.chip:first-child {
+  border-color: transparent;
+  background: var(--accent-soft);
+}
+
 /* ---- Footer ------------------------------------------------------------------ */
 
 .foot {
@@ -359,11 +578,6 @@ body {
     animation: none;
     transform: none;
   }
-}
-
-:root[data-reduce-motion] .is-playing .play::before {
-  animation: none;
-  transform: none;
 }
 
 .spectrum[hidden] {

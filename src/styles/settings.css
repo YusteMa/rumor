@@ -192,7 +192,6 @@ body {
 
 /* ---- Controls ----------------------------------------------------------------- */
 
-.select,
 .number,
 .btn,
 .shortcut-btn {
@@ -203,101 +202,6 @@ body {
   transition:
     background-color var(--dur-press) var(--ease-out),
     border-color var(--dur-press) var(--ease-out);
-}
-
-/* Dropdown (src/ui/dropdown.ts): a fixed width, long values end in "…". */
-.select {
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  width: var(--control-wide);
-  max-width: 100%;
-  padding: 0 var(--space-2) 0 var(--space-3);
-  text-align: left;
-}
-
-.select-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.select svg {
-  flex: none;
-  width: var(--chevron-size);
-  height: var(--chevron-size);
-  color: var(--muted);
-  stroke-width: var(--chevron-stroke);
-  transition: transform var(--dur-press) var(--ease-out);
-}
-
-.select[aria-expanded="true"] svg {
-  transform: rotate(180deg);
-}
-
-.select-list {
-  position: fixed;
-  z-index: 10;
-  max-width: calc(100vw - 2 * var(--popup-gap));
-  max-height: var(--popup-max-height);
-  margin: 0;
-  padding: var(--space-1);
-  overflow-y: auto;
-  list-style: none;
-  border: var(--border);
-  border-radius: var(--radius-control);
-  background: var(--surface-raised);
-  box-shadow: var(--shadow-popup);
-  color: var(--ink);
-  animation: select-in var(--dur-open) var(--ease-out);
-}
-
-/* It slides in from the button's side: down when below, up when above. */
-.select-list {
-  --open-from: calc(var(--open-offset) / -2);
-}
-
-.select-list.is-up {
-  --open-from: calc(var(--open-offset) / 2);
-}
-
-@keyframes select-in {
-  from {
-    opacity: 0;
-    transform: translateY(var(--open-from));
-  }
-}
-
-.select-list [role="option"] {
-  position: relative;
-  line-height: var(--option-height);
-  padding: 0 var(--space-3);
-  border-radius: calc(var(--radius-control) - var(--space-1) / 2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: default;
-}
-
-.select-list [role="option"].is-active {
-  background: var(--raised-hover);
-}
-
-.select-list [role="option"][aria-selected="true"] {
-  font-weight: var(--weight-semibold);
-}
-
-.select-list [role="option"][aria-selected="true"]::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: var(--selected-bar-width);
-  height: var(--selected-bar-height);
-  border-radius: var(--radius-pill);
-  background: var(--accent);
-  transform: translateY(-50%);
 }
 
 .number {
@@ -312,9 +216,7 @@ body {
 }
 
 .btn:hover,
-.shortcut-btn:hover,
-.select:hover,
-.select[aria-expanded="true"] {
+.shortcut-btn:hover {
   background: var(--surface-hover);
 }
 
@@ -390,6 +292,105 @@ body {
   margin: var(--space-3) 0 0;
   color: var(--muted);
   font-size: var(--text-xs);
+}
+
+/* Advanced groups its cards under small headings. */
+.subtitle {
+  margin: var(--space-5) 0 var(--space-2);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+
+.section-title + .subtitle {
+  margin-top: 0;
+}
+
+.subtitle + .card {
+  margin-top: 0;
+}
+
+.text {
+  height: var(--control-height);
+  min-width: 0;
+  padding: 0 var(--space-3);
+  border: var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  user-select: text;
+}
+
+/* Pomodoro times: four small fields in a row. */
+.pomodoro {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: end;
+  gap: var(--space-3);
+}
+
+.pomodoro-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.pomodoro-field .number {
+  width: var(--number-width);
+  color: var(--ink);
+  font-size: var(--text-sm);
+}
+
+/* Tags: dot (click to recolour), name (edit in place), ×. */
+.tag-editor,
+.tags {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: var(--measure);
+}
+
+.tag-row,
+.tag-add {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tag-row .text,
+.tag-add .text {
+  flex: 1;
+}
+
+.tag-dot {
+  --tag: var(--line);
+  flex: none;
+  width: var(--icon-button);
+  height: var(--icon-button);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  transition: background-color var(--dur-press) var(--ease-out);
+}
+
+.tag-dot::before {
+  content: "";
+  display: block;
+  width: var(--tag-dot);
+  height: var(--tag-dot);
+  margin: auto;
+  border-radius: var(--radius-pill);
+  background: var(--tag);
+}
+
+.tag-dot:hover {
+  background: var(--surface-hover);
+}
+
+.tag-add .text {
+  border-style: dashed;
 }
 
 /* ---- About ------------------------------------------------------------------------ */

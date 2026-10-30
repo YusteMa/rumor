@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-study-set-mode"
+description = "Enables the study_set_mode command without any pre-configured scope."
+commands.allow = ["study_set_mode"]
+
+[[permission]]
+identifier = "deny-study-set-mode"
+description = "Denies the study_set_mode command without any pre-configured scope."
+commands.deny = ["study_set_mode"]

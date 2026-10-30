@@ -1,11 +1,25 @@
 // The Settings window's link to Rust. Outside Tauri a mock stands in, for
 // design work in a browser.
 
-import { isTauri, type Appearance, type Color, type Lang } from "./api";
+import { isTauri, type Appearance, type Color, type Lang, type StudyMode, type Tag } from "./api";
 
-export type Action = "toggle" | "volumeUp" | "volumeDown" | "nextColor" | "openPanel";
+export type Action = "toggle" | "volumeUp" | "volumeDown" | "nextColor" | "openPanel" | "study";
+export type Alerts = "bell" | "notification" | "both" | "none";
+export type BreakNoise = "half" | "pause" | "keep";
 
 export interface Settings {
+  general: { alerts: Alerts; earBreakHours: number };
+  study: {
+    enabled: boolean;
+    linkNoise: boolean;
+    workMin: number;
+    shortBreakMin: number;
+    longBreakMin: number;
+    cycles: number;
+    breakNoise: BreakNoise;
+    /** 0 = off. */
+    idleMinutes: number;
+  };
   sound: { startColor: "last" | Color; fadeMs: number; maxVolume: number; perOutputVolume: boolean; mono: boolean };
   playback: {
     onOutputChange: "pauseOnSpeakers" | "pauseAlways" | "keepPlaying";
@@ -13,13 +27,21 @@ export interface Settings {
     onLock: "pauseResumeWithHeadphones" | "pause" | "nothing";
     onLaunch: "silent" | "play" | "resume";
   };
-  timer: { presets: [number, number, number]; endFadeS: number; notifyOnEnd: boolean };
+  timer: { presets: [number, number, number]; endFadeS: number };
   shortcuts: Record<Action, string | null>;
-  tray: { leftClick: "toggle" | "panel"; showRemaining: boolean };
+  tray: { leftClick: "toggle" | "panel" };
   appearance: Appearance;
   startup: { launchAtLogin: boolean };
   advanced: { outputDevice: string | null; buffer: "auto" | "ms10" | "ms20" | "ms50" };
-  last: { color: Color; volume: number; timerMinutes: number; wasPlaying: boolean; outputVolumes: Record<string, number> };
+  last: {
+    color: Color;
+    volume: number;
+    timerMinutes: number;
+    wasPlaying: boolean;
+    outputVolumes: Record<string, number>;
+    studyMode: StudyMode;
+    studyTag: number | null;
+  };
 }
 
 export interface Endpoint {
@@ -36,6 +58,7 @@ export interface SettingsView {
   version: string;
   systemAccent: string | null;
   mica: boolean;
+  tags: Tag[];
 }
 
 export type ShortcutError = { kind: "invalid" | "noModifier" | "typesCharacter" | "duplicate" | "taken" };
@@ -54,6 +77,9 @@ export interface SettingsBackend {
   importSettings(): Promise<boolean>;
   reset(): Promise<SettingsView | null>;
   openLogs(): Promise<void>;
+  /** Creates (`id` null) or renames / recolours a tag; rejects with a message. */
+  upsertTag(id: number | null, name: string, color: string): Promise<Tag>;
+  deleteTag(id: number): Promise<void>;
   onChanged(cb: (view: SettingsView) => void): void;
 }
 
@@ -70,21 +96,42 @@ async function tauriBackend(): Promise<SettingsBackend> {
     importSettings: () => invoke("import_settings"),
     reset: () => invoke("reset_settings"),
     openLogs: () => invoke("open_logs"),
+    upsertTag: (id, name, color) => invoke("tags_upsert", { id, name, color }),
+    deleteTag: (id) => invoke("tags_delete", { id }),
     onChanged: (cb) => void listen<SettingsView>("settings-changed", (e) => cb(e.payload)),
   };
 }
 
 function defaults(): Settings {
   return {
+    general: { alerts: "both", earBreakHours: 3 },
+    study: {
+      enabled: false,
+      linkNoise: true,
+      workMin: 25,
+      shortBreakMin: 5,
+      longBreakMin: 15,
+      cycles: 4,
+      breakNoise: "half",
+      idleMinutes: 0,
+    },
     sound: { startColor: "last", fadeMs: 400, maxVolume: 1, perOutputVolume: true, mono: false },
     playback: { onOutputChange: "pauseOnSpeakers", resumeOnReconnect: false, onLock: "pauseResumeWithHeadphones", onLaunch: "silent" },
-    timer: { presets: [25, 50, 90], endFadeS: 10, notifyOnEnd: true },
-    shortcuts: { toggle: "Ctrl+Alt+P", volumeUp: null, volumeDown: null, nextColor: null, openPanel: null },
-    tray: { leftClick: "toggle", showRemaining: true },
-    appearance: { theme: "system", accent: "noise", mica: true, spectrum: true, reduceMotion: false, language: "auto" },
+    timer: { presets: [25, 50, 90], endFadeS: 10 },
+    shortcuts: { toggle: "Ctrl+Alt+P", volumeUp: null, volumeDown: null, nextColor: null, openPanel: null, study: "Ctrl+Alt+T" },
+    tray: { leftClick: "toggle" },
+    appearance: { theme: "system", accent: "noise", mica: true, spectrum: true, language: "auto" },
     startup: { launchAtLogin: false },
     advanced: { outputDevice: null, buffer: "auto" },
-    last: { color: "pink", volume: 0.4, timerMinutes: 0, wasPlaying: false, outputVolumes: {} },
+    last: {
+      color: "pink",
+      volume: 0.4,
+      timerMinutes: 0,
+      wasPlaying: false,
+      outputVolumes: {},
+      studyMode: "stopwatch",
+      studyTag: null,
+    },
   };
 }
 
@@ -92,6 +139,15 @@ function defaults(): Settings {
 function mockBackend(): SettingsBackend {
   const params = new URLSearchParams(location.search);
   let settings = defaults();
+  // ?study=1 starts with "Modo estudio" on and a few tags.
+  if (params.get("study")) settings.study.enabled = true;
+  let tags: Tag[] = params.get("study")
+    ? [
+        { id: 1, name: "Cálculo", color: "sky" },
+        { id: 2, name: "EDA", color: "sage" },
+      ]
+    : [];
+  let nextTag = 3;
   const listeners: ((v: SettingsView) => void)[] = [];
   const view = (): SettingsView => ({
     settings: structuredClone(settings),
@@ -110,6 +166,7 @@ function mockBackend(): SettingsBackend {
     version: "0.1.0",
     systemAccent: "#0078d4",
     mica: false,
+    tags: structuredClone(tags),
   });
   const merge = (target: Record<string, unknown>, patch: Record<string, unknown>) => {
     for (const [k, v] of Object.entries(patch)) {
@@ -141,6 +198,21 @@ function mockBackend(): SettingsBackend {
       return view();
     },
     openLogs: async () => {},
+    upsertTag: async (id, name, color) => {
+      const clean = name.trim();
+      if (!clean) throw "a tag needs a name";
+      if (tags.some((g) => g.id !== id && g.name.toLowerCase() === clean.toLowerCase())) {
+        throw `there is already a tag called "${clean}"`;
+      }
+      const tag = { id: id ?? nextTag++, name: clean, color };
+      tags = [...tags.filter((g) => g.id !== tag.id), tag].sort((a, b) => a.name.localeCompare(b.name));
+      listeners.forEach((cb) => cb(view()));
+      return tag;
+    },
+    deleteTag: async (id) => {
+      tags = tags.filter((g) => g.id !== id);
+      listeners.forEach((cb) => cb(view()));
+    },
     onChanged: (cb) => listeners.push(cb),
   };
 }

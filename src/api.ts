@@ -9,6 +9,34 @@ export type PauseReason =
   | "suspended"
   | "locked";
 export type Lang = "es" | "en";
+export type StudyMode = "stopwatch" | "pomodoro";
+export type StudyRun = "stopped" | "running" | "paused";
+export type StudyPhase = "work" | "shortBreak" | "longBreak";
+
+export interface Tag {
+  id: number;
+  name: string;
+  /** A `--tag-*` token name. */
+  color: string;
+}
+
+/** The study card (SPEC §4.3b); absent with "Modo estudio" off. */
+export interface StudyView {
+  run: StudyRun;
+  mode: StudyMode;
+  phase: StudyPhase;
+  cycle: number;
+  cycles: number;
+  workedSecs: number;
+  phaseLeftSecs: number | null;
+  phaseSecs: number | null;
+  todaySecs: number;
+  weekSecs: number;
+  tag: number | null;
+  tags: Tag[];
+  /** Minutes away while "¿Seguías estudiando?" waits. */
+  idleMinutes: number | null;
+}
 
 export interface PanelState {
   playing: boolean;
@@ -26,6 +54,7 @@ export interface PanelState {
   timerPresets: [number, number, number];
   appearance: Appearance;
   systemAccent: string | null;
+  study: StudyView | null;
 }
 
 export interface Appearance {
@@ -33,7 +62,6 @@ export interface Appearance {
   accent: "noise" | "system";
   mica: boolean;
   spectrum: boolean;
-  reduceMotion: boolean;
   language: "auto" | "es" | "en";
 }
 
@@ -43,6 +71,11 @@ export interface Backend {
   setColor(color: Color): Promise<void>;
   setVolume(volume: number): Promise<void>;
   setTimer(minutes: number): Promise<void>;
+  studyToggle(): Promise<void>;
+  studyFinish(): Promise<void>;
+  studySetMode(mode: StudyMode): Promise<void>;
+  studySetTag(tag: number | null): Promise<void>;
+  studyResolveIdle(keep: boolean): Promise<void>;
   hide(): Promise<void>;
   quit(): Promise<void>;
   openSettings(): Promise<void>;
@@ -54,6 +87,8 @@ export interface Backend {
   /** 64 band levels in dB (power density), ~30 per second while visible. */
   onSpectrum(cb: (bands: number[]) => void): void;
   onTimerTick(cb: (remaining: number | null) => void): void;
+  /** Once a second while visible, with "Modo estudio" on. */
+  onStudyTick(cb: (study: StudyView) => void): void;
   onShown(cb: () => void): void;
   onHiding(cb: () => void): void;
 }
@@ -81,6 +116,11 @@ async function tauriBackend(): Promise<Backend> {
     setColor: (color) => call("set_color", { color }),
     setVolume: (volume) => call("set_volume", { volume }),
     setTimer: (minutes) => call("set_timer", { minutes }),
+    studyToggle: () => call("study_toggle"),
+    studyFinish: () => call("study_finish"),
+    studySetMode: (mode) => call("study_set_mode", { mode }),
+    studySetTag: (tag) => call("study_set_tag", { tag }),
+    studyResolveIdle: (keep) => call("study_resolve_idle", { keep }),
     hide: () => call("hide_panel"),
     quit: () => call("quit"),
     openSettings: () => call("open_settings"),
@@ -90,6 +130,7 @@ async function tauriBackend(): Promise<Backend> {
     onSpectrum: (cb) => void listen<number[]>("spectrum", (e) => cb(e.payload)),
     onTimerTick: (cb) =>
       void listen<{ remaining: number | null }>("timer-tick", (e) => cb(e.payload.remaining)),
+    onStudyTick: (cb) => void listen<StudyView>("study-tick", (e) => cb(e.payload)),
     onShown: (cb) => void listen("panel-shown", () => cb()),
     onHiding: (cb) => void listen("panel-hiding", () => cb()),
   };
@@ -116,10 +157,51 @@ function mockBackend(): Backend {
       accent: params.get("accent") === "system" ? "system" : "noise",
       mica: true,
       spectrum: params.get("spectrum") !== "0",
-      reduceMotion: false,
       language: "auto",
     },
     systemAccent: params.get("accent") === "system" ? "#0078d4" : null,
+    study: null,
+  };
+  // ?study=1 shows the card; ?study=pomodoro, ?idle=14 and ?tags=1 vary it.
+  const study: StudyView | null = params.get("study")
+    ? {
+        run: "stopped",
+        mode: params.get("study") === "pomodoro" ? "pomodoro" : "stopwatch",
+        phase: "work",
+        cycle: 1,
+        cycles: 4,
+        workedSecs: 0,
+        phaseLeftSecs: null,
+        phaseSecs: null,
+        todaySecs: 3 * 3600 + 10 * 60,
+        weekSecs: 12 * 3600 + 40 * 60,
+        tag: null,
+        tags: params.get("tags")
+          ? [
+              { id: 1, name: "Cálculo", color: "sky" },
+              { id: 2, name: "EDA", color: "sage" },
+              { id: 3, name: "Física", color: "amber" },
+            ]
+          : [],
+        idleMinutes: params.get("idle") ? Number(params.get("idle")) : null,
+      }
+    : null;
+  state.study = study;
+  let workSince = 0;
+  let workedBefore = 0;
+  const POMODORO = [25 * 60, 5 * 60];
+  const studyTick = () => {
+    if (!study) return;
+    const now = Date.now();
+    const running = study.run === "running" && study.phase === "work";
+    study.workedSecs = workedBefore + (running ? Math.floor((now - workSince) / 1000) : 0);
+    if (study.mode === "pomodoro" && study.run !== "stopped") {
+      const total = POMODORO[study.phase === "work" ? 0 : 1];
+      study.phaseSecs = total;
+      study.phaseLeftSecs = Math.max(0, total - (study.workedSecs % total));
+    } else {
+      study.phaseSecs = study.phaseLeftSecs = null;
+    }
   };
   // Same rule as timer.rs: choosing restarts, pausing freezes, playing continues.
   let deadline = 0;
@@ -152,14 +234,28 @@ function mockBackend(): Backend {
   setInterval(() => {
     const left = deadline ? deadline - Date.now() : frozen;
     state.timerRemaining = deadline || frozen ? Math.max(0, Math.ceil(left / 1000)) : null;
+    studyTick();
     emit();
   }, 1000);
+  // Linked, like the default: noise and stopwatch play and pause together.
+  const studyRun = (run: StudyRun) => {
+    if (!study || study.run === run) return;
+    if (run === "running") workSince = Date.now();
+    else {
+      studyTick();
+      workedBefore = run === "stopped" ? 0 : study.workedSecs;
+      if (run === "stopped") study.todaySecs += study.workedSecs;
+    }
+    study.run = run;
+    studyTick();
+  };
   return {
     getState: async () => ({ ...state }),
     toggle: async () => {
       state.playing = !state.playing;
       state.pausedFor = null;
       onPlaying();
+      studyRun(state.playing ? "running" : "paused");
       emit();
     },
     setColor: async (c) => {
@@ -175,6 +271,35 @@ function mockBackend(): Backend {
       arm();
       emit();
     },
+    studyToggle: async () => {
+      if (!study) return;
+      const run = study.run === "running" ? "paused" : "running";
+      studyRun(run);
+      state.playing = run === "running";
+      onPlaying();
+      emit();
+    },
+    studyFinish: async () => {
+      studyRun("stopped");
+      state.playing = false;
+      onPlaying();
+      emit();
+    },
+    studySetMode: async (mode) => {
+      if (study && study.run === "stopped") study.mode = mode;
+      studyTick();
+      emit();
+    },
+    studySetTag: async (tag) => {
+      if (study) study.tag = tag;
+      emit();
+    },
+    studyResolveIdle: async (keep) => {
+      if (study && study.idleMinutes && !keep) workedBefore = Math.max(0, workedBefore - study.idleMinutes * 60);
+      if (study) study.idleMinutes = null;
+      studyTick();
+      emit();
+    },
     hide: async () => {},
     quit: async () => {},
     openSettings: async () => {},
@@ -183,6 +308,7 @@ function mockBackend(): Backend {
     onState: (cb) => listeners.state.push(cb),
     onSpectrum: (cb) => listeners.spectrum.push(cb),
     onTimerTick: () => {},
+    onStudyTick: () => {},
     onShown: (cb) => queueMicrotask(cb),
     onHiding: () => {},
   };

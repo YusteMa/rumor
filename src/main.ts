@@ -8,6 +8,7 @@ import { colors } from "./ui/colors";
 import { footer } from "./ui/footer";
 import { player } from "./ui/player";
 import { Spectrum } from "./ui/spectrum";
+import { study } from "./ui/study";
 import { timer } from "./ui/timer";
 import { volume } from "./ui/volume";
 
@@ -21,6 +22,13 @@ const ui = {
   colors: colors((c) => api.setColor(c)),
   volume: volume((v) => api.setVolume(v)),
   timer: timer((m) => api.setTimer(m)),
+  study: study({
+    toggle: () => void api.studyToggle(),
+    finish: () => void api.studyFinish(),
+    setMode: (mode) => void api.studySetMode(mode),
+    setTag: (tag) => void api.studySetTag(tag),
+    resolveIdle: (keep) => void api.studyResolveIdle(keep),
+  }),
   footer: footer(
     () => api.openSettings(),
     () => api.quit(),
@@ -46,13 +54,13 @@ function render(s: PanelState): void {
   // The accent follows the noise (tokens.css), or Windows' own; text stays neutral.
   document.documentElement.dataset.noise = s.color;
   applyAccent(s.appearance.accent === "system" ? s.systemAccent : null);
-  document.documentElement.toggleAttribute("data-reduce-motion", s.appearance.reduceMotion);
   spectrumCard.hidden = !s.appearance.spectrum;
   spectrum.setEnabled(s.appearance.spectrum);
   ui.player.render(s);
   ui.colors.render(s);
   ui.volume.render(s);
   ui.timer.render(s);
+  ui.study.render(s.study);
   ui.footer.render(s);
   spectrum.setColor(s.color);
   spectrum.setPlaying(s.playing);
@@ -62,6 +70,9 @@ api.onState(render);
 api.onSpectrum((bands) => spectrum.push(bands));
 api.onTimerTick((remaining) => {
   if (state) ui.timer.render({ ...state, timerRemaining: remaining });
+});
+api.onStudyTick((view) => {
+  if (state?.study) ui.study.render((state = { ...state, study: view }).study);
 });
 api.onShown(() => {
   panel.classList.remove("is-closing");

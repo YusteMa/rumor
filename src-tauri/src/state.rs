@@ -1,10 +1,10 @@
 //! Shared `AppState` and the coordinator: every user action (tray, shortcut,
-//! panel, Settings) goes through here, which updates the engine and then
-//! everything that shows the state. Modules never call each other directly
-//! (CLAUDE.md rule 12).
+//! panel, Settings) goes through here, which updates the engine and the study
+//! module and then everything that shows the state. Sound and Study never
+//! call each other: the linking between them lives here (CLAUDE.md rule 12).
 
 use std::sync::{Mutex, MutexGuard, RwLock, RwLockReadGuard};
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime};
 
 use serde::Serialize;
 use serde_json::Value;
@@ -12,11 +12,15 @@ use tauri::{AppHandle, Manager};
 use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_notification::NotificationExt;
 
-use crate::audio::device_watch::{OutputKind, PauseReason};
+use crate::audio::device_watch::{OutputKind, PauseReason, SystemEvent};
 use crate::audio::engine::{AudioEngine, EngineConfig, EngineEvent};
 use crate::audio::noise::{Controls, NoiseColor};
+use crate::ear_break::EarBreak;
 use crate::i18n::{Lang, Strings};
-use crate::settings::{self, LanguageChoice, Settings};
+use crate::settings::{self, BreakNoise, LanguageChoice, Settings};
+use crate::study::db::{DbError, Tag};
+use crate::study::machine::{Mode, Phase, Run};
+use crate::study::{self, Study, StudyView};
 use crate::timer::Timer;
 use crate::{panel, settings_window, shortcut, tray};
 
@@ -31,6 +35,17 @@ pub struct Sound {
     pub volume: f32,
 }
 
+/// The stopwatch, as the tray shows it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct StudyBrief {
+    pub run: Run,
+    pub phase: Phase,
+    pub worked_secs: u64,
+    pub phase_left_secs: Option<u64>,
+    /// "¿Seguías estudiando?" waits for an answer.
+    pub idle_pending: bool,
+}
+
 /// Everything the tray needs to draw itself.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Snapshot {
@@ -38,6 +53,8 @@ pub struct Snapshot {
     pub sound: Sound,
     pub paused_for: Option<PauseReason>,
     pub timer_remaining: Option<u64>,
+    /// `None` with "Modo estudio" off.
+    pub study: Option<StudyBrief>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -67,6 +84,18 @@ pub struct PanelState {
     pub appearance: settings::Appearance,
     /// Windows' accent colour, when Settings → Appearance asks for it.
     pub system_accent: Option<String>,
+    /// The study card; `None` with "Modo estudio" off (SPEC §4.3c).
+    pub study: Option<StudyView>,
+}
+
+/// What the coordinator did on its own, to undo it at the right moment.
+#[derive(Debug, Default)]
+struct Link {
+    /// A Pomodoro break ("Pausar") paused the noise; the next work block
+    /// plays it again.
+    noise_paused_for_break: bool,
+    /// Locking the PC paused the stopwatch; unlocking continues it.
+    study_paused_by_lock: bool,
 }
 
 pub struct AppState {
@@ -75,6 +104,9 @@ pub struct AppState {
     lang: Mutex<Lang>,
     settings: Mutex<Settings>,
     timer: Mutex<Timer>,
+    study: Mutex<Study>,
+    link: Mutex<Link>,
+    ears: Mutex<EarBreak>,
 }
 
 fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
@@ -112,17 +144,50 @@ impl AppState {
         lock(&self.settings).clone()
     }
 
+    fn study_on(&self) -> bool {
+        lock(&self.settings).study.enabled
+    }
+
+    /// Noise and stopwatch play and pause together.
+    fn linked(&self) -> bool {
+        let s = lock(&self.settings);
+        s.study.enabled && s.study.link_noise
+    }
+
     pub fn snapshot(&self) -> Snapshot {
-        let settings = lock(&self.settings);
+        let now = Instant::now();
+        let (sound, study_on) = {
+            let settings = lock(&self.settings);
+            (
+                Sound {
+                    color: settings.last.color,
+                    volume: settings.last.volume,
+                },
+                settings.study.enabled,
+            )
+        };
+        let study = study_on.then(|| {
+            let st = lock(&self.study);
+            StudyBrief {
+                run: st.run(),
+                phase: st.phase(),
+                worked_secs: st.worked(now).as_secs(),
+                phase_left_secs: st.phase_left_secs(now),
+                idle_pending: st.idle_pending(),
+            }
+        });
         Snapshot {
             playing: self.engine.is_playing(),
-            sound: Sound {
-                color: settings.last.color,
-                volume: settings.last.volume,
-            },
+            sound,
             paused_for: self.engine.paused_for(),
-            timer_remaining: lock(&self.timer).remaining_secs(Instant::now()),
+            timer_remaining: lock(&self.timer).remaining_secs(now),
+            study,
         }
+    }
+
+    fn study_view(&self) -> Option<StudyView> {
+        self.study_on()
+            .then(|| lock(&self.study).view(Instant::now(), SystemTime::now()))
     }
 }
 
@@ -150,7 +215,13 @@ pub fn panel_state(app: &AppHandle) -> Option<PanelState> {
             .then(crate::taskbar::system_accent)
             .flatten(),
         appearance: settings.appearance,
+        study: state.study_view(),
     })
+}
+
+/// The study card's live numbers (`study-tick`, `study_totals`).
+pub fn study_view(app: &AppHandle) -> Option<StudyView> {
+    app.try_state::<AppState>()?.study_view()
 }
 
 pub fn setup(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
@@ -171,6 +242,7 @@ pub fn setup(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
             fade_in_ms: fade,
             fade_out_ms: fade,
             mono: settings.sound.mono,
+            ..Controls::default()
         },
         engine_config(&settings),
         move |event| on_engine_event(&events, event),
@@ -178,6 +250,17 @@ pub fn setup(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     )?;
     let mut timer = Timer::default();
     timer.set(settings.last.timer_minutes, playing, Instant::now());
+    let data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| log::error!("no data folder for the study history: {e}"))
+        .ok();
+    let study = Study::open(
+        data_dir.as_deref(),
+        settings.last.study_mode,
+        settings.study.plan(),
+        settings.last.study_tag,
+    );
     let welcome = !settings.onboarded;
     settings.onboarded = true;
     settings::save(app, &settings);
@@ -189,6 +272,9 @@ pub fn setup(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         lang: Mutex::new(lang),
         settings: Mutex::new(settings),
         timer: Mutex::new(timer),
+        study: Mutex::new(study),
+        link: Mutex::new(Link::default()),
+        ears: Mutex::new(EarBreak::default()),
     });
     // Shortcuts first, so the tray and panel can show them.
     shortcut::register_all(app);
@@ -253,10 +339,18 @@ fn on_engine_event(app: &AppHandle, event: EngineEvent) {
         EngineEvent::AutoPaused(_) => {
             lock(&state.timer).on_playing(false, Instant::now());
             remember(app, |last| last.was_playing = false);
+            // Headphones out, PC locked or asleep: the stopwatch stops too.
+            if state.linked() {
+                study_pause_only(app);
+            }
         }
         EngineEvent::AutoResumed => {
             lock(&state.timer).on_playing(true, Instant::now());
             remember(app, |last| last.was_playing = true);
+            // Continues a paused session; never starts a new one by itself.
+            if state.linked() && lock(&state.study).run() == Run::Paused {
+                study_start_only(app);
+            }
         }
         EngineEvent::OutputChanged(output) => {
             if let Some(output) = output {
@@ -264,8 +358,36 @@ fn on_engine_event(app: &AppHandle, event: EngineEvent) {
             }
             settings_window::emit_changed(app);
         }
+        EngineEvent::Session(event) => on_session(app, *event),
     }
     refresh(app);
+}
+
+/// Locked or asleep time never counts as study (SPEC §4.3b), linked or not.
+fn on_session(app: &AppHandle, event: SystemEvent) {
+    let state = app.state::<AppState>();
+    if !state.study_on() {
+        return;
+    }
+    match event {
+        SystemEvent::Locked | SystemEvent::Suspending => {
+            if lock(&state.study).run() == Run::Running {
+                study_pause_only(app);
+                // After sleep it stays paused, like the noise.
+                lock(&state.link).study_paused_by_lock = event == SystemEvent::Locked;
+            }
+        }
+        SystemEvent::Unlocked => {
+            let by_lock = std::mem::take(&mut lock(&state.link).study_paused_by_lock);
+            // Linked, it follows the noise: if the noise stayed paused (not
+            // on headphones any more), so does the stopwatch.
+            let follow = !state.linked() || state.engine.is_playing();
+            if by_lock && follow && lock(&state.study).run() == Run::Paused {
+                study_start_only(app);
+            }
+        }
+        SystemEvent::Resumed | SystemEvent::OutputChanged => {}
+    }
 }
 
 /// Volume per output (SPEC §3.3): a device keeps its own volume; one never
@@ -309,12 +431,10 @@ pub fn refresh(app: &AppHandle) {
     panel::emit_state(app);
 }
 
-pub fn toggle(app: &AppHandle) {
-    let playing = app.state::<AppState>().engine.is_playing();
-    set_playing(app, !playing);
-}
+// ---- Noise ---------------------------------------------------------------------
 
-pub fn set_playing(app: &AppHandle, playing: bool) {
+/// Plays or pauses the noise, without touching the stopwatch.
+fn noise_only(app: &AppHandle, playing: bool) {
     let state = app.state::<AppState>();
     // A user stop always uses the normal fade, even right after a timer end.
     state
@@ -323,6 +443,32 @@ pub fn set_playing(app: &AppHandle, playing: bool) {
     state.engine.set_playing(playing);
     lock(&state.timer).on_playing(playing, Instant::now());
     remember(app, |last| last.was_playing = playing);
+}
+
+/// The noise changed by the user's hand: a linked stopwatch follows.
+fn link_noise_to_study(app: &AppHandle, playing: bool) {
+    let state = app.state::<AppState>();
+    if !state.linked() {
+        return;
+    }
+    if playing {
+        study_start_only(app);
+    } else {
+        study_pause_only(app);
+    }
+}
+
+pub fn toggle(app: &AppHandle) {
+    let playing = app.state::<AppState>().engine.is_playing();
+    set_playing(app, !playing);
+}
+
+pub fn set_playing(app: &AppHandle, playing: bool) {
+    let state = app.state::<AppState>();
+    noise_only(app, playing);
+    // The user took over from whatever a break did.
+    lock(&state.link).noise_paused_for_break = false;
+    link_noise_to_study(app, playing);
     refresh(app);
 }
 
@@ -379,6 +525,211 @@ pub fn set_timer(app: &AppHandle, minutes: u32) {
     refresh(app);
 }
 
+// ---- Study ---------------------------------------------------------------------
+
+/// Starts or continues the stopwatch, without touching the noise.
+fn study_start_only(app: &AppHandle) {
+    let state = app.state::<AppState>();
+    if !state.study_on() {
+        return;
+    }
+    lock(&state.study).start(Instant::now(), SystemTime::now());
+    lock(&state.link).study_paused_by_lock = false;
+}
+
+fn study_pause_only(app: &AppHandle) {
+    let state = app.state::<AppState>();
+    lock(&state.study).pause(Instant::now());
+}
+
+/// The stopwatch's play/pause (panel, tray, `Ctrl+Alt+T`).
+pub fn study_toggle(app: &AppHandle) {
+    let state = app.state::<AppState>();
+    if !state.study_on() {
+        return;
+    }
+    let running = lock(&state.study).run() == Run::Running;
+    if running {
+        study_pause_only(app);
+        if state.linked() && state.engine.is_playing() {
+            noise_only(app, false);
+        }
+    } else {
+        study_start_only(app);
+        // A break set to "Pausar" keeps the noise quiet until work resumes.
+        let quiet_break = {
+            let st = lock(&state.study);
+            st.phase().is_break() && state.settings().study.break_noise == BreakNoise::Pause
+        };
+        if state.linked() && !state.engine.is_playing() && !quiet_break {
+            noise_only(app, true);
+        }
+    }
+    refresh(app);
+}
+
+/// Ends the session and stores it. Linked, the noise stops too: "I'm done".
+pub fn study_finish(app: &AppHandle) {
+    let state = app.state::<AppState>();
+    let had_session = lock(&state.study).run() != Run::Stopped;
+    lock(&state.study).finish(Instant::now());
+    end_break_effects(app);
+    if had_session && state.linked() && state.engine.is_playing() {
+        noise_only(app, false);
+    }
+    refresh(app);
+}
+
+/// Undoes what a break did to the noise.
+fn end_break_effects(app: &AppHandle) {
+    let state = app.state::<AppState>();
+    state.engine.set_duck(false);
+    lock(&state.link).noise_paused_for_break = false;
+}
+
+/// Between sessions only; the panel remembers the last one used.
+pub fn study_set_mode(app: &AppHandle, mode: Mode) {
+    let state = app.state::<AppState>();
+    if lock(&state.study).set_mode(mode) {
+        remember(app, |last| last.study_mode = mode);
+        refresh(app);
+    }
+}
+
+pub fn study_set_tag(app: &AppHandle, tag: Option<i64>) {
+    let state = app.state::<AppState>();
+    let tag = {
+        let mut st = lock(&state.study);
+        st.set_tag(tag);
+        st.tag()
+    };
+    remember(app, |last| last.study_tag = tag);
+    refresh(app);
+}
+
+/// "¿Seguías estudiando?": `keep` = "Sí, contar".
+pub fn study_resolve_idle(app: &AppHandle, keep: bool) {
+    let state = app.state::<AppState>();
+    lock(&state.study).resolve_idle(keep, Instant::now());
+    refresh(app);
+}
+
+pub fn tags(app: &AppHandle) -> Vec<Tag> {
+    app.state::<AppState>()
+        .study
+        .lock()
+        .map_or_else(|e| e.into_inner().tags().to_vec(), |st| st.tags().to_vec())
+}
+
+pub fn tags_upsert(
+    app: &AppHandle,
+    id: Option<i64>,
+    name: &str,
+    color: &str,
+) -> Result<Tag, DbError> {
+    let state = app.state::<AppState>();
+    let tag = lock(&state.study).upsert_tag(id, name, color)?;
+    refresh(app);
+    settings_window::emit_changed(app);
+    Ok(tag)
+}
+
+pub fn tags_delete(app: &AppHandle, id: i64) -> Result<(), DbError> {
+    let state = app.state::<AppState>();
+    let current = {
+        let mut st = lock(&state.study);
+        st.delete_tag(id)?;
+        st.tag()
+    };
+    remember(app, |last| last.study_tag = current);
+    refresh(app);
+    settings_window::emit_changed(app);
+    Ok(())
+}
+
+/// A Pomodoro phase began: tell the user, and (linked) do what Settings
+/// says with the noise during breaks.
+fn on_phase(app: &AppHandle, phase: Phase, cycle: u32, cycles: u32) {
+    let state = app.state::<AppState>();
+    let settings = state.settings();
+    let (title, body) = {
+        let t = state.strings();
+        match phase {
+            Phase::Work => (
+                t.get("alertWorkTitle").to_owned(),
+                t.format(
+                    "alertWorkBody",
+                    &[("n", &cycle.to_string()), ("total", &cycles.to_string())],
+                ),
+            ),
+            Phase::ShortBreak => (
+                t.get("alertBreakTitle").to_owned(),
+                t.format(
+                    "alertBreakBody",
+                    &[("n", &(settings.study.short_break_min).to_string())],
+                ),
+            ),
+            Phase::LongBreak => (
+                t.get("alertLongBreakTitle").to_owned(),
+                t.format(
+                    "alertBreakBody",
+                    &[("n", &(settings.study.long_break_min).to_string())],
+                ),
+            ),
+        }
+    };
+    log::info!("pomodoro: {phase:?} {cycle}/{cycles}");
+    alert(app, &title, &body);
+    if !state.linked() {
+        return;
+    }
+    if phase.is_break() {
+        match settings.study.break_noise {
+            BreakNoise::Half => state.engine.set_duck(true),
+            BreakNoise::Pause if state.engine.is_playing() => {
+                noise_only(app, false);
+                lock(&state.link).noise_paused_for_break = true;
+            }
+            BreakNoise::Pause | BreakNoise::Keep => {}
+        }
+    } else {
+        state.engine.set_duck(false);
+        if std::mem::take(&mut lock(&state.link).noise_paused_for_break) {
+            noise_only(app, true);
+        }
+    }
+}
+
+fn on_idle(app: &AppHandle, away: Duration) {
+    let state = app.state::<AppState>();
+    let minutes = away.as_secs().div_ceil(60);
+    log::info!("back after {minutes} min without input");
+    panel::emit_study_idle(app, minutes);
+    // A discreet notification only; never a sound, never the panel.
+    if state.settings().general.alerts.notification() {
+        let t = state.strings();
+        notify(
+            app,
+            t.get("idleTitle"),
+            &t.format("idleBody", &[("n", &minutes.to_string())]),
+        );
+    }
+}
+
+/// The one "Avisos" setting: the bell, a notification, both or nothing.
+fn alert(app: &AppHandle, title: &str, body: &str) {
+    let state = app.state::<AppState>();
+    let alerts = state.settings().general.alerts;
+    if alerts.bell() {
+        state.engine.ring();
+    }
+    if alerts.notification() {
+        notify(app, title, body);
+    }
+}
+
+// ---- Settings ------------------------------------------------------------------
+
 /// Keys of the settings that only the app writes, or that have their own
 /// command (`set_shortcut`), dropped from a Settings update.
 const INTERNAL_KEYS: [&str; 4] = ["last", "onboarded", "version", "shortcuts"];
@@ -427,9 +778,6 @@ pub fn replace_settings(app: &AppHandle, mut new: Settings) {
     };
     settings::save(app, &new);
     settings::flush(app);
-    if old.shortcuts != new.shortcuts {
-        shortcut::register_all(app);
-    }
     apply(app, &old, &new);
 }
 
@@ -464,18 +812,41 @@ fn apply(app: &AppHandle, old: &Settings, new: &Settings) {
         panel::apply_appearance(app, &new.appearance);
         settings_window::apply_appearance(app, &new.appearance);
     }
+    if old.study.plan() != new.study.plan() {
+        lock(&state.study).set_plan(new.study.plan());
+    }
+    let was_linked = old.study.enabled && old.study.link_noise;
+    let is_linked = new.study.enabled && new.study.link_noise;
+    if old.study.enabled && !new.study.enabled {
+        // "Modo estudio" off: the session in progress is stored and ends,
+        // and nothing of the stopwatch is left anywhere (SPEC §4.3c).
+        lock(&state.study).finish(Instant::now());
+    }
+    if was_linked && !is_linked {
+        end_break_effects(app);
+    }
+    if old.study.enabled != new.study.enabled || old.shortcuts != new.shortcuts {
+        shortcut::register_all(app);
+    }
+    if old.study.enabled != new.study.enabled {
+        panel::resize(app);
+    }
     refresh(app);
     settings_window::emit_changed(app);
 }
 
-/// Checks the sleep timer and keeps the countdown on screen. The timer
-/// itself is `Instant`-based; this only polls it.
+// ---- Ticker --------------------------------------------------------------------
+
+/// Polls the sleep timer, the Pomodoro, idle detection and the ear break, and
+/// keeps the countdowns on screen. Every duration is `Instant`-based; this
+/// only looks at the clocks.
 fn start_ticker(app: &AppHandle) {
     let app = app.clone();
     let spawned = std::thread::Builder::new()
         .name("rumor-ticker".into())
         .spawn(move || {
             let mut last_shown = None;
+            let mut last_second = Instant::now();
             loop {
                 std::thread::sleep(Duration::from_millis(250));
                 let state = app.state::<AppState>();
@@ -491,10 +862,68 @@ fn start_ticker(app: &AppHandle) {
                     panel::emit_timer_tick(&app, remaining);
                 }
                 last_shown = remaining;
+
+                study_tick(&app, now);
+                if now.saturating_duration_since(last_second) >= Duration::from_secs(1) {
+                    last_second = now;
+                    ear_tick(&app, now);
+                    if state.study_on() {
+                        tray::refresh(&app);
+                        if let Some(view) = state.study_view() {
+                            panel::emit_study_tick(&app, &view);
+                        }
+                    }
+                }
             }
         });
     if let Err(e) = spawned {
         log::error!("timer thread not started: {e}");
+    }
+}
+
+fn study_tick(app: &AppHandle, now: Instant) {
+    let state = app.state::<AppState>();
+    let settings = state.settings();
+    if !settings.study.enabled {
+        return;
+    }
+    let idle_after = (settings.study.idle_minutes > 0)
+        .then(|| Duration::from_secs(u64::from(settings.study.idle_minutes) * 60));
+    let events = lock(&state.study).tick(now, SystemTime::now(), idle_after);
+    for event in &events {
+        match *event {
+            study::Event::Phase(change) => {
+                on_phase(app, change.to, change.cycle, settings.study.cycles)
+            }
+            study::Event::Idle(away) => on_idle(app, away),
+        }
+    }
+    if !events.is_empty() {
+        refresh(app);
+    }
+}
+
+/// SPEC §4.3b: after X hours on headphones, one reminder; it never stops
+/// the noise.
+fn ear_tick(app: &AppHandle, now: Instant) {
+    let state = app.state::<AppState>();
+    let hours = state.settings().general.ear_break_hours;
+    let listening = state.engine.is_playing()
+        && state
+            .engine
+            .output()
+            .is_some_and(|o| o.endpoint.kind == OutputKind::Personal);
+    let after = Duration::from_secs(u64::from(hours) * 3600);
+    if hours > 0 && lock(&state.ears).update(now, listening, after) {
+        log::info!("ear break reminder after {hours} h on headphones");
+        let (title, body) = {
+            let t = state.strings();
+            (
+                t.get("earBreakTitle").to_owned(),
+                t.format("earBreakBody", &[("n", &hours.to_string())]),
+            )
+        };
+        alert(app, &title, &body);
     }
 }
 
@@ -507,20 +936,25 @@ fn timer_finished(app: &AppHandle) {
         .set_fade_out_ms(settings.timer.end_fade_s as f32 * 1000.0);
     state.engine.set_playing(false);
     remember(app, |last| last.was_playing = false);
-    refresh(app);
-    if settings.timer.notify_on_end {
-        let strings = state.strings();
-        notify(
-            app,
-            strings.get("timerEndedTitle"),
-            strings.get("timerEndedBody"),
-        );
+    if state.linked() {
+        study_pause_only(app);
     }
+    refresh(app);
+    let (title, body) = {
+        let t = state.strings();
+        (
+            t.get("timerEndedTitle").to_owned(),
+            t.get("timerEndedBody").to_owned(),
+        )
+    };
+    alert(app, &title, &body);
 }
 
-/// Fades out before exiting, so quitting never clicks.
+/// Fades out before exiting, so quitting never clicks. A study session in
+/// progress is stored first.
 pub fn quit(app: &AppHandle) {
     let state = app.state::<AppState>();
+    lock(&state.study).finish(Instant::now());
     let playing = state.engine.is_playing();
     // "As I left it" needs to know whether it was playing.
     remember(app, |last| last.was_playing = playing);
@@ -546,7 +980,8 @@ pub fn quit(app: &AppHandle) {
 ///
 /// Debug builds also take `--dev-hide`, `--dev-prepare` and
 /// `--dev-color <pink|brown|white>`, to drive the panel for screenshots and
-/// timings, and `--dev-settings` to open Settings.
+/// timings, `--dev-settings` to open Settings, `--dev-bell` to ring and
+/// `--dev-study` / `--dev-study-finish` to drive the stopwatch.
 pub fn second_instance(app: &AppHandle, args: &[String]) {
     log::debug!("second instance: {args:?}");
     if cfg!(debug_assertions) {
@@ -561,6 +996,18 @@ pub fn second_instance(app: &AppHandle, args: &[String]) {
         }
         if args.iter().any(|a| a == "--dev-settings") {
             settings_window::open(app);
+            return;
+        }
+        if args.iter().any(|a| a == "--dev-bell") {
+            app.state::<AppState>().engine.ring();
+            return;
+        }
+        if args.iter().any(|a| a == "--dev-study") {
+            study_toggle(app);
+            return;
+        }
+        if args.iter().any(|a| a == "--dev-study-finish") {
+            study_finish(app);
             return;
         }
         let color = args

@@ -5,6 +5,7 @@
 
 pub mod audio;
 mod commands;
+mod ear_break;
 mod i18n;
 mod panel;
 mod settings;
@@ -54,6 +55,15 @@ pub fn run() {
             commands::set_color,
             commands::set_volume,
             commands::set_timer,
+            commands::study_toggle,
+            commands::study_finish,
+            commands::study_set_mode,
+            commands::study_set_tag,
+            commands::study_resolve_idle,
+            commands::study_totals,
+            commands::tags_list,
+            commands::tags_upsert,
+            commands::tags_delete,
             commands::hide_panel,
             commands::panel_ready,
             commands::panel_painted,

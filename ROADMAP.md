@@ -55,7 +55,9 @@ Cada fase termina **compilando, con los tests en verde y con un commit**. No se 
 - Recordatorio de descanso de oídos tras X horas con cascos (por defecto 3 h, desactivable).
 - El cronómetro se pausa al bloquear el PC y no cuenta el tiempo suspendido.
 
-**Hecho cuando:** dejas el cronómetro 2 h con pausas y el total coincide al segundo con un reloj; el Pomodoro cambia de fase sin intervención; desactivar un módulo lo hace desaparecer por completo; la campana suena limpia encima del ruido sin cortarlo; con el Modo estudio desactivado no queda rastro del cronómetro.
+- Ajustes simplificados (SPEC §4.4, 2026-10-30): 6 secciones (General · Estudio · Atajos · Apariencia · Avanzado · Acerca de).
+
+**Hecho cuando:** dejas el cronómetro 2 h con pausas y el total coincide al segundo con un reloj; el Pomodoro cambia de fase sin intervención; desactivar el Modo estudio lo hace desaparecer por completo; la campana suena limpia encima del ruido sin cortarlo; con el Modo estudio desactivado no queda rastro del cronómetro.
 
 ### Fase 4 — Temporizador, ajustes e idioma
 - Temporizador en Rust (sigue funcionando sin panel), con fundido al acabar y notificación.

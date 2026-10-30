@@ -316,3 +316,94 @@ fn switching_mono_never_jumps() {
         "L/R difference dropped by {max_jump} in one sample"
     );
 }
+
+#[test]
+fn the_bell_rings_while_paused_then_the_output_is_silent_again() {
+    let fs = 48_000.0;
+    let mut c = Controls {
+        volume: 0.4,
+        ..Controls::default()
+    };
+    let mut r = NoiseRenderer::new(fs, 31, &c);
+    assert!(r.is_silent());
+    c.bell += 1;
+    let mut peak = 0.0f32;
+    for _ in 0..fs as usize {
+        let [a, b] = r.next_frame(&c);
+        assert_eq!(a, b, "the bell is centred");
+        peak = peak.max(a.abs());
+    }
+    assert!(peak > 0.01, "bell too quiet: {peak}");
+    assert!(!r.is_silent(), "silent while the bell rings");
+    for _ in 0..(8.0 * fs) as usize {
+        r.next_frame(&c);
+    }
+    assert!(r.is_silent());
+    assert_eq!(r.next_frame(&c), [0.0, 0.0]);
+}
+
+#[test]
+fn the_bell_over_full_volume_noise_stays_clean() {
+    let fs = 48_000.0;
+    let mut c = playing(NoiseColor::Brown);
+    let mut r = NoiseRenderer::new(fs, 37, &c);
+    for _ in 0..fs as usize {
+        r.next_frame(&c);
+    }
+    c.bell += 1;
+    let n = (9.0 * fs) as usize;
+    let mut over = 0usize;
+    for _ in 0..n {
+        for s in r.next_frame(&c) {
+            assert!(s.is_finite() && s.abs() <= CLIP_CEILING);
+            over += usize::from(s.abs() > CLIP_KNEE);
+        }
+    }
+    let share = over as f64 / (2 * n) as f64;
+    eprintln!(
+        "samples in the clipper with the bell: {:.4} %",
+        share * 100.0
+    );
+    assert!(share < 1e-3, "{share}");
+}
+
+#[test]
+fn ducking_glides_10_db_down_and_back() {
+    let fs = 48_000.0;
+    // Below the clipper knee, so output = noise × gain exactly.
+    let plain = Controls {
+        volume: 0.5,
+        ..playing(NoiseColor::Pink)
+    };
+    let mut reference = NoiseRenderer::new(fs, 41, &plain);
+    let mut ducked = NoiseRenderer::new(fs, 41, &plain);
+    for _ in 0..fs as usize {
+        reference.next_frame(&plain);
+        ducked.next_frame(&plain);
+    }
+    let target = 10f32.powf(rumor_lib::audio::noise::DUCK_DB / 20.0);
+    let mut c = Controls {
+        duck: true,
+        ..plain
+    };
+    let mut gain = 1.0f32;
+    let mut glide = |c: &Controls, seconds: f32, gain: &mut f32| {
+        for _ in 0..(seconds * fs) as usize {
+            let [a, _] = reference.next_frame(&plain);
+            let [b, _] = ducked.next_frame(c);
+            if a.abs() > 1e-3 {
+                let g = b / a;
+                assert!((g - *gain).abs() < 1e-3, "gain jumped {} -> {g}", *gain);
+                *gain = g;
+            }
+        }
+    };
+    glide(&c, 3.0, &mut gain);
+    assert!(
+        (gain - target).abs() < 1e-4,
+        "ducked to {gain}, want {target}"
+    );
+    c.duck = false;
+    glide(&c, 3.0, &mut gain);
+    assert!((gain - 1.0).abs() < 1e-4, "back to {gain}");
+}

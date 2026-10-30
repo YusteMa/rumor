@@ -39,6 +39,7 @@ rumor/
 │  │  ├─ i18n.rs             # textos de Rust, leídos de src/i18n/*.json
 │  │  ├─ shortcut.rs
 │  │  ├─ timer.rs
+│  │  ├─ ear_break.rs        # recordatorio de descanso de oídos (puro, testeable)
 │  │  ├─ settings.rs         # modelo de ajustes y store
 │  │  ├─ settings_window.rs  # ventana de Ajustes
 │  │  ├─ panel.rs            # crear/posicionar/ocultar ventana, Mica
@@ -47,6 +48,7 @@ rumor/
 │  │     ├─ engine.rs        # stream cpal, reconexión
 │  │     ├─ device_watch.rs  # IMMNotificationClient, cascos vs altavoces
 │  │     ├─ noise.rs         # generadores (puros, testeables)
+│  │     ├─ bell.rs          # campana de aviso: cuenco tibetano sintetizado (puro)
 │  │     ├─ smoothing.rs     # rampas y one-pole
 │  │     ├─ params.rs        # parámetros atómicos
 │  │     └─ analysis.rs      # bandas del espectro para el panel
@@ -54,7 +56,8 @@ rumor/
 │  │     ├─ mod.rs
 │  │     ├─ machine.rs       # estados cronómetro/Pomodoro (puro, testeable)
 │  │     ├─ idle.rs          # GetLastInputInfo
-│  │     └─ db.rs            # SQLite: sessions, tags, migraciones
+│  │     ├─ calendar.rs      # hoy y esta semana en hora local
+│  │     └─ db.rs            # SQLite: sessions, segments, tags, migraciones
 │  ├─ tests/dsp.rs           # tests espectrales
 │  ├─ icons/                 # tray/: iconos de bandeja generados por scripts/gen-tray-icons.mjs
 │  ├─ capabilities/default.json
@@ -69,7 +72,7 @@ rumor/
 1. **Hilo de audio sagrado:** en el callback de `cpal` no hay asignaciones de memoria, locks, logs, `println!`, `unwrap` ni I/O. Comunicación solo por atómicos o por una cola lock-free.
 2. **Cero clics:** todo cambio de parámetro se suaviza. Si oyes un clic, es un bug.
 3. **El estado vive en Rust.** El panel nunca es la fuente de verdad: pide el estado al abrirse (`get_state`) y escucha el evento `state-changed`.
-4. **DSP puro y testeable:** `noise.rs` y `smoothing.rs` no dependen de `cpal` ni de Tauri. Se testean renderizando a buffers.
+4. **DSP puro y testeable:** `noise.rs`, `bell.rs` y `smoothing.rs` no dependen de `cpal` ni de Tauri. Se testean renderizando a buffers.
 5. **Nada de `unwrap()`/`expect()` fuera de los tests.** Usa errores con `thiserror` y loguea con `log` + `tauri-plugin-log`.
 6. **Permisos mínimos** en `capabilities/`: solo los comandos y plugins que se usan.
 7. **Sin frameworks de UI ni librerías de componentes.** El panel debe pesar muy poco.

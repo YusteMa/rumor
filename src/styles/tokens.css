@@ -38,6 +38,13 @@
   --surface-raised: #ffffff;
   --raised-hover: #f4eeeb;
   --shadow-popup: 0 8px 24px rgb(43 37 35 / 0.14), 0 2px 6px rgb(43 37 35 / 0.08);
+  /* Study tags: small dots, ≥ 3:1 against the background in both themes. */
+  --tag-rose: #c46a7e;
+  --tag-amber: #b7791f;
+  --tag-sage: #5e8a6b;
+  --tag-sky: #4f82a8;
+  --tag-lilac: #8a6fb0;
+  --tag-stone: #7d746f;
 
   /* Type: the Windows system font, 0 KB and native. */
   --font: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
@@ -79,6 +86,17 @@
   --thumb-inner: 8px;
   --dot-size: 6px;
   --icon-size: 16px;
+
+  /* Study card (panel). */
+  --study-ring: 48px;
+  --study-ring-stroke: 2px;
+  --study-glyph: 16px;
+  --icon-button: 28px;
+  --stop-glyph: 10px;
+  --stop-radius: 2px;
+  --control-height-sm: 28px;
+  --tag-select-width: 120px;
+  --tag-dot: 8px;
 
   /* Settings window. */
   --side-width: 168px;
@@ -156,6 +174,12 @@
     --surface-raised: #2c2827;
     --raised-hover: #38332f;
     --shadow-popup: 0 8px 24px rgb(0 0 0 / 0.42), 0 2px 6px rgb(0 0 0 / 0.3);
+    --tag-rose: #e48da1;
+    --tag-amber: #e2a64b;
+    --tag-sage: #8fbf9c;
+    --tag-sky: #85b4d6;
+    --tag-lilac: #b9a0db;
+    --tag-stone: #ada39e;
     color-scheme: dark;
   }
 }
@@ -177,6 +201,12 @@
   --surface-raised: #2c2827;
   --raised-hover: #38332f;
   --shadow-popup: 0 8px 24px rgb(0 0 0 / 0.42), 0 2px 6px rgb(0 0 0 / 0.3);
+  --tag-rose: #e48da1;
+  --tag-amber: #e2a64b;
+  --tag-sage: #8fbf9c;
+  --tag-sky: #85b4d6;
+  --tag-lilac: #b9a0db;
+  --tag-stone: #ada39e;
   color-scheme: dark;
 }
 
@@ -221,15 +251,7 @@
   --line: rgb(242 236 233 / 0.09);
 }
 
-/* Windows' "animation effects" off, or Settings → Appearance → reduce motion. */
-:root[data-reduce-motion] {
-  --open-offset: 0px;
-  --press-scale: 1;
-  --hover-scale: 1;
-  --thumb-hover-scale: 1;
-  --dur-accent: 0ms;
-}
-
+/* Windows' "animation effects" off (SPEC §4.5): fades only. */
 @media (prefers-reduced-motion: reduce) {
   :root {
     --open-offset: 0px;

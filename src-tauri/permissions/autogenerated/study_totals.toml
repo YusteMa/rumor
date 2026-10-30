@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-study-totals"
+description = "Enables the study_totals command without any pre-configured scope."
+commands.allow = ["study_totals"]
+
+[[permission]]
+identifier = "deny-study-totals"
+description = "Denies the study_totals command without any pre-configured scope."
+commands.deny = ["study_totals"]

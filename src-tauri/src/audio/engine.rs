@@ -89,6 +89,9 @@ pub enum EngineEvent {
     AutoResumed,
     OutputChanged(Option<OutputInfo>),
     StreamError(String),
+    /// Locking, unlocking, sleeping and waking, passed on after the engine
+    /// has reacted (the study stopwatch pauses with them too).
+    Session(SystemEvent),
 }
 
 type EventSink = Box<dyn Fn(EngineEvent) + Send>;
@@ -106,6 +109,8 @@ struct Shared {
     params: Params,
     /// Set by the callback once a fade-out has finished.
     silent: AtomicBool,
+    /// A bell strike the callback hasn't picked up yet: the stream must run.
+    bell_pending: AtomicBool,
     /// Generation of a stream whose error callback fired (0 = none).
     failed: AtomicU64,
     frames: AtomicU64,
@@ -154,6 +159,7 @@ impl AudioEngine {
         let shared = Arc::new(Shared {
             params: Params::new(&initial),
             silent: AtomicBool::new(true),
+            bell_pending: AtomicBool::new(false),
             failed: AtomicU64::new(0),
             frames: AtomicU64::new(0),
             config: Mutex::new(config),
@@ -221,6 +227,19 @@ impl AudioEngine {
 
     pub fn set_mono(&self, mono: bool) {
         self.shared.params.set_mono(mono);
+    }
+
+    /// Lowers the noise by `DUCK_DB` (Pomodoro breaks), gliding.
+    pub fn set_duck(&self, duck: bool) {
+        self.shared.params.set_duck(duck);
+    }
+
+    /// Strikes the alert bell over the noise, even while it is paused.
+    pub fn ring(&self) {
+        self.shared.params.ring();
+        self.shared.bell_pending.store(true, Ordering::Relaxed);
+        self.shared.silent.store(false, Ordering::Relaxed);
+        self.wake();
     }
 
     pub fn set_config(&self, config: EngineConfig) {
@@ -359,6 +378,13 @@ impl Control {
     }
 
     fn on_system(&mut self, event: SystemEvent) {
+        self.react(event);
+        if event != SystemEvent::OutputChanged {
+            self.emit(EngineEvent::Session(event));
+        }
+    }
+
+    fn react(&mut self, event: SystemEvent) {
         match event {
             SystemEvent::OutputChanged => self.reconcile(),
             SystemEvent::Suspending => {
@@ -397,7 +423,9 @@ impl Control {
 
     fn tick(&mut self) {
         let now = Instant::now();
-        let playing = self.shared.params.playing();
+        let bell = self.shared.bell_pending.load(Ordering::Relaxed);
+        // The device runs while the noise plays or the bell rings.
+        let playing = self.shared.params.playing() || bell;
 
         // A stream reported an error: drop it and give Windows a moment to
         // announce a new default output before reconnecting.
@@ -704,6 +732,9 @@ where
                 } else {
                     write_frame(frame, l, r);
                 }
+            }
+            if renderer.bell_seen() == controls.bell {
+                shared.bell_pending.store(false, Ordering::Relaxed);
             }
             shared
                 .silent

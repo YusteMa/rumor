@@ -13,6 +13,7 @@ use serde_json::Value;
 
 use crate::audio::device_watch::{LockPolicy, OutputChangePolicy};
 use crate::audio::noise::NoiseColor;
+use crate::study::machine::{Mode as StudyMode, Plan};
 
 /// Bumped when the shape changes in a way `#[serde(default)]` can't absorb.
 pub const VERSION: u32 = 1;
@@ -20,6 +21,14 @@ pub const FADE_MS: (u32, u32) = (200, 3_000);
 pub const MAX_VOLUME: (f32, f32) = (0.1, 1.0);
 pub const END_FADE_S: (u32, u32) = (2, 60);
 pub const PRESET_MINUTES: (u32, u32) = (1, 600);
+pub const WORK_MINUTES: (u32, u32) = (5, 180);
+pub const BREAK_MINUTES: (u32, u32) = (1, 60);
+pub const LONG_BREAK_MINUTES: (u32, u32) = (1, 90);
+pub const CYCLES: (u32, u32) = (1, 12);
+/// Idle detection: 0 = off.
+pub const IDLE_MINUTES: (u32, u32) = (5, 120);
+/// Ear break: 0 = off.
+pub const EAR_BREAK_HOURS: (u32, u32) = (1, 8);
 
 /// "Color por defecto": the one used last, or a fixed one.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -77,6 +86,40 @@ pub enum LanguageChoice {
     Auto,
     Es,
     En,
+}
+
+/// How Rumor tells you something (SPEC §4.3b "Avisos"): one choice for the
+/// sleep timer, the Pomodoro and the ear break.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Alerts {
+    /// The singing bowl.
+    Bell,
+    Notification,
+    #[default]
+    Both,
+    None,
+}
+
+impl Alerts {
+    pub fn bell(self) -> bool {
+        matches!(self, Self::Bell | Self::Both)
+    }
+
+    pub fn notification(self) -> bool {
+        matches!(self, Self::Notification | Self::Both)
+    }
+}
+
+/// What the noise does during Pomodoro breaks.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum BreakNoise {
+    /// −10 dB: half as loud.
+    #[default]
+    Half,
+    Pause,
+    Keep,
 }
 
 /// Output buffer: Windows' default, or a fixed length.
@@ -142,7 +185,6 @@ pub struct Timer {
     /// The three quick choices next to ∞, in minutes.
     pub presets: [u32; 3],
     pub end_fade_s: u32,
-    pub notify_on_end: bool,
 }
 
 impl Default for Timer {
@@ -150,7 +192,70 @@ impl Default for Timer {
         Self {
             presets: [25, 50, 90],
             end_fade_s: 10,
-            notify_on_end: true,
+        }
+    }
+}
+
+/// Settings → General, beyond playback.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct General {
+    pub alerts: Alerts,
+    /// Remind to rest the ears after this many hours on headphones; 0 = off.
+    pub ear_break_hours: u32,
+}
+
+impl Default for General {
+    fn default() -> Self {
+        Self {
+            alerts: Alerts::Both,
+            ear_break_hours: 3,
+        }
+    }
+}
+
+/// Settings → Study (SPEC §4.3b, §4.3c).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct Study {
+    /// "Modo estudio": off by default (SPEC §9 decision 9).
+    pub enabled: bool,
+    /// Play and pause the noise and the stopwatch together.
+    pub link_noise: bool,
+    pub work_min: u32,
+    pub short_break_min: u32,
+    pub long_break_min: u32,
+    /// Work blocks before the long break.
+    pub cycles: u32,
+    pub break_noise: BreakNoise,
+    /// Ask after this many minutes without input; 0 = off (the default:
+    /// paper notes don't touch the computer).
+    pub idle_minutes: u32,
+}
+
+impl Default for Study {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            link_noise: true,
+            work_min: 25,
+            short_break_min: 5,
+            long_break_min: 15,
+            cycles: 4,
+            break_noise: BreakNoise::Half,
+            idle_minutes: 0,
+        }
+    }
+}
+
+impl Study {
+    pub fn plan(&self) -> Plan {
+        let min = |m: u32| std::time::Duration::from_secs(u64::from(m) * 60);
+        Plan {
+            work: min(self.work_min),
+            short_break: min(self.short_break_min),
+            long_break: min(self.long_break_min),
+            cycles: self.cycles,
         }
     }
 }
@@ -164,6 +269,8 @@ pub struct Shortcuts {
     pub volume_down: Option<String>,
     pub next_color: Option<String>,
     pub open_panel: Option<String>,
+    /// Start or pause the study stopwatch (only with "Modo estudio" on).
+    pub study: Option<String>,
 }
 
 impl Default for Shortcuts {
@@ -174,6 +281,7 @@ impl Default for Shortcuts {
             volume_down: None,
             next_color: None,
             open_panel: None,
+            study: Some("Ctrl+Alt+T".into()),
         }
     }
 }
@@ -186,15 +294,17 @@ pub enum ShortcutAction {
     VolumeDown,
     NextColor,
     OpenPanel,
+    Study,
 }
 
 impl ShortcutAction {
-    pub const ALL: [ShortcutAction; 5] = [
+    pub const ALL: [ShortcutAction; 6] = [
         Self::Toggle,
         Self::VolumeUp,
         Self::VolumeDown,
         Self::NextColor,
         Self::OpenPanel,
+        Self::Study,
     ];
 }
 
@@ -206,6 +316,7 @@ impl Shortcuts {
             ShortcutAction::VolumeDown => self.volume_down.as_deref(),
             ShortcutAction::NextColor => self.next_color.as_deref(),
             ShortcutAction::OpenPanel => self.open_panel.as_deref(),
+            ShortcutAction::Study => self.study.as_deref(),
         }
     }
 
@@ -216,25 +327,16 @@ impl Shortcuts {
             ShortcutAction::VolumeDown => &mut self.volume_down,
             ShortcutAction::NextColor => &mut self.next_color,
             ShortcutAction::OpenPanel => &mut self.open_panel,
+            ShortcutAction::Study => &mut self.study,
         };
         *slot = value;
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct Tray {
     pub left_click: LeftClick,
-    pub show_remaining: bool,
-}
-
-impl Default for Tray {
-    fn default() -> Self {
-        Self {
-            left_click: LeftClick::Toggle,
-            show_remaining: true,
-        }
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -244,7 +346,6 @@ pub struct Appearance {
     pub accent: AccentChoice,
     pub mica: bool,
     pub spectrum: bool,
-    pub reduce_motion: bool,
     pub language: LanguageChoice,
 }
 
@@ -255,7 +356,6 @@ impl Default for Appearance {
             accent: AccentChoice::Noise,
             mica: true,
             spectrum: true,
-            reduce_motion: false,
             language: LanguageChoice::Auto,
         }
     }
@@ -286,6 +386,9 @@ pub struct LastSession {
     pub was_playing: bool,
     /// Slider position per output endpoint id (SPEC §3.3).
     pub output_volumes: BTreeMap<String, f32>,
+    /// The panel remembers the study mode last used.
+    pub study_mode: StudyMode,
+    pub study_tag: Option<i64>,
 }
 
 impl Default for LastSession {
@@ -296,6 +399,8 @@ impl Default for LastSession {
             timer_minutes: 0,
             was_playing: false,
             output_volumes: BTreeMap::new(),
+            study_mode: StudyMode::Stopwatch,
+            study_tag: None,
         }
     }
 }
@@ -304,9 +409,11 @@ impl Default for LastSession {
 #[serde(default, rename_all = "camelCase")]
 pub struct Settings {
     pub version: u32,
+    pub general: General,
     pub sound: Sound,
     pub playback: Playback,
     pub timer: Timer,
+    pub study: Study,
     pub shortcuts: Shortcuts,
     pub tray: Tray,
     pub appearance: Appearance,
@@ -321,9 +428,11 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             version: VERSION,
+            general: General::default(),
             sound: Sound::default(),
             playback: Playback::default(),
             timer: Timer::default(),
+            study: Study::default(),
             shortcuts: Shortcuts::default(),
             tray: Tray::default(),
             appearance: Appearance::default(),
@@ -363,6 +472,20 @@ impl Settings {
         }
         self.last.volume = clamp_f(self.last.volume, (0.0, 1.0), 0.4);
         self.last.timer_minutes = self.last.timer_minutes.min(PRESET_MINUTES.1);
+        let st = &mut self.study;
+        st.work_min = st.work_min.clamp(WORK_MINUTES.0, WORK_MINUTES.1);
+        st.short_break_min = st.short_break_min.clamp(BREAK_MINUTES.0, BREAK_MINUTES.1);
+        st.long_break_min = st
+            .long_break_min
+            .clamp(LONG_BREAK_MINUTES.0, LONG_BREAK_MINUTES.1);
+        st.cycles = st.cycles.clamp(CYCLES.0, CYCLES.1);
+        if st.idle_minutes != 0 {
+            st.idle_minutes = st.idle_minutes.clamp(IDLE_MINUTES.0, IDLE_MINUTES.1);
+        }
+        let ear = &mut self.general.ear_break_hours;
+        if *ear != 0 {
+            *ear = (*ear).clamp(EAR_BREAK_HOURS.0, EAR_BREAK_HOURS.1);
+        }
         for v in self.last.output_volumes.values_mut() {
             *v = clamp_f(*v, (0.0, 1.0), 0.4);
         }
@@ -515,6 +638,45 @@ mod tests {
         assert!(s.sound.per_output_volume);
         assert!(!s.sound.mono);
         assert_eq!(s.playback.on_lock, LockPolicy::PauseResumeWithHeadphones);
+        assert_eq!(s.general.alerts, Alerts::Both);
+        assert_eq!(s.general.ear_break_hours, 3);
+        assert!(!s.study.enabled, "Modo estudio is off by default");
+        assert!(s.study.link_noise);
+        assert_eq!(s.study.plan(), Plan::default());
+        assert_eq!(s.study.break_noise, BreakNoise::Half);
+        assert_eq!(s.study.idle_minutes, 0);
+        assert_eq!(s.shortcuts.study.as_deref(), Some("Ctrl+Alt+T"));
+        assert_eq!(s.last.study_mode, StudyMode::Stopwatch);
+    }
+
+    #[test]
+    fn old_files_lose_the_removed_options_quietly() {
+        let s = Settings::from_json(json!({
+            "timer": { "notifyOnEnd": false, "presets": [10, 20, 30] },
+            "tray": { "showRemaining": false, "leftClick": "panel" },
+            "appearance": { "reduceMotion": true, "theme": "dark" }
+        }))
+        .unwrap();
+        assert_eq!(s.timer.presets, [10, 20, 30]);
+        assert_eq!(s.tray.left_click, LeftClick::Panel);
+        assert_eq!(s.appearance.theme, ThemeChoice::Dark);
+        assert_eq!(s.general, General::default());
+    }
+
+    #[test]
+    fn study_values_are_clamped_and_zero_means_off() {
+        let s = Settings::from_json(json!({
+            "study": { "workMin": 1, "shortBreakMin": 500, "cycles": 0, "idleMinutes": 2 },
+            "general": { "earBreakHours": 0 }
+        }))
+        .unwrap();
+        assert_eq!(s.study.work_min, WORK_MINUTES.0);
+        assert_eq!(s.study.short_break_min, BREAK_MINUTES.1);
+        assert_eq!(s.study.cycles, CYCLES.0);
+        assert_eq!(s.study.idle_minutes, IDLE_MINUTES.0);
+        assert_eq!(s.general.ear_break_hours, 0);
+        let off = Settings::from_json(json!({ "study": { "idleMinutes": 0 } })).unwrap();
+        assert_eq!(off.study.idle_minutes, 0);
     }
 
     #[test]

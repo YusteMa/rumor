@@ -40,14 +40,8 @@ export class Spectrum {
   private raf = 0;
   private lastFrame = 0;
   private palette: Palette;
-  private readonly reducedQuery = matchMedia("(prefers-reduced-motion: reduce)");
-  private get reduced(): { matches: boolean } {
-    // Windows' setting, or Rumor's own (Settings → Appearance).
-    return {
-      matches:
-        this.reducedQuery.matches || document.documentElement.hasAttribute("data-reduce-motion"),
-    };
-  }
+  // Windows' "animation effects" setting.
+  private readonly reduced = matchMedia("(prefers-reduced-motion: reduce)");
 
   constructor(private readonly canvas: HTMLCanvasElement) {
     const ctx = canvas.getContext("2d");

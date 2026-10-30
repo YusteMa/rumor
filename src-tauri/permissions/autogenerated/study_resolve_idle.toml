@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-study-resolve-idle"
+description = "Enables the study_resolve_idle command without any pre-configured scope."
+commands.allow = ["study_resolve_idle"]
+
+[[permission]]
+identifier = "deny-study-resolve-idle"
+description = "Denies the study_resolve_idle command without any pre-configured scope."
+commands.deny = ["study_resolve_idle"]

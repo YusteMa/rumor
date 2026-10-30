@@ -11,7 +11,8 @@ use crate::audio::engine::OutputInfo;
 use crate::i18n::Lang;
 use crate::settings::{Appearance, Settings, ThemeChoice};
 use crate::shortcut::{self, ShortcutStatus};
-use crate::state::AppState;
+use crate::state::{self, AppState};
+use crate::study::db::Tag;
 use crate::taskbar;
 
 pub const LABEL: &str = "settings";
@@ -39,6 +40,8 @@ pub struct SettingsView {
     pub version: String,
     pub system_accent: Option<String>,
     pub mica: bool,
+    /// Study tags, for Settings → Study.
+    pub tags: Vec<Tag>,
 }
 
 pub fn view(app: &AppHandle) -> Option<SettingsView> {
@@ -51,6 +54,7 @@ pub fn view(app: &AppHandle) -> Option<SettingsView> {
         version: app.package_info().version.to_string(),
         system_accent: taskbar::system_accent(),
         mica: MICA.load(Ordering::Relaxed),
+        tags: state::tags(app),
     })
 }
 

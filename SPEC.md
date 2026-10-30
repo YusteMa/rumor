@@ -163,7 +163,7 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
   - Si las notificaciones están activadas, además se manda una discreta.
   - Si no contestas antes de terminar la sesión, el tiempo cuenta.
 
-**Al terminar una sesión**, se guarda en SQLite: inicio, fin, duración neta (sin pausas), modo y etiqueta.
+**Al terminar una sesión**, se guarda en SQLite: inicio, fin, duración neta (sin pausas), modo, etiqueta y sus tramos de trabajo (para repartir bien una sesión que cruza la medianoche). Una sesión en curso se guarda cada minuto, así que un cierre inesperado pierde como mucho un minuto. Al salir de Rumor la sesión se termina y se guarda. **Hoy** y **esta semana** se cuentan en hora local; la semana empieza el día que diga la configuración regional de Windows.
 
 **Etiquetas** (opcionales): asignar la sesión a una asignatura o tema ("Cálculo", "EDA"…), elegida de una lista que creas en Ajustes. Si no las usas, no aparecen en ninguna parte.
 
@@ -175,31 +175,27 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
 
 ### 4.3c Módulos activables
 - **Por defecto Rumor es solo ruido.** El cronómetro es un **"Modo estudio" opcional, desactivado por defecto**. Con él desactivado, **nada** del cronómetro aparece en el panel, la bandeja, el tooltip ni los atajos.
-- Ajustes → **Módulos**: ☑ Sonido · ☐ Estudio. Al menos uno tiene que estar activo.
-- **Solo Sonido:** el panel queda exactamente como el del ruido; el cronómetro no existe.
-- **Solo Estudio:** el panel enseña el cronómetro como protagonista; el clic izquierdo en la bandeja inicia o pausa el cronómetro.
-- **Los dos:** el ruido arriba (protagonista) y la tarjeta de Estudio debajo, compacta.
+- Ajustes → **Estudio → Modo estudio** (sí/no) sustituye a la antigua sección "Módulos" (decidido el 2026-10-30): el ruido está siempre; el estudio se añade.
+- **Desactivado:** el panel queda exactamente como el del ruido; el cronómetro no existe (ni su atajo ni su punto en la bandeja).
+- **Activado:** el ruido arriba (protagonista) y la tarjeta de Estudio debajo, compacta; el panel crece lo justo para ella.
 - El **tooltip y el icono** se adaptan: `Rumor · Rosa 40 % · Estudiando 1:23:45`. El icono tiene una variante con un punto que indica que el cronómetro está corriendo.
 
 ### 4.4 Ajustes — sencillo por fuera, completo por dentro
-El panel solo enseña lo que usas a diario. **Todo lo demás vive en Ajustes**, una ventana aparte (unos 560×640 px) con barra lateral de secciones. Cada opción tiene una línea de explicación debajo y un valor por defecto sensato: **nadie debería necesitar entrar para que la app funcione bien**.
+El panel solo enseña lo que usas a diario. **Todo lo demás vive en Ajustes**, una ventana aparte (720×640 px al abrirse, como mínimo 520×440, y siempre dentro de la pantalla) con barra lateral de secciones. Cada opción tiene una línea de explicación debajo y un valor por defecto sensato: **nadie debería necesitar entrar para que la app funcione bien**.
 
 | Sección | Opciones |
 |---|---|
-| **Sonido** | Color por defecto · ajuste fino de tono (v0.2) · duración del fundido (0,2–3 s) · volumen máximo permitido (el 100 % del slider equivale a ese máximo) · recordar el volumen de cada salida (§3.3) · **modo mono** (para escuchar con un solo auricular) |
-| **Reproducción** | Si se desconectan los cascos (§3.3) · reanudar al reconectar · al bloquear el PC (§3.3) · al iniciar Rumor: no sonar *(por defecto)* / sonar siempre / como lo dejé · reacción a otro audio (v0.2) |
-| **Temporizador** | Tiempos rápidos editables (por defecto 25/50/90) · fundido final largo (unos 10 s) · notificar al acabar |
-| **Módulos** | Sonido · Estudio (§4.3c) |
-| **Estudio** | Modo por defecto (cronómetro o Pomodoro) · tiempos del Pomodoro (trabajo, descanso, descanso largo, ciclos) · vincular con el ruido · qué hace el ruido en los descansos · detección de inactividad y minutos · etiquetas (crear, renombrar, colores) · inicio de la semana (lunes) · avisos (notificación / sonido suave / las dos / nada) para temporizador, Pomodoro y descanso de oídos · descanso de oídos (horas con cascos) |
-| **Atajos** | Alternar ruido (`Ctrl+Alt+P`) · cronómetro (`Ctrl+Alt+T`) · subir y bajar volumen · siguiente color · abrir panel. Se graban pulsando la combinación |
-| **Bandeja** | Acción del clic izquierdo · mostrar el tiempo restante en el tooltip |
-| **Apariencia** | Tema: sistema, claro u oscuro · acento: el del ruido *(por defecto)* o el del sistema · efecto Mica · mostrar espectro · reducir animaciones |
-| **Inicio** | Iniciar con Windows |
-| **Avanzado** | Dispositivo de salida fijo (o "el predeterminado de Windows") · tamaño de buffer y latencia · info del dispositivo (frecuencia, canales) · **exportar/importar ajustes (JSON)** · abrir la carpeta de logs · restablecer todo |
+| **General** | Si se desconectan los cascos (§3.3): pausar *(por defecto)* / pausar y reanudar al reconectarlos / pausar con cualquier cambio de salida / seguir sonando · al bloquear el PC (§3.3) · **avisos**: campana / notificación / las dos *(por defecto)* / nada · **descanso de oídos**: desactivado / cada 2, 3 *(por defecto)* o 4 h · **modo mono** · al iniciar Rumor: no sonar *(por defecto)* / sonar siempre / como lo dejé · iniciar con Windows · reacción a otro audio (v0.2) |
+| **Estudio** | **Modo estudio** (sí/no, desactivado por defecto). Solo con él activado: tiempos del Pomodoro (trabajo, descanso, descanso largo y bloques) · ruido en los descansos · vincular con el ruido · inactividad: desactivada / 10 / 15 / 20 / 30 min · etiquetas (crear, renombrar, colores) |
+| **Atajos** | Alternar ruido (`Ctrl+Alt+P`) · subir y bajar volumen · siguiente color · abrir panel · cronómetro (`Ctrl+Alt+T`, solo con el Modo estudio) · acción del clic izquierdo en el icono. Se graban pulsando la combinación |
+| **Apariencia** | Tema: sistema, claro u oscuro · acento: el del ruido *(por defecto)* o el del sistema · mostrar espectro · idioma |
+| **Avanzado** | *Sonido:* color al iniciar · duración del fundido (0,2–3 s) · volumen máximo (el 100 % del slider equivale a ese máximo) · volumen de cada salida (§3.3) · ajuste fino de tono (v0.2). *Temporizador:* tiempos rápidos (25/50/90) · fundido final (unos 10 s). *Salida de audio:* dispositivo fijo · buffer · salida actual. *Ventana:* efecto Mica. *Mantenimiento:* exportar/importar ajustes (JSON) · registros · restablecer todo |
 | **Acerca de** | Versión · enlace a GitHub · licencia · cómo reportar un fallo |
 
 - Los cambios se aplican **al instante**, sin botón de "Guardar".
-- Decidido el 2026-10-29: el volumen máximo escala el slider; "empezar sonando" y "recordar el último estado" se funden en una sola opción; "empezar minimizado" se elimina (Rumor siempre arranca en la bandeja); el acento puede ser el del ruido o el del sistema. Las secciones **Módulos** y **Estudio** y el atajo del cronómetro llegan con la Fase 3b.
+- Decidido el 2026-10-29: el volumen máximo escala el slider; "empezar sonando" y "recordar el último estado" se funden en una sola opción; "empezar minimizado" se elimina (Rumor siempre arranca en la bandeja); el acento puede ser el del ruido o el del sistema.
+- Decidido el 2026-10-30 (simplificación de Ajustes): de 11 secciones a 6. Se quitan "reducir animaciones" (manda el ajuste "Efectos de animación" de Windows), "tiempo restante en el tooltip" (se muestra siempre), "modo por defecto" del estudio (el panel recuerda el último) e "inicio de la semana" (se toma de la configuración regional de Windows: lunes en España). "Reanudar al reconectar" se junta con "si se desconectan los cascos"; "avisar al acabar" pasa al ajuste único de avisos.
+- El **descanso de oídos** va en General y no en Estudio: protege los oídos de cualquiera que use cascos, tenga o no el Modo estudio activado.
 - Idioma: **Español / English**, detectado del sistema (también en Ajustes → Apariencia).
 
 ### 4.5 Diseño visual

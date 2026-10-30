@@ -33,6 +33,8 @@ rustfft = "6.4.1"
 tauri-plugin-store = "2.5.0"
 tauri-plugin-autostart = "2.7.0"
 tauri-plugin-dialog = "2.8.4"
+rusqlite = { version = "0.40.2", features = ["bundled"] }
+chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
 
 # The spectral tests run minutes of noise through FFTs; keep them fast in debug.
 [profile.dev.package.rustfft]
@@ -57,6 +59,7 @@ windows = { version = "0.62.2", features = [
   "Win32_System_LibraryLoader",
   "Win32_System_Power",
   "Win32_System_Registry",
+  "Win32_System_SystemInformation",
   "Win32_System_RemoteDesktop",
   "Win32_System_Threading",
   "Win32_UI_Input_KeyboardAndMouse",

@@ -93,18 +93,35 @@ Open it from the panel (⚙ Ajustes). Every change must apply at once, without a
 - [ ] Quit and reopen: colour, volume and timer are the same as before.
 - [ ] Sound: "Color al iniciar" fixed to Marrón starts brown; fade length 3 s is audibly slower; maximum volume 50 % makes the panel's 100 % as loud as 50 % was.
 - [ ] Playback: each "Si se desconectan los cascos" option behaves as in the phase 1 table; "Al iniciar Rumor": No sonar / Sonar siempre / Como lo dejé (quit while playing, reopen: plays).
-- [ ] Timer: change the quick times to 10/20/30 → the panel's buttons change; final fade 5 s; notification at the end on and off.
+- [ ] Timer: change the quick times to 10/20/30 → the panel's buttons change; final fade 5 s (Avanzado → Temporizador); at the end, the alert chosen in General → Avisos.
 - [ ] Shortcuts: record Ctrl+Shift+F9 for "Subir volumen" and use it; Ctrl+Alt+E is refused on a Spanish keyboard (types €); the same combination for two actions is refused; Esc cancels; Delete clears.
-- [ ] Tray: left click "Abrir el panel" opens it instead of toggling; tooltip without time left when turned off.
-- [ ] Appearance: theme light/dark/system changes the panel and Settings at once; accent "El de Windows" uses Windows' colour, still readable; Mica off gives solid backgrounds; spectrum off hides the card; reduce motion removes the halo; language English switches every text, tray tooltip included.
-- [ ] Startup: "Iniciar con Windows" on → Rumor starts after signing in again; off → it doesn't.
+- [ ] Atajos → clic izquierdo "Abrir el panel" opens it instead of toggling.
+- [ ] Appearance: theme light/dark/system changes the panel and Settings at once; accent "El de Windows" uses Windows' colour, still readable; Mica off (Avanzado → Ventana) gives solid backgrounds; spectrum off hides the card; Windows "Animation effects" off removes the halo; language English switches every text, tray tooltip included.
+- [ ] General: "Iniciar con Windows" on → Rumor starts after signing in again; off → it doesn't.
 - [ ] Advanced: pick a fixed output → noise moves there; unplug it → pauses, never falls back to the speakers; buffer 10/20/50 ms plays clean; export then import gives the same settings; a non-settings JSON is refused with a message; reset asks first and keeps colour/volume/timer; "Abrir carpeta" opens the logs.
+- [ ] Settings has six sections: General, Estudio, Atajos, Apariencia, Avanzado (grouped under Sonido, Temporizador, Salida de audio, Ventana, Mantenimiento) and Acerca de.
 - [ ] Settings looks right in light and dark, at 100/150/200 % scaling, and with the keyboard only.
 - [ ] Dropdowns (no native lists): open with a click, Enter, Space or ↓; ↑ ↓ Home End move; a letter jumps (again cycles); Enter or Tab chooses; Esc closes without changing; a click outside closes. The list is opaque and readable in light and dark, with Mica on and off, and opens upwards near the bottom.
 - [ ] Window size: at 200 % on a 1080p screen it opens fully on screen; it can't be made smaller than 520 × 440. Narrow: the dropdowns move under their explanation instead of squeezing it; wide: the content stops at 720 px and the explanations keep a reading width.
 - [ ] Volume per output: 30 % on headphones, switch to speakers and set 60 %, switch back: 30 % again, smoothly (no jump or click); with "Volumen de cada salida" off the volume stays put.
 - [ ] Lock (Win+L) while playing on headphones: it pauses; unlock: it plays again. Lock on headphones, take them off, unlock: stays paused, nothing from the speakers. "Pausar": stays paused after unlock. "No hacer nada": keeps playing while locked. Paused before locking: unlock never starts it.
 - [ ] Mono: one earbud in, mono on: the noise sounds the same and just as loud; switching mono on and off while playing never clicks.
+
+## Study (phase 3b)
+
+Turn it on in Ajustes → Estudio → Modo estudio. The panel grows to make room for the study card.
+
+- [ ] Off (the default): no study card, no dot on the tray icon, nothing about it in the tooltip, and Ctrl+Alt+T does nothing. Turning it on brings all of it; turning it off mid-session stores the session and removes everything again.
+- [ ] Linked (default): play on the noise starts the stopwatch and play on the stopwatch starts the noise; pause on either pauses both. Unplugging the headphones, locking the PC (Win+L) and sleeping pause both. The sleep timer ending pauses the stopwatch too.
+- [ ] Not linked: each one plays and pauses on its own. Locking or sleeping still pauses the stopwatch; unlocking continues it.
+- [ ] Two hours with pauses: the session time matches a clock to the second, and "Hoy" goes up by exactly the work time.
+- [ ] Pomodoro with 1-minute work and break (Settings): it changes phase on its own; "Trabajo 1/4 · 0:42" in the panel, the ring fills, and the tooltip shows "Descanso 0:30" during breaks. With "Bajar a la mitad" the noise glides down and back up, with "Pausar" it fades out and back in, with "Seguir igual" it doesn't change. Break time doesn't count.
+- [ ] Alerts: "Campana" plays a soft singing-bowl "bong" over the noise without cutting it, also while the noise is paused; "Notificación" shows only the notification; "Las dos" both; "Nada" nothing. This covers the sleep timer end, Pomodoro phases and the ear break.
+- [ ] Idle (Inactividad 10 min): leave the keyboard and mouse for 11 minutes while studying, then move the mouse: a dot on the tray icon and "¿Seguías estudiando?" in the tooltip; the panel stays closed and nothing steals the focus. Opening the panel shows the question; "No, descontar" takes those minutes out of the session and of "Hoy"; "Sí, contar" keeps them. Unanswered at the end of the session, they count.
+- [ ] Tags: create "Cálculo" and "EDA" in Settings, recolour one, rename one; a duplicate name is refused. The panel shows a tag picker only once a tag exists; deleting a tag keeps its sessions.
+- [ ] Quit Rumor mid-session and open it again: that session is in "Hoy". Kill the process mid-session: at most a minute is lost.
+- [ ] Ear break (General, every 3 h): after 3 h playing on headphones, one alert; the noise keeps playing. A 15-minute pause starts the count again.
+- [ ] A session across midnight counts on each day only for its own part.
 
 ## Measurements (SPEC §3.4)
 - [ ] `cargo run --release --example engine -- --check 20`: frames ≈ 100 % of expected, CPU < 1 % of the machine.

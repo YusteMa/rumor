@@ -32,6 +32,8 @@ const HELP: &str = "  p                 play / pause
   f 200-3000        fade length in ms
   policy pause|always|keep
   resume on|off     resume when headphones reconnect
+  b                 strike the alert bell (singing bowl)
+  duck on|off       Pomodoro break: noise 10 dB down
   d                 list output devices
   i                 current output
   q                 quit";
@@ -57,6 +59,7 @@ fn print_event(event: EngineEvent) {
         ),
         EngineEvent::OutputChanged(None) => println!("» no audio output"),
         EngineEvent::StreamError(e) => println!("» stream error: {e}"),
+        EngineEvent::Session(e) => println!("» session: {e:?}"),
     }
 }
 
@@ -116,6 +119,8 @@ fn interactive() {
                 engine.set_config(config.clone());
                 println!("resume on reconnect: {}", config.resume_on_reconnect);
             }
+            (Some("b"), _) => engine.ring(),
+            (Some("duck"), Some(v)) => engine.set_duck(v == "on"),
             (Some("d"), _) => list_devices(),
             (Some("i"), _) => println!(
                 "{:?} (paused for: {:?})",

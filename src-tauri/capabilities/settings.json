@@ -16,6 +16,9 @@
     "allow-export-settings",
     "allow-import-settings",
     "allow-reset-settings",
-    "allow-open-logs"
+    "allow-open-logs",
+    "allow-tags-list",
+    "allow-tags-upsert",
+    "allow-tags-delete"
   ]
 }

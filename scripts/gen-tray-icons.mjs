@@ -8,6 +8,9 @@
 //
 // - active: four sound bars of different heights ("waves")
 // - idle:   the same four bars, short and level (a flat wave), dimmed
+// - …-dot:  either, with a dot in the lower right corner: the study stopwatch
+//           is running, or "¿Seguías estudiando?" waits (SPEC §4.3c). The dot
+//           is cut out of the bars and always full ink, so it reads at 16 px.
 // Ink colours are the --ink tokens of SPEC §4.5: dark ink on a light taskbar,
 // light ink on a dark one.
 
@@ -25,6 +28,9 @@ const INKS = {
 const ACTIVE_HEIGHTS = [0.44, 0.81, 0.56, 0.31];
 const IDLE_HEIGHT = 0.31;
 const IDLE_OPACITY = 0.6;
+const DOT_RADIUS = 0.15;
+// Clear space around the dot, in pixels.
+const DOT_GAP = 1;
 
 // --- PNG encoding -----------------------------------------------------------
 
@@ -94,41 +100,51 @@ function evenHeight(size, fraction, min) {
   return h;
 }
 
-function draw(size, ink, state) {
+function draw(size, ink, state, dot) {
   const bars = layout(size).map((b, i) => {
     const fraction = state === "active" ? ACTIVE_HEIGHTS[i] : IDLE_HEIGHT;
     const h = evenHeight(size, fraction, b.w);
     return { ...b, y: (size - h) / 2, h };
   });
   const opacity = state === "active" ? 1 : IDLE_OPACITY;
+  const r = Math.max(2, size * DOT_RADIUS);
+  const c = size - r - Math.max(0.5, size / 32);
   const SS = 8; // supersampling per axis
   const rgba = Buffer.alloc(size * size * 4);
   for (let py = 0; py < size; py++) {
     for (let px = 0; px < size; px++) {
-      let hits = 0;
+      let alpha = 0;
       for (let sy = 0; sy < SS; sy++) {
         for (let sx = 0; sx < SS; sx++) {
           const x = px + (sx + 0.5) / SS;
           const y = py + (sy + 0.5) / SS;
-          if (bars.some((b) => pill(x, y, b.x, b.y, b.w, b.h) <= 0)) hits++;
+          const d = Math.hypot(x - c, y - c);
+          if (dot && d <= r) alpha += 1;
+          else if (dot && d <= r + DOT_GAP) continue;
+          else if (bars.some((b) => pill(x, y, b.x, b.y, b.w, b.h) <= 0)) alpha += opacity;
         }
       }
       const i = (py * size + px) * 4;
       rgba[i] = ink[0];
       rgba[i + 1] = ink[1];
       rgba[i + 2] = ink[2];
-      rgba[i + 3] = Math.round((255 * opacity * hits) / (SS * SS));
+      rgba[i + 3] = Math.round((255 * alpha) / (SS * SS));
     }
   }
   return png(size, rgba);
 }
 
 mkdirSync(OUT, { recursive: true });
+let n = 0;
 for (const state of ["active", "idle"]) {
-  for (const [theme, ink] of Object.entries(INKS)) {
-    for (const size of SIZES) {
-      writeFileSync(join(OUT, `${state}-${theme}-${size}.png`), draw(size, ink, state));
+  for (const dot of [false, true]) {
+    const name = dot ? `${state}-dot` : state;
+    for (const [theme, ink] of Object.entries(INKS)) {
+      for (const size of SIZES) {
+        writeFileSync(join(OUT, `${name}-${theme}-${size}.png`), draw(size, ink, state, dot));
+        n++;
+      }
     }
   }
 }
-console.log(`wrote ${2 * 2 * SIZES.length} icons to ${OUT}`);
+console.log(`wrote ${n} icons to ${OUT}`);
