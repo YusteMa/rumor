@@ -134,14 +134,14 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
 - **Ojo con AltGr:** en teclados españoles y de muchos países europeos, `Ctrl+Alt` equivale a **AltGr**. Los atajos por defecto **no pueden coincidir con un carácter** (`Ctrl+Alt+E` = €, `Ctrl+Alt+2` = @…). Validarlo al grabar un atajo nuevo y avisar.
 
 ### 4.3b Módulo Estudio
-**Idea:** contar el tiempo que estudias **sin obligarte a ningún método**. Por defecto es un **cronómetro** que cuenta hacia arriba; el **Pomodoro** existe para quien lo quiera, pero no se impone.
+**Idea:** contar el tiempo que estudias **sin obligarte a ningún método**. Es un **"Modo estudio" opcional, desactivado por defecto** (§4.3c): Rumor es solo ruido hasta que lo activas. Por defecto es un **cronómetro** que cuenta hacia arriba; el **Pomodoro** existe para quien lo quiera, pero no se impone.
 
 **Modos** (se elige en el panel con un selector pequeño):
 
 | Modo | Qué hace |
 |---|---|
 | **Cronómetro** *(por defecto)* | Cuenta hacia arriba. Play, pausa y terminar sesión. Sin avisos ni descansos |
-| **Pomodoro** | Bloques de trabajo y descanso **configurables** (por defecto 25/5, y descanso largo de 15 cada 4). Aviso suave al cambiar de fase con notificación y, opcionalmente, un fundido del ruido durante el descanso |
+| **Pomodoro** | Bloques de trabajo y descanso **configurables** (por defecto 25/5, y descanso largo de 15 cada 4). Cambia de fase solo, con el aviso elegido. En los descansos el ruido se **baja a la mitad** *(por defecto)*, se **pausa** o **sigue igual** (un solo desplegable), siempre con fundido |
 
 **Lo que se ve en el panel** (tarjeta de Estudio):
 - **Tiempo de la sesión actual** grande (`1:23:45`), con `tabular-nums`.
@@ -149,26 +149,33 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
 - Botones: play/pausa y terminar sesión.
 - En Pomodoro: la fase actual ("Trabajo 2/4") y un anillo de progreso fino alrededor del tiempo.
 
-**Juntar los dos módulos** (Ajustes → Estudio → *"Vincular con el ruido"*, **activado por defecto**):
-- Al darle a play al ruido, **empieza a contar** el cronómetro; al pausar el ruido, **se pausa**. Un solo clic para "me pongo a estudiar".
+**Juntar los dos módulos** (solo con el Modo estudio activado; *"Vincular con el ruido"*, **activado por defecto**), **en los dos sentidos**:
+- Play en el ruido arranca el cronómetro y play en el cronómetro arranca el ruido; igual con la pausa. Un solo clic para "me pongo a estudiar".
+- Las pausas automáticas del ruido (cascos desconectados, bloqueo del PC, suspensión) también pausan el cronómetro. Los descansos del Pomodoro no: los gobierna el Pomodoro.
 - Si no está vinculado, cada módulo va por libre.
-- En los descansos del Pomodoro, el ruido puede bajar o pararse (opcional).
+
+**Lo que cuenta:** solo el **tiempo de trabajo**. Pausas, descansos del Pomodoro, el PC bloqueado o suspendido no suman a la sesión ni a los totales de hoy y de la semana.
 
 **Detección de inactividad** (opcional, **desactivada por defecto**, porque si estudias con apuntes en papel no tocas el ordenador):
-- Si no hay teclado ni ratón durante X minutos (por defecto 10; se lee con `GetLastInputInfo`), al volver pregunta: *"Has estado 14 min sin actividad. ¿Seguías estudiando?"* → **Sí, contar** / **No, descontar**.
+- Si no hay teclado ni ratón durante X minutos (por defecto 10; se lee con `GetLastInputInfo`), al volver se plantea la pregunta *"Has estado 14 min sin actividad. ¿Seguías estudiando?"* → **Sí, contar** / **No, descontar**, **sin depender de las notificaciones ni interrumpir**:
+  - El icono de la bandeja muestra un puntito y el tooltip dice *"¿Seguías estudiando?"* mientras la pregunta esté pendiente.
+  - La pregunta espera en el panel hasta que lo abras. Rumor **nunca abre el panel solo ni quita el foco** a lo que estés haciendo.
+  - Si las notificaciones están activadas, además se manda una discreta.
+  - Si no contestas antes de terminar la sesión, el tiempo cuenta.
 
 **Al terminar una sesión**, se guarda en SQLite: inicio, fin, duración neta (sin pausas), modo y etiqueta.
 
 **Etiquetas** (opcionales): asignar la sesión a una asignatura o tema ("Cálculo", "EDA"…), elegida de una lista que creas en Ajustes. Si no las usas, no aparecen en ninguna parte.
 
-**Avisos** (Ajustes → Estudio): para cada aviso (fin del temporizador de apagado, cambios de fase del Pomodoro y descanso de oídos) se elige **Notificación / Sonido suave / Las dos / Nada**. El sonido suave es un *"blim"* breve **sintetizado en el momento** (sin archivos de audio, como el ruido), a un volumen moderado que se mezcla encima del ruido sin cortarlo. Por defecto: *Notificación* para el temporizador, *Las dos* para el Pomodoro y para el descanso de oídos.
+**Avisos:** un **único ajuste para toda la app**, *"Avisos: Campana / Notificación / Las dos / Nada"*, que vale para el fin del temporizador de apagado, los cambios de fase del Pomodoro y el descanso de oídos. La **campana** es un **cuenco tibetano**: un *"bong"* suave con cola larga, **sintetizado en el momento** (parciales inarmónicos con caída exponencial, sin archivos de audio), a un volumen moderado que se mezcla encima del ruido sin cortarlo. Suena aunque el ruido esté en pausa.
 
 **Descanso de oídos** (activado por defecto, desactivable): tras **X horas escuchando con cascos** (por defecto **3 h**, configurable) Rumor recuerda descansar con el aviso elegido. Cuenta solo el tiempo sonando por una salida de cascos; una pausa de **15 minutos o más** reinicia la cuenta. No para el ruido: solo avisa, una vez por tramo.
 
 **Fuera de la beta** (v0.2): pantalla de **estadísticas** (gráfico semanal, por asignatura, racha de días) y **exportar a CSV**.
 
 ### 4.3c Módulos activables
-- Ajustes → **Módulos**: ☑ Sonido · ☑ Estudio. Al menos uno tiene que estar activo.
+- **Por defecto Rumor es solo ruido.** El cronómetro es un **"Modo estudio" opcional, desactivado por defecto**. Con él desactivado, **nada** del cronómetro aparece en el panel, la bandeja, el tooltip ni los atajos.
+- Ajustes → **Módulos**: ☑ Sonido · ☐ Estudio. Al menos uno tiene que estar activo.
 - **Solo Sonido:** el panel queda exactamente como el del ruido; el cronómetro no existe.
 - **Solo Estudio:** el panel enseña el cronómetro como protagonista; el clic izquierdo en la bandeja inicia o pausa el cronómetro.
 - **Los dos:** el ruido arriba (protagonista) y la tarjeta de Estudio debajo, compacta.
@@ -306,4 +313,4 @@ El panel solo enseña lo que usas a diario. **Todo lo demás vive en Ajustes**, 
 | 6 | Windows 10 | **Soportado** (sin Mica, color sólido) | Cerrada (2026-10-29) |
 | 7 | Al desconectar los cascos | **Pausar si pasa a altavoces** | Cerrada (2026-10-29) |
 | 8 | Modo de estudio por defecto | **Cronómetro** | Cerrada (2026-10-29) |
-| 9 | Vincular estudio con el ruido | **Sí** | Cerrada (2026-10-29) |
+| 9 | Modo estudio y vinculación | **Modo estudio desactivado por defecto**; al activarlo, vinculado con el ruido en los dos sentidos | Cerrada (2026-10-30) |

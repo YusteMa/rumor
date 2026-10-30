@@ -44,16 +44,18 @@ Cada fase termina **compilando, con los tests en verde y con un commit**. No se 
 ### Fase 3b — Módulo Estudio
 - `study/`: máquina de estados (parado → contando → en pausa → terminado; y en Pomodoro, trabajo ↔ descanso), basada en `Instant` (nunca sumando ticks, para que no derive).
 - SQLite (`rusqlite` con `bundled`): tabla `sessions` y tabla `tags`, con migraciones versionadas desde el principio.
-- Vinculación con el ruido, inactividad opcional con `GetLastInputInfo` y la pregunta al volver.
+- Vinculación con el ruido en los dos sentidos; inactividad opcional con `GetLastInputInfo` y la pregunta al volver (puntito en la bandeja y pregunta en el panel, sin abrir nada solo).
+- Ruido en los descansos del Pomodoro: bajar a la mitad (por defecto) / pausar / seguir igual. Solo cuenta el tiempo de trabajo.
 - Tarjeta de Estudio en el panel, totales de hoy y de la semana, atajo `Ctrl+Alt+T`.
 - Módulos activables (SPEC §4.3c) e icono y tooltip adaptados.
 - Tests: la máquina de estados (pausas, fases del Pomodoro, sesión que cruza la medianoche) y que la suma diaria sea correcta.
 
-- Avisos configurables (notificación / sonido suave "blim" sintetizado / las dos / nada) para el fin del temporizador, el Pomodoro y el descanso de oídos.
+- **Modo estudio opcional, desactivado por defecto**: sin él no aparece nada del cronómetro.
+- Avisos con un único ajuste para toda la app (campana / notificación / las dos / nada). La campana es un **cuenco tibetano sintetizado** (parciales inarmónicos, caída exponencial, sin archivos).
 - Recordatorio de descanso de oídos tras X horas con cascos (por defecto 3 h, desactivable).
 - El cronómetro se pausa al bloquear el PC y no cuenta el tiempo suspendido.
 
-**Hecho cuando:** dejas el cronómetro 2 h con pausas y el total coincide al segundo con un reloj; el Pomodoro cambia de fase sin intervención; desactivar un módulo lo hace desaparecer por completo; el "blim" suena limpio encima del ruido sin cortarlo.
+**Hecho cuando:** dejas el cronómetro 2 h con pausas y el total coincide al segundo con un reloj; el Pomodoro cambia de fase sin intervención; desactivar un módulo lo hace desaparecer por completo; la campana suena limpia encima del ruido sin cortarlo; con el Modo estudio desactivado no queda rastro del cronómetro.
 
 ### Fase 4 — Temporizador, ajustes e idioma
 - Temporizador en Rust (sigue funcionando sin panel), con fundido al acabar y notificación.
