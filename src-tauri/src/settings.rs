@@ -571,7 +571,7 @@ fn merge(target: &mut Value, patch: &Value) {
 const STORE_FILE: &str = "settings.json";
 const STORE_KEY: &str = "settings";
 
-/// Reads the saved settings (`%APPDATA%<id>settings.json`). A missing or
+/// Reads the saved settings (`%APPDATA%\<id>\settings.json`). A missing or
 /// unreadable file gives the defaults; it never stops Rumor from starting.
 pub fn load(app: &tauri::AppHandle) -> Settings {
     use tauri_plugin_store::StoreExt;

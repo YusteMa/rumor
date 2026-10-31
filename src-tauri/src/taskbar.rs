@@ -30,6 +30,32 @@ pub fn uses_light_theme() -> bool {
     false
 }
 
+/// Settings → Accessibility → Visual effects → "Animation effects", the same
+/// switch the panel follows through `prefers-reduced-motion`.
+#[cfg(windows)]
+pub fn animations_enabled() -> bool {
+    use windows::Win32::UI::WindowsAndMessaging::{
+        SPI_GETCLIENTAREAANIMATION, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS, SystemParametersInfoW,
+    };
+    use windows::core::BOOL;
+
+    let mut on = BOOL(1);
+    let read = unsafe {
+        SystemParametersInfoW(
+            SPI_GETCLIENTAREAANIMATION,
+            0,
+            Some(&mut on as *mut BOOL as *mut _),
+            SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS(0),
+        )
+    };
+    read.is_err() || on.as_bool()
+}
+
+#[cfg(not(windows))]
+pub fn animations_enabled() -> bool {
+    true
+}
+
 /// Windows' accent colour as `#rrggbb`, for the "system accent" setting.
 #[cfg(windows)]
 pub fn system_accent() -> Option<String> {

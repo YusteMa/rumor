@@ -111,7 +111,9 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
 | **Clic derecho** | Abre el **panel** junto al icono | — |
 | **Pasar el ratón** | Tooltip: `Rumor · Rosa · 40 % · quedan 23:10` | — |
 
-- **Icono con dos estados:** activo (con ondas) e inactivo (atenuado). Variantes para la barra clara y la oscura.
+- **Icono con dos estados:** activo (con ondas) e inactivo (atenuado). Variantes para la barra clara y la oscura. Se dibuja en Rust al tamaño exacto del escalado.
+- **Animación solo al cambiar de estado** (2026-10-31): al dar play las barras suben y al pausar bajan, en ~400 ms; mientras suena, el icono queda quieto para no distraer. Sin animación si Windows tiene desactivados los efectos de animación.
+- **Icono de la app** (2026-10-31): tres barras redondeadas, una por ruido y en su acento oscuro (rosa, caramelo, perla), sobre una tesela cálida oscura (`#1C1A19`) con un borde de 1 px `#3A3432` para que no se funda con fondos oscuros. Lo genera `scripts/gen-app-icon.mjs`, cada tamaño en su rejilla de píxeles.
 - Al **arrancar sin configuración**, mostrar una notificación de Windows: "Rumor está en la bandeja. Clic para activar, clic derecho para opciones".
 
 ### 4.2 Panel
@@ -310,3 +312,5 @@ El panel solo enseña lo que usas a diario. **Todo lo demás vive en Ajustes**, 
 | 7 | Al desconectar los cascos | **Pausar si pasa a altavoces** | Cerrada (2026-10-29) |
 | 8 | Modo de estudio por defecto | **Cronómetro** | Cerrada (2026-10-29) |
 | 9 | Modo estudio y vinculación | **Modo estudio desactivado por defecto**; al activarlo, vinculado con el ruido en los dos sentidos | Cerrada (2026-10-30) |
+| 10 | Icono de la app | **Tres barras de acento sobre tesela oscura con borde fino** | Cerrada (2026-10-31) |
+| 11 | Icono de la bandeja | **Animado solo al cambiar de estado** (~400 ms), quieto mientras suena | Cerrada (2026-10-31) |

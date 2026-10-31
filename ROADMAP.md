@@ -78,6 +78,8 @@ Cada fase termina **compilando, con los tests en verde y con un commit**. No se 
 - Plantillas de issues y Discussions.
 - **Tag `v0.1.0-beta.1`.**
 
+- Decidido (2026-10-31): icono de app con tres barras (rosa, caramelo, perla) y borde de 1 px; el icono de la bandeja anima solo el cambio de estado. Antes de hacer público el repo, revisión de datos personales (correo de los commits, rutas, logs, capturas). El GIF del README sale del mock y es provisional hasta una grabación real.
+
 ---
 
 ## Después de la beta

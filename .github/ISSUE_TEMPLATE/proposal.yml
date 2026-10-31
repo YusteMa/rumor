@@ -1,0 +1,24 @@
+name: Proposal
+description: An idea for Rumor. English or Spanish, whichever you prefer.
+labels: [proposal]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Rumor stays simple on the outside: the panel only grows when something can't live in Settings. Check the [roadmap](../blob/main/ROADMAP.md) first; it may be planned already. Open-ended ideas fit better in Discussions.
+        Puedes escribir en español.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What you'd like to do
+      description: The situation and what gets in the way, before any solution.
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: How it could work
+    validations:
+      required: false

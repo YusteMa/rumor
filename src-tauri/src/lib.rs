@@ -16,6 +16,7 @@ mod study;
 mod taskbar;
 mod timer;
 mod tray;
+mod tray_glyph;
 
 use tauri::RunEvent;
 

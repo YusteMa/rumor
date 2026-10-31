@@ -1,0 +1,65 @@
+name: Bug report
+description: Something doesn't work, sounds wrong or looks off. English or Spanish, whichever you prefer.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing the beta. Clicks, pops or any change in the sound count as bugs here: sound quality comes first.
+        Gracias por probar la beta. Puedes escribir en español.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected and what happened instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Play pink noise at 40 %
+        2. Unplug the headphones
+        3. …
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Rumor version
+      description: Settings → About.
+      placeholder: 0.1.0-beta.1
+    validations:
+      required: true
+
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      description: Win + R → winver.
+      placeholder: Windows 11 24H2
+    validations:
+      required: true
+
+  - type: input
+    id: output
+    attributes:
+      label: Audio output
+      description: Only if it's about sound or headphones. The kind is enough; no serial numbers needed.
+      placeholder: Bluetooth headphones / USB DAC / laptop speakers
+    validations:
+      required: false
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: |
+        Settings → Advanced → Logs → Open folder, then paste the last lines of the log. Read it first: it can contain your Windows user name in file paths.
+      render: text
+    validations:
+      required: false

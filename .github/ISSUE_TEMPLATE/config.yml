@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and beta feedback
+    url: https://github.com/YusteMa/rumor/discussions
+    about: How something works, first impressions, open-ended ideas. Preguntas y opiniones sobre la beta.

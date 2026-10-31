@@ -1,8 +1,11 @@
 //! Tray icon, tooltip and clicks (SPEC §4.1, §4.3c). Left click toggles the
-//! noise; right click opens the panel next to the icon. With "Modo estudio"
-//! on, a dot on the icon and the tooltip show the stopwatch.
+//! noise; right click opens the panel next to the icon. On play the bars
+//! rise and on pause they settle, then the icon keeps still (no motion at
+//! all with Windows' animation effects off). With "Modo estudio" on, a dot on the icon and the tooltip show the
+//! stopwatch.
 
-use std::sync::Mutex;
+use std::sync::{Arc, Condvar, Mutex};
+use std::time::Duration;
 
 use tauri::image::Image;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
@@ -13,51 +16,39 @@ use crate::audio::noise::NoiseColor;
 use crate::settings::LeftClick;
 use crate::state::{self, AppState, Snapshot, StudyBrief};
 use crate::study::machine::{Phase, Run};
+use crate::tray_glyph::{self, Pose};
 use crate::{panel, taskbar};
 
 const ID: &str = "main";
+/// Ink colours are the --ink tokens of SPEC §4.5: dark ink on a light
+/// taskbar, light ink on a dark one.
+const INK_LIGHT_TASKBAR: [u8; 3] = [0x2b, 0x25, 0x23];
+const INK_DARK_TASKBAR: [u8; 3] = [0xf2, 0xec, 0xe9];
+/// 25 frames a second, only while the bars move.
+const FRAME: Duration = Duration::from_millis(40);
+/// Play and pause glide between the idle and the active bars.
+const GLIDE_SECS: f32 = 0.4;
 
-macro_rules! icons {
-    ($($state:literal $theme:literal $size:literal),* $(,)?) => {
-        &[$((
-            $state,
-            $theme,
-            $size,
-            include_bytes!(concat!("../icons/tray/", $state, "-", $theme, "-", $size, ".png")) as &[u8],
-        )),*]
-    };
+/// What the icon should show; the animator thread draws it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct Look {
+    playing: bool,
+    dot: bool,
+    light: bool,
+    size: u32,
 }
 
-/// (state, taskbar theme, size in px, PNG), drawn by `scripts/gen-tray-icons.mjs`.
-const ICONS: &[(&str, &str, u32, &[u8])] = icons![
-    "active" "light" 16, "active" "light" 20, "active" "light" 24,
-    "active" "light" 32, "active" "light" 40, "active" "light" 48,
-    "active" "dark" 16, "active" "dark" 20, "active" "dark" 24,
-    "active" "dark" 32, "active" "dark" 40, "active" "dark" 48,
-    "idle" "light" 16, "idle" "light" 20, "idle" "light" 24,
-    "idle" "light" 32, "idle" "light" 40, "idle" "light" 48,
-    "idle" "dark" 16, "idle" "dark" 20, "idle" "dark" 24,
-    "idle" "dark" 32, "idle" "dark" 40, "idle" "dark" 48,
-    "active-dot" "light" 16, "active-dot" "light" 20, "active-dot" "light" 24,
-    "active-dot" "light" 32, "active-dot" "light" 40, "active-dot" "light" 48,
-    "active-dot" "dark" 16, "active-dot" "dark" 20, "active-dot" "dark" 24,
-    "active-dot" "dark" 32, "active-dot" "dark" 40, "active-dot" "dark" 48,
-    "idle-dot" "light" 16, "idle-dot" "light" 20, "idle-dot" "light" 24,
-    "idle-dot" "light" 32, "idle-dot" "light" 40, "idle-dot" "light" 48,
-    "idle-dot" "dark" 16, "idle-dot" "dark" 20, "idle-dot" "dark" 24,
-    "idle-dot" "dark" 32, "idle-dot" "dark" 40, "idle-dot" "dark" 48,
-];
+struct Animator {
+    look: Mutex<Look>,
+    wake: Condvar,
+}
 
-/// What the tray shows now, so a refresh only touches what changed (volume
-/// drags refresh many times a second).
-#[derive(Default)]
+/// The tooltip shown now, so a refresh only touches it when it changes
+/// (volume drags refresh many times a second).
 struct Shown {
-    icon: Mutex<Option<IconKey>>,
     tooltip: Mutex<String>,
+    animator: Arc<Animator>,
 }
-
-/// (playing, dot, light taskbar, size).
-type IconKey = (bool, bool, bool, u32);
 
 /// The dot: the stopwatch is running, or the idle question waits.
 fn has_dot(s: &Snapshot) -> bool {
@@ -65,43 +56,76 @@ fn has_dot(s: &Snapshot) -> bool {
         .is_some_and(|st| st.run == Run::Running || st.idle_pending)
 }
 
-/// The icon drawn for the current scaling, so Windows never resamples it.
-fn pick_icon(app: &AppHandle, s: &Snapshot) -> (IconKey, Option<&'static [u8]>) {
-    let (playing, dot) = (s.playing, has_dot(s));
-    let state = match (playing, dot) {
-        (true, false) => "active",
-        (false, false) => "idle",
-        (true, true) => "active-dot",
-        (false, true) => "idle-dot",
-    };
-    let light = taskbar::uses_light_theme();
-    let theme = if light { "light" } else { "dark" };
+/// The icon for the current scaling, drawn at its exact size so Windows
+/// never resamples it.
+fn look(app: &AppHandle, s: &Snapshot) -> Look {
     let scale = app
         .primary_monitor()
         .ok()
         .flatten()
         .map_or(1.0, |m| m.scale_factor());
-    let wanted = (16.0 * scale).round() as u32;
-    let mut candidates = ICONS
-        .iter()
-        .filter(|(s, t, _, _)| *s == state && *t == theme);
-    let best = candidates
-        .clone()
-        .filter(|(_, _, size, _)| *size >= wanted)
-        .min_by_key(|(_, _, size, _)| *size)
-        .or_else(|| candidates.next_back());
-    match best {
-        Some(&(_, _, size, png)) => ((playing, dot, light, size), Some(png)),
-        None => ((playing, dot, light, 0), None),
+    Look {
+        playing: s.playing,
+        dot: has_dot(s),
+        light: taskbar::uses_light_theme(),
+        size: ((16.0 * scale).round() as u32).clamp(16, 64),
     }
 }
 
-fn decode(png: &[u8]) -> Option<Image<'static>> {
-    match Image::from_bytes(png) {
-        Ok(image) => Some(image.to_owned()),
-        Err(e) => {
-            log::error!("tray icon: {e}");
-            None
+fn image(look: Look, pose: &Pose) -> Image<'static> {
+    let ink = if look.light {
+        INK_LIGHT_TASKBAR
+    } else {
+        INK_DARK_TASKBAR
+    };
+    Image::new_owned(
+        tray_glyph::draw(look.size, ink, pose, look.dot),
+        look.size,
+        look.size,
+    )
+}
+
+/// Draws the icon whenever the look changes, frame by frame while the bars
+/// glide. Sleeps on the condvar the rest of the time: a still icon costs
+/// nothing.
+fn animate(app: AppHandle, animator: Arc<Animator>, first: Look) {
+    let step = FRAME.as_secs_f32() / GLIDE_SECS;
+    let mut drawn = first;
+    // 0 idle, 1 active.
+    let mut glide: f32 = if first.playing { 1.0 } else { 0.0 };
+    loop {
+        let look = {
+            let Ok(mut current) = animator.look.lock() else {
+                return;
+            };
+            loop {
+                let target = if current.playing { 1.0 } else { 0.0 };
+                if glide != target || *current != drawn {
+                    break *current;
+                }
+                current = match animator.wake.wait(current) {
+                    Ok(guard) => guard,
+                    Err(_) => return,
+                };
+            }
+        };
+        let target = if look.playing { 1.0 } else { 0.0 };
+        glide = if !taskbar::animations_enabled() {
+            target
+        } else if target > glide {
+            (glide + step).min(target)
+        } else {
+            (glide - step).max(target)
+        };
+        let pose = Pose::blend(&Pose::idle(), &Pose::active(), glide);
+        if let Some(tray) = app.tray_by_id(ID) {
+            if let Err(e) = tray.set_icon(Some(image(look, &pose))) {
+                log::warn!("tray icon: {e}");
+            }
+        }
+        drawn = look;
+        if glide != target {
+            std::thread::sleep(FRAME);
         }
     }
 }
@@ -178,9 +202,15 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
     let state = app.state::<AppState>();
     let snapshot = state.snapshot();
     let text = tooltip(&state, &snapshot);
-    let (key, png) = pick_icon(app, &snapshot);
+    let first = look(app, &snapshot);
+    let pose = if first.playing {
+        Pose::active()
+    } else {
+        Pose::idle()
+    };
 
-    let mut builder = TrayIconBuilder::with_id(ID)
+    TrayIconBuilder::with_id(ID)
+        .icon(image(first, &pose))
         .tooltip(&text)
         .on_tray_icon_event(|tray, event| {
             // Build the panel as soon as the pointer arrives, so the click
@@ -208,15 +238,18 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
                     _ => {}
                 }
             }
-        });
-    if let Some(image) = png.and_then(decode) {
-        builder = builder.icon(image);
-    }
-    builder.build(app)?;
-    app.manage(Shown {
-        icon: Mutex::new(Some(key)),
-        tooltip: Mutex::new(text),
+        })
+        .build(app)?;
+    let animator = Arc::new(Animator {
+        look: Mutex::new(first),
+        wake: Condvar::new(),
     });
+    app.manage(Shown {
+        tooltip: Mutex::new(text),
+        animator: animator.clone(),
+    });
+    let handle = app.clone();
+    std::thread::spawn(move || animate(handle, animator, first));
 
     let handle = app.clone();
     taskbar::watch_theme(move || refresh(&handle));
@@ -233,13 +266,11 @@ pub fn refresh(app: &AppHandle) {
     };
     let snapshot = state.snapshot();
 
-    let (key, png) = pick_icon(app, &snapshot);
-    if let Ok(mut current) = shown.icon.lock() {
-        if *current != Some(key) {
-            *current = Some(key);
-            if let Err(e) = tray.set_icon(png.and_then(decode)) {
-                log::warn!("tray icon: {e}");
-            }
+    let wanted = look(app, &snapshot);
+    if let Ok(mut current) = shown.animator.look.lock() {
+        if *current != wanted {
+            *current = wanted;
+            shown.animator.wake.notify_one();
         }
     }
 

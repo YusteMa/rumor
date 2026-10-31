@@ -1,0 +1,55 @@
+name: Release
+
+# Pushing a tag like v0.1.0-beta.1 builds the NSIS (.exe) and MSI installers
+# and publishes them as a GitHub pre-release (SPEC §7). Anything with a "-"
+# (beta, rc) stays a pre-release; a plain vX.Y.Z is a normal release.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - run: npm ci
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      # The same gate as CI: no installer from a red build.
+      - name: cargo test
+        working-directory: src-tauri
+        run: cargo test
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: Rumor ${{ github.ref_name }}
+          releaseBody: |
+            See the assets below: **Rumor_…_x64-setup.exe** is the recommended installer; the .msi is for managed installs.
+
+            Windows SmartScreen will say "Windows protected your PC" because the beta isn't code-signed yet: click **More info → Run anyway**. Details in the [README](https://github.com/${{ github.repository }}#install).
+
+            ---
+
+            Los recursos están abajo: **Rumor_…_x64-setup.exe** es el instalador recomendado; el .msi es para instalaciones gestionadas.
+
+            SmartScreen dirá «Windows protegió su PC» porque la beta aún no está firmada: pulsa **Más información → Ejecutar de todas formas**.
+          releaseDraft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}

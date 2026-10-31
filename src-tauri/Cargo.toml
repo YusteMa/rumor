@@ -1,6 +1,6 @@
 [package]
 name = "rumor"
-version = "0.1.0"
+version = "0.1.0-beta.1"
 description = "Real-time pink, brown and white noise for the Windows tray"
 authors = ["Rumor contributors"]
 license = "MIT"

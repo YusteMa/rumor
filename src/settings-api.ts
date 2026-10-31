@@ -163,7 +163,7 @@ function mockBackend(): SettingsBackend {
       sampleFormat: "f32",
     },
     lang: (params.get("lang") as Lang) ?? "es",
-    version: "0.1.0",
+    version: "0.1.0-beta.1",
     systemAccent: "#0078d4",
     mica: false,
     tags: structuredClone(tags),

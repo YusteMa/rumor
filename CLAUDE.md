@@ -35,6 +35,7 @@ rumor/
 │  │  ├─ state.rs            # AppState compartido
 │  │  ├─ commands.rs         # #[tauri::command] expuestos al panel
 │  │  ├─ tray.rs
+│  │  ├─ tray_glyph.rs      # dibujo del icono de bandeja (puro, testeable)
 │  │  ├─ taskbar.rs          # tema claro/oscuro de la barra (tinta del icono)
 │  │  ├─ i18n.rs             # textos de Rust, leídos de src/i18n/*.json
 │  │  ├─ shortcut.rs
@@ -59,13 +60,13 @@ rumor/
 │  │     ├─ calendar.rs      # hoy y esta semana en hora local
 │  │     └─ db.rs            # SQLite: sessions, segments, tags, migraciones
 │  ├─ tests/dsp.rs           # tests espectrales
-│  ├─ icons/                 # tray/: iconos de bandeja generados por scripts/gen-tray-icons.mjs
+│  ├─ icons/                 # icono de la app, generado por scripts/gen-app-icon.mjs
 │  ├─ capabilities/default.json
 │  └─ tauri.conf.json
 ├─ docs/  (prototype.html, QA.md)
-├─ scripts/                  # generadores (iconos de bandeja)
+├─ scripts/                  # generadores (icono de la app)
 ├─ .github/  (workflows/ci.yml, workflows/release.yml, ISSUE_TEMPLATE/)
-├─ SPEC.md  ROADMAP.md  README.md  LICENSE  CLAUDE.md
+├─ SPEC.md  ROADMAP.md  README.md  CONTRIBUTING.md  LICENSE  CLAUDE.md
 ```
 
 ## Reglas de oro

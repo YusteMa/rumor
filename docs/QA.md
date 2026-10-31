@@ -49,7 +49,7 @@ Default policy is `policy pause`.
 Run `npm run tauri dev` (or the installed build). No window should open.
 
 - [ ] The icon appears in the tray in under a second; idle = short level bars, dimmed.
-- [ ] Left click: noise fades in and the icon becomes the "waves"; left click again: fades out, idle icon.
+- [ ] Left click: noise fades in and the bars rise into the "waves" in about 0.4 s, then keep still; left click again: they settle back to the idle icon. With Settings → Accessibility → Visual effects → Animation effects off, the icon switches at once.
 - [ ] Tooltip while playing: `Rumor · Rosa · 40 %` (English: `Rumor · Pink · 40%`); paused: `Rumor · En pausa`.
 - [ ] Unplug / switch off headphones while playing: idle icon, tooltip `Rumor · En pausa: se desconectaron los cascos`.
 - [ ] `Ctrl+Alt+P` toggles from any app, including a full-screen one.
@@ -57,12 +57,12 @@ Run `npm run tauri dev` (or the installed build). No window should open.
 - [ ] Shortcut taken: register `Ctrl+Alt+P` in another app first (e.g. an AutoHotkey script `^!p::return`), start Rumor → notification says it uses `Ctrl+Alt+N`, and the panel footer says so.
 - [ ] Launch Rumor a second time: no second icon; the panel opens.
 - [ ] Switch Windows between light and dark mode: the icon ink follows within a second.
-- [ ] Display scaling 100 / 150 / 200 %: the icon is crisp (restart Rumor after changing it).
+- [ ] Display scaling 100 / 125 / 150 / 200 %: the icon is crisp, drawn at its exact size (restart Rumor after changing it).
 - [ ] Task Manager: Rumor with no panel uses ~20 MB of RAM and ~0 % CPU while paused.
 
 ## Panel (phase 3)
 
-Reference screenshots: `docs/screenshots/panel-light.png`, `panel-dark.png`, `accents.png`.
+Reference screenshots (from the mock backend): `docs/screenshots/panel-light.png`, `panel-dark.png`, `panel-study.png`, `settings-light.png`.
 
 - [ ] Right click on the tray icon: the panel fades in, 8 px upward, in under 150 ms, next to the icon.
 - [ ] Click anywhere outside: it fades out. Right click on the icon while open: it closes and stays closed.
@@ -89,7 +89,7 @@ Reference screenshots: `docs/screenshots/panel-light.png`, `panel-dark.png`, `ac
 
 Open it from the panel (⚙ Ajustes). Every change must apply at once, without a Save button.
 
-- [ ] First launch ever (delete `%APPDATA%io.github.yustema.rumorsettings.json`): a welcome notification; not on the next launch.
+- [ ] First launch ever (delete `%APPDATA%\io.github.yustema.rumor\settings.json`): a welcome notification; not on the next launch.
 - [ ] Quit and reopen: colour, volume and timer are the same as before.
 - [ ] Sound: "Color al iniciar" fixed to Marrón starts brown; fade length 3 s is audibly slower; maximum volume 50 % makes the panel's 100 % as loud as 50 % was.
 - [ ] Playback: each "Si se desconectan los cascos" option behaves as in the phase 1 table; "Al iniciar Rumor": No sonar / Sonar siempre / Como lo dejé (quit while playing, reopen: plays).
@@ -122,6 +122,17 @@ Turn it on in Ajustes → Estudio → Modo estudio. The panel grows to make room
 - [ ] Quit Rumor mid-session and open it again: that session is in "Hoy". Kill the process mid-session: at most a minute is lost.
 - [ ] Ear break (General, every 3 h): after 3 h playing on headphones, one alert; the noise keeps playing. A 15-minute pause starts the count again.
 - [ ] A session across midnight counts on each day only for its own part.
+
+## Release (phase 5)
+
+Install from the GitHub release on a clean user account (or a VM), not from `tauri dev`.
+
+- [ ] The setup .exe shows SmartScreen's "Windows protected your PC"; More info → Run anyway installs without asking for admin rights. The installer speaks Spanish on a Spanish Windows and English otherwise.
+- [ ] The app icon (three bars on a dark tile with a fine rim) looks crisp in the installer, Start menu, Settings → Apps, Alt+Tab with Settings open, and the taskbar, both in light and dark mode, at 100 % and 150 %.
+- [ ] Settings → About says "Versión 0.1.0-beta.1".
+- [ ] Uninstall from Settings → Apps: the tray icon goes away and its folder in `%LOCALAPPDATA%\Rumor` is gone; settings and study history stay in `%APPDATA%\io.github.yustema.rumor` (on purpose, for reinstalling).
+- [ ] The .msi installs the same app.
+- [ ] README: the GIF plays, the screenshots load and the links work on github.com.
 
 ## Measurements (SPEC §3.4)
 - [ ] `cargo run --release --example engine -- --check 20`: frames ≈ 100 % of expected, CPU < 1 % of the machine.
