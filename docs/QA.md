@@ -98,7 +98,7 @@ Open it from the panel (⚙ Ajustes). Every change must apply at once, without a
 - [ ] Atajos → clic izquierdo "Abrir el panel" opens it instead of toggling.
 - [ ] Appearance: theme light/dark/system changes the panel and Settings at once; accent "El de Windows" uses Windows' colour, still readable; Mica off (Avanzado → Ventana) gives solid backgrounds; spectrum off hides the card; Windows "Animation effects" off removes the halo; language English switches every text, tray tooltip included.
 - [ ] General: "Iniciar con Windows" on → Rumor starts after signing in again; off → it doesn't.
-- [ ] Advanced: pick a fixed output → noise moves there; unplug it → pauses, never falls back to the speakers; buffer 10/20/50 ms plays clean; export then import gives the same settings; a non-settings JSON is refused with a message; reset asks first and keeps colour/volume/timer; "Abrir carpeta" opens the logs.
+- [ ] Advanced: pick a fixed output → noise moves there; unplug it → pauses, never falls back to the speakers; buffer Automatic (80 ms)/20/50/100 ms plays clean; export then import gives the same settings; a non-settings JSON is refused with a message; reset asks first and keeps colour/volume/timer; "Abrir carpeta" opens the logs.
 - [ ] Settings has six sections: General, Estudio, Atajos, Apariencia, Avanzado (grouped under Sonido, Temporizador, Salida de audio, Ventana, Mantenimiento) and Acerca de.
 - [ ] Settings looks right in light and dark, at 100/150/200 % scaling, and with the keyboard only.
 - [ ] Dropdowns (no native lists): open with a click, Enter, Space or ↓; ↑ ↓ Home End move; a letter jumps (again cycles); Enter or Tab chooses; Esc closes without changing; a click outside closes. The list is opaque and readable in light and dark, with Mica on and off, and opens upwards near the bottom.
@@ -135,6 +135,7 @@ Install from the GitHub release on a clean user account (or a VM), not from `tau
 - [ ] README: the GIF plays, the screenshots load and the links work on github.com.
 
 ## Measurements (SPEC §3.4)
-- [ ] `cargo run --release --example engine -- --check 20`: frames ≈ 100 % of expected, CPU < 1 % of the machine.
+- [ ] `cargo run --release --example engine -- --check 20`: frames ≈ 100 % of expected, CPU < 1 % of the machine, buffer 80 ms, 0 underruns.
+- [ ] Busy PC: with every core loaded (a big build, or a CPU stress test), the noise stays clean. The log shows `audio thread: MMCSS "Pro Audio"` and `device buffer: … (80.0 ms)`, and no `audio underrun` lines. Measured 2026-11-03 with 32–64 busy threads on 16: before (22 ms, normal priority) 2 underruns/15 s in release and 12–15 in debug; after, 0 in both.
 - [ ] Memory (RAM = private working set incl. WebView2, bundled build), measured 2026-10-29: no panel ~3 MB; panel open ~154 MB; hidden and suspended ~148 MB; 5 minutes after closing (webview destroyed) ~6 MB. Executable: 6.0 MB.
 - [ ] Panel open latency, click to first frame on screen (2026-10-29): already built 63–78 ms; hover ≥ 600 ms before the click ~100 ms; hover 400 ms ~210 ms; hover 250 ms ~300–380 ms; no hover (keyboard, second launch) ~600 ms. Building the webview takes ~500 ms.

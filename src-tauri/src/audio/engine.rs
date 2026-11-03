@@ -10,7 +10,7 @@
 
 use std::collections::HashMap;
 use std::f32::consts::FRAC_1_SQRT_2;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, AtomicU32, AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread::JoinHandle;
@@ -25,6 +25,7 @@ use super::device_watch::{
     Endpoint, LockPolicy, OutputChangePolicy, OutputKind, PauseReason, SystemEvent, SystemWatch,
     Verdict, on_output_change, resumes_after_unlock, resumes_on,
 };
+use super::mmcss::{AudioThread, Priority};
 use super::noise::{Controls, NoiseColor, NoiseRenderer, calibrate};
 use super::params::Params;
 
@@ -41,6 +42,11 @@ const DEFAULT_POLL: Duration = Duration::from_secs(1);
 const SPECTRUM_FRAME: Duration = Duration::from_millis(33);
 /// Longest wait for a fade-out on the old output before switching.
 const SWITCH_FADE_LIMIT: Duration = Duration::from_millis(3_200);
+/// Device buffer unless Settings picks another. Latency doesn't matter for a
+/// noise generator; a long buffer lets the audio thread be late by most of
+/// it without the device running dry on a busy PC. Changes still glide, so
+/// they only arrive this much later.
+pub const DEFAULT_BUFFER_MS: u32 = 80;
 
 #[derive(Debug, thiserror::Error)]
 pub enum EngineError {
@@ -68,7 +74,7 @@ pub struct EngineConfig {
     /// fixed output that disappears pauses the noise: it never falls back to
     /// another device (CLAUDE.md rule 10).
     pub output_device: Option<String>,
-    /// Fixed buffer length, if the device supports it; `None` = Windows'.
+    /// Device buffer length; `None` = `DEFAULT_BUFFER_MS`.
     pub buffer_ms: Option<u32>,
 }
 
@@ -114,6 +120,15 @@ struct Shared {
     /// Generation of a stream whose error callback fired (0 = none).
     failed: AtomicU64,
     frames: AtomicU64,
+    /// Buffers the device ran dry on (the callback came too late), since launch.
+    underruns: AtomicU64,
+    /// Bumped before every `play()`: the first buffer after a start is empty
+    /// by design and isn't an underrun.
+    starts: AtomicU32,
+    /// Size of the device buffer in frames, as the callback sees it (0 = not yet).
+    capacity: AtomicU32,
+    /// The audio thread's `Priority` (0 = not known yet).
+    priority: AtomicU8,
     config: Mutex<EngineConfig>,
     paused_for: Mutex<Option<PauseReason>>,
     output: Mutex<Option<OutputInfo>>,
@@ -162,6 +177,10 @@ impl AudioEngine {
             bell_pending: AtomicBool::new(false),
             failed: AtomicU64::new(0),
             frames: AtomicU64::new(0),
+            underruns: AtomicU64::new(0),
+            starts: AtomicU32::new(0),
+            capacity: AtomicU32::new(0),
+            priority: AtomicU8::new(0),
             config: Mutex::new(config),
             paused_for: Mutex::new(None),
             output: Mutex::new(None),
@@ -284,6 +303,16 @@ impl AudioEngine {
     pub fn frames_rendered(&self) -> u64 {
         self.shared.frames.load(Ordering::Relaxed)
     }
+
+    /// Times the device ran out of audio since start (diagnostics).
+    pub fn underruns(&self) -> u64 {
+        self.shared.underruns.load(Ordering::Relaxed)
+    }
+
+    /// The device buffer in frames, once the stream has run (diagnostics).
+    pub fn buffer_frames(&self) -> u32 {
+        self.shared.capacity.load(Ordering::Relaxed)
+    }
 }
 
 impl Drop for AudioEngine {
@@ -322,6 +351,12 @@ struct Control {
     retry_at: Option<Instant>,
     switch_at: Option<Instant>,
     next_poll: Instant,
+    /// Underruns already written to the log.
+    underruns_logged: u64,
+    /// Whether the current stream's buffer size has been logged.
+    capacity_logged: bool,
+    /// Whether the current stream's thread priority has been logged.
+    priority_logged: bool,
 }
 
 impl Control {
@@ -344,6 +379,9 @@ impl Control {
             retry_at: Some(Instant::now()),
             switch_at: None,
             next_poll: Instant::now() + DEFAULT_POLL,
+            underruns_logged: 0,
+            capacity_logged: false,
+            priority_logged: false,
         }
     }
 
@@ -460,8 +498,10 @@ impl Control {
             }
         }
 
+        self.log_health();
+
         match &mut self.live {
-            Some(live) if playing && !live.running => match live.stream.play() {
+            Some(live) if playing && !live.running => match start(&self.shared, &live.stream) {
                 Ok(()) => live.running = true,
                 Err(e) => {
                     log::warn!("could not start the stream: {e}");
@@ -542,6 +582,40 @@ impl Control {
         }
     }
 
+    /// Writes what the audio thread can't: underruns as they happen, and the
+    /// buffer size and thread priority once they are known.
+    fn log_health(&mut self) {
+        let underruns = self.shared.underruns.load(Ordering::Relaxed);
+        if underruns != self.underruns_logged {
+            log::warn!(
+                "audio underrun: {} more, {underruns} since launch",
+                underruns - self.underruns_logged
+            );
+            self.underruns_logged = underruns;
+        }
+        let capacity = self.shared.capacity.load(Ordering::Relaxed);
+        if !self.capacity_logged && capacity > 0 {
+            self.capacity_logged = true;
+            if let Some(info) = &*lock(&self.shared.output) {
+                log::info!(
+                    "device buffer: {capacity} frames ({:.1} ms)",
+                    capacity as f32 * 1000.0 / info.sample_rate as f32
+                );
+            }
+        }
+        let priority = Priority::from_u8(self.shared.priority.load(Ordering::Relaxed));
+        if let Some(priority) = priority.filter(|_| !self.priority_logged) {
+            self.priority_logged = true;
+            match priority {
+                Priority::ProAudio => log::info!("audio thread: MMCSS \"Pro Audio\""),
+                Priority::TimeCritical => {
+                    log::warn!("MMCSS unavailable; audio thread at time-critical priority");
+                }
+                Priority::Normal => log::warn!("audio thread at normal priority"),
+            }
+        }
+    }
+
     fn auto_pause(&mut self, reason: PauseReason) {
         log::info!("pausing: {reason:?}");
         self.shared.params.set_playing(false);
@@ -616,14 +690,14 @@ impl Control {
         let sample_rate = supported.sample_rate();
         let channels = supported.channels();
         let format = supported.sample_format();
-        let wanted = lock(&self.shared.config).buffer_ms;
-        let buffer_size = match (wanted, supported.buffer_size()) {
-            (Some(ms), cpal::SupportedBufferSize::Range { min, max }) => {
-                let frames = (sample_rate * ms / 1000).clamp(*min, *max);
-                BufferSize::Fixed(frames)
-            }
-            _ => BufferSize::Default,
-        };
+        // Shared-mode WASAPI takes any length. The range cpal reports for a
+        // normal (not offloaded) output is just the device period, ~10 ms, so
+        // clamping to it would undo the setting. Callbacks still come once a
+        // period; the buffer only sets how much audio is queued ahead.
+        let ms = lock(&self.shared.config)
+            .buffer_ms
+            .unwrap_or(DEFAULT_BUFFER_MS);
+        let buffer_size = BufferSize::Fixed((sample_rate * ms / 1000).max(1));
         let config = StreamConfig {
             channels,
             sample_rate,
@@ -650,6 +724,10 @@ impl Control {
         self.generation += 1;
         let generation = self.generation;
         self.shared.silent.store(true, Ordering::Relaxed);
+        self.shared.capacity.store(0, Ordering::Relaxed);
+        self.shared.priority.store(0, Ordering::Relaxed);
+        self.capacity_logged = false;
+        self.priority_logged = false;
         // A quarter second of headroom; the spectrum thread drains it every 33 ms.
         let (producer, consumer) = rtrb::RingBuffer::new(sample_rate as usize / 4);
         *lock(&self.shared.tap) = Some(Tap {
@@ -677,7 +755,7 @@ impl Control {
         }?;
 
         let running = if self.shared.params.playing() {
-            stream.play()?;
+            start(&self.shared, &stream)?;
             true
         } else {
             // Built but idle: the next play starts instantly (SPEC §3.3).
@@ -714,10 +792,31 @@ where
 {
     let channels = usize::from(config.channels);
     let errors = shared.clone();
+    // Underrun detection: WASAPI asks for whatever room is free, so a request
+    // for the whole buffer means the device had nothing left to play.
+    let mut start_seen: Option<u32> = None;
+    let mut capacity = 0usize;
+    let mut thread = AudioThread::default();
     device.build_output_stream(
         config,
         // The audio thread: render only.
         move |data: &mut [T], _: &cpal::OutputCallbackInfo| {
+            // MMCSS "Pro Audio" on the first buffer; a single branch after.
+            if let Some(priority) = thread.raise() {
+                shared.priority.store(priority.to_u8(), Ordering::Relaxed);
+            }
+            let frames = data.len() / channels;
+            let starts = shared.starts.load(Ordering::Relaxed);
+            if start_seen != Some(starts) {
+                start_seen = Some(starts);
+            } else if capacity > 0 && frames >= capacity {
+                shared.underruns.fetch_add(1, Ordering::Relaxed);
+            }
+            if frames > capacity {
+                capacity = frames;
+                shared.capacity.store(frames as u32, Ordering::Relaxed);
+            }
+
             let controls = shared.params.snapshot();
             let feed_tap = shared.spectrum_on.load(Ordering::Relaxed);
             let muted = shared.muted.load(Ordering::Relaxed);
@@ -739,9 +838,7 @@ where
             shared
                 .silent
                 .store(!controls.playing && renderer.is_silent(), Ordering::Relaxed);
-            shared
-                .frames
-                .fetch_add((data.len() / channels) as u64, Ordering::Relaxed);
+            shared.frames.fetch_add(frames as u64, Ordering::Relaxed);
         },
         move |err: cpal::Error| {
             // A stream on a concrete device never reroutes; anything else
@@ -752,6 +849,13 @@ where
         },
         None,
     )
+}
+
+/// Starts the device, marking the start so the callback doesn't count the
+/// empty buffer it begins with as an underrun.
+fn start(shared: &Shared, stream: &cpal::Stream) -> Result<(), cpal::Error> {
+    shared.starts.fetch_add(1, Ordering::Relaxed);
+    stream.play()
 }
 
 /// Stereo to the first two channels, silence on any others; mono gets an

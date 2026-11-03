@@ -46,7 +46,8 @@ rumor/
 │  │  ├─ panel.rs            # crear/posicionar/ocultar ventana, Mica
 │  │  └─ audio/
 │  │     ├─ mod.rs
-│  │     ├─ engine.rs        # stream cpal, reconexión
+│  │     ├─ engine.rs        # stream cpal, reconexión, buffer de 80 ms y underruns al log
+│  │     ├─ mmcss.rs         # hilo de audio en MMCSS "Pro Audio"
 │  │     ├─ device_watch.rs  # IMMNotificationClient, cascos vs altavoces
 │  │     ├─ noise.rs         # generadores (puros, testeables)
 │  │     ├─ bell.rs          # campana de aviso: cuenco tibetano sintetizado (puro)

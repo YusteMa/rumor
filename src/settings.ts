@@ -535,7 +535,7 @@ const SECTIONS: { id: string; title: Key; build: () => Node[] }[] = [
         subtitle("subOutput"),
         card(
           row("optDevice", "hintDevice", device.node, true),
-          row("optBuffer", "hintBuffer", select([["auto", t("bufferAuto")], ["ms10", t("bufferMs", { n: 10 })], ["ms20", t("bufferMs", { n: 20 })], ["ms50", t("bufferMs", { n: 50 })]], (s) => s.advanced.buffer, (v) => ({ advanced: { buffer: v } }))),
+          row("optBuffer", "hintBuffer", select([["auto", t("bufferAuto", { n: 80 })], ["ms20", t("bufferMs", { n: 20 })], ["ms50", t("bufferMs", { n: 50 })], ["ms100", t("bufferMs", { n: 100 })]], (s) => s.advanced.buffer, (v) => ({ advanced: { buffer: v } }))),
           row("optDeviceInfo", null, info, true),
         ),
         subtitle("subWindow"),

@@ -5,6 +5,7 @@ pub mod analysis;
 pub mod bell;
 pub mod device_watch;
 pub mod engine;
+pub mod mmcss;
 pub mod noise;
 pub mod params;
 pub mod smoothing;

@@ -32,7 +32,7 @@ export interface Settings {
   tray: { leftClick: "toggle" | "panel" };
   appearance: Appearance;
   startup: { launchAtLogin: boolean };
-  advanced: { outputDevice: string | null; buffer: "auto" | "ms10" | "ms20" | "ms50" };
+  advanced: { outputDevice: string | null; buffer: "auto" | "ms20" | "ms50" | "ms100" };
   last: {
     color: Color;
     volume: number;

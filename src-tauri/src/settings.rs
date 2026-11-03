@@ -122,24 +122,27 @@ pub enum BreakNoise {
     Keep,
 }
 
-/// Output buffer: Windows' default, or a fixed length.
+/// Output buffer: Rumor's default (`DEFAULT_BUFFER_MS`) or a fixed length.
+/// Values from older versions (`ms10`) read as `Auto`.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum BufferChoice {
-    #[default]
-    Auto,
-    Ms10,
     Ms20,
     Ms50,
+    Ms100,
+    // Last: `serde(other)` has to be.
+    #[default]
+    #[serde(other)]
+    Auto,
 }
 
 impl BufferChoice {
     pub fn millis(self) -> Option<u32> {
         match self {
             Self::Auto => None,
-            Self::Ms10 => Some(10),
             Self::Ms20 => Some(20),
             Self::Ms50 => Some(50),
+            Self::Ms100 => Some(100),
         }
     }
 }
@@ -647,6 +650,15 @@ mod tests {
         assert_eq!(s.study.idle_minutes, 0);
         assert_eq!(s.shortcuts.study.as_deref(), Some("Ctrl+Alt+T"));
         assert_eq!(s.last.study_mode, StudyMode::Stopwatch);
+    }
+
+    #[test]
+    fn the_removed_10_ms_buffer_reads_as_auto() {
+        let s = Settings::from_json(json!({ "advanced": { "buffer": "ms10" } })).unwrap();
+        assert_eq!(s.advanced.buffer, BufferChoice::Auto);
+        assert_eq!(BufferChoice::Auto.millis(), None);
+        let s = Settings::from_json(json!({ "advanced": { "buffer": "ms100" } })).unwrap();
+        assert_eq!(s.advanced.buffer.millis(), Some(100));
     }
 
     #[test]

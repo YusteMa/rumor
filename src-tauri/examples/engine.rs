@@ -205,8 +205,10 @@ fn check(seconds: f64) {
         return println!("FAIL: no output opened");
     };
     let (f0, c0, t0) = (engine.frames_rendered(), cpu_time(), Instant::now());
+    let u0 = engine.underruns();
     std::thread::sleep(Duration::from_secs_f64(seconds));
     let (frames, cpu, wall) = (engine.frames_rendered() - f0, cpu_time() - c0, t0.elapsed());
+    let underruns = engine.underruns() - u0;
 
     let expected = f64::from(output.sample_rate) * wall.as_secs_f64();
     let cores = std::thread::available_parallelism().map_or(1, |n| n.get()) as f64;
@@ -226,6 +228,11 @@ fn check(seconds: f64) {
     println!(
         "cpu:       {one_core:.2} % of one core, {:.3} % of the machine ({cores} threads)",
         one_core / cores
+    );
+    println!(
+        "buffer:    {} frames ({:.0} ms), {underruns} underruns",
+        engine.buffer_frames(),
+        f64::from(engine.buffer_frames()) * 1000.0 / f64::from(output.sample_rate)
     );
     engine.set_playing(false);
     std::thread::sleep(Duration::from_millis(600));

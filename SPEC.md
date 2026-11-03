@@ -178,9 +178,9 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
 ### 4.3c Módulos activables
 - **Por defecto Rumor es solo ruido.** El cronómetro es un **"Modo estudio" opcional, desactivado por defecto**. Con él desactivado, **nada** del cronómetro aparece en el panel, la bandeja, el tooltip ni los atajos.
 - Ajustes → **Estudio → Modo estudio** (sí/no) sustituye a la antigua sección "Módulos" (decidido el 2026-10-30): el ruido está siempre; el estudio se añade.
-- **Desactivado:** el panel queda exactamente como el del ruido; el cronómetro no existe (ni su atajo ni su punto en la bandeja).
+- **Desactivado:** el panel queda exactamente como el del ruido; el cronómetro no existe (ni su atajo ni su punto en la bandeja ni su tooltip).
 - **Activado:** el ruido arriba (protagonista) y la tarjeta de Estudio debajo, compacta; el panel crece lo justo para ella.
-- El **tooltip y el icono** se adaptan: `Rumor · Rosa 40 % · Estudiando 1:23:45`. El icono tiene una variante con un punto que indica que el cronómetro está corriendo.
+- El **tooltip** se adapta: `Rumor · Rosa 40 % · Estudiando 1:23:45`. El icono lleva un punto **solo** mientras espera la pregunta «¿Seguías estudiando?» (§4.3b); con el cronómetro corriendo sin más, no hay punto (decidido el 2026-11-03).
 
 ### 4.4 Ajustes — sencillo por fuera, completo por dentro
 El panel solo enseña lo que usas a diario. **Todo lo demás vive en Ajustes**, una ventana aparte (720×640 px al abrirse, como mínimo 520×440, y siempre dentro de la pantalla) con barra lateral de secciones. Cada opción tiene una línea de explicación debajo y un valor por defecto sensato: **nadie debería necesitar entrar para que la app funcione bien**.

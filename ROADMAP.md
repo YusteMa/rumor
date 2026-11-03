@@ -91,6 +91,9 @@ Cada fase termina **compilando, con los tests en verde y con un commit**. No se 
 - **Estadísticas de estudio:** gráfico semanal y mensual, tiempo por asignatura, racha de días y exportar a CSV.
 
 - **Reacción a otro audio** (vídeos, llamadas): bajar el volumen (cuánto, configurable) / pausar / nada, con transiciones suaves como en iOS. Se detecta con las sesiones de audio de WASAPI.
+- **Rediseño del cronómetro** (la tarjeta de Estudio del panel).
+- **Mini widget flotante opcional** con el tiempo de estudio: arrastrable y siempre encima; desactivado por defecto.
+- **Revisión de Ajustes** tras el feedback de la beta.
 
 ### v0.3 — "Más sonidos, mismo principio"
 - Más colores: gris (ecualizado a la sensibilidad del oído), azul y violeta.

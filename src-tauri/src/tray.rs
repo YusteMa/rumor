@@ -1,8 +1,9 @@
 //! Tray icon, tooltip and clicks (SPEC §4.1, §4.3c). Left click toggles the
 //! noise; right click opens the panel next to the icon. On play the bars
 //! rise and on pause they settle, then the icon keeps still (no motion at
-//! all with Windows' animation effects off). With "Modo estudio" on, a dot on the icon and the tooltip show the
-//! stopwatch.
+//! all with Windows' animation effects off). With "Modo estudio" on, the tooltip
+//! shows the stopwatch, and a dot on the icon says the "Still studying?"
+//! question is waiting.
 
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::Duration;
@@ -50,10 +51,9 @@ struct Shown {
     animator: Arc<Animator>,
 }
 
-/// The dot: the stopwatch is running, or the idle question waits.
+/// The dot: only the idle question waiting, so it means "look at me".
 fn has_dot(s: &Snapshot) -> bool {
-    s.study
-        .is_some_and(|st| st.run == Run::Running || st.idle_pending)
+    s.study.is_some_and(|st| st.idle_pending)
 }
 
 /// The icon for the current scaling, drawn at its exact size so Windows
@@ -281,6 +281,44 @@ pub fn refresh(app: &AppHandle) {
                 log::warn!("tray tooltip: {e}");
             }
             *current = text;
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::state::Sound;
+
+    fn snapshot(study: Option<StudyBrief>) -> Snapshot {
+        Snapshot {
+            playing: true,
+            sound: Sound {
+                color: NoiseColor::Pink,
+                volume: 0.4,
+            },
+            paused_for: None,
+            timer_remaining: None,
+            study,
+        }
+    }
+
+    fn brief(run: Run, idle_pending: bool) -> StudyBrief {
+        StudyBrief {
+            run,
+            phase: Phase::Work,
+            worked_secs: 600,
+            phase_left_secs: None,
+            idle_pending,
+        }
+    }
+
+    #[test]
+    fn the_dot_only_shows_while_the_idle_question_waits() {
+        assert!(!has_dot(&snapshot(None)));
+        for run in [Run::Stopped, Run::Running, Run::Paused] {
+            assert!(!has_dot(&snapshot(Some(brief(run, false)))), "{run:?}");
+            assert!(has_dot(&snapshot(Some(brief(run, true)))), "{run:?}");
         }
     }
 }
