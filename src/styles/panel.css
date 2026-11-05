@@ -571,12 +571,67 @@ body {
   white-space: nowrap;
 }
 
+/* A newer version (update.rs), in the shortcut hint's place. */
+.update {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--control-height-sm);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--ink);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  transition: box-shadow var(--dur-press) var(--ease-out);
+}
+
+.update:hover:not(:disabled) {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.update:disabled {
+  cursor: default;
+  color: var(--muted);
+}
+
+.update[hidden],
+.shortcut[hidden] {
+  display: none;
+}
+
+.update svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: var(--icon-stroke);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* While it downloads, the arrow breathes. */
+.update:disabled svg {
+  animation: update-pulse var(--dur-pulse) var(--ease-in-out) infinite;
+}
+
+@keyframes update-pulse {
+  50% {
+    opacity: var(--breathe-dim);
+  }
+}
+
 /* ---- Reduced motion: no halo or movement, fades only ------------------------ */
 
 @media (prefers-reduced-motion: reduce) {
   .is-playing .play::before {
     animation: none;
     transform: none;
+  }
+
+  .update:disabled svg {
+    animation: none;
   }
 }
 

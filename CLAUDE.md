@@ -39,6 +39,7 @@ rumor/
 │  │  ├─ taskbar.rs          # tema claro/oscuro de la barra (tinta del icono)
 │  │  ├─ i18n.rs             # textos de Rust, leídos de src/i18n/*.json
 │  │  ├─ shortcut.rs
+│  │  ├─ update.rs           # auto-actualización: comprobar, avisar, instalar
 │  │  ├─ timer.rs
 │  │  ├─ ear_break.rs        # recordatorio de descanso de oídos (puro, testeable)
 │  │  ├─ settings.rs         # modelo de ajustes y store
@@ -78,7 +79,7 @@ rumor/
 5. **Nada de `unwrap()`/`expect()` fuera de los tests.** Usa errores con `thiserror` y loguea con `log` + `tauri-plugin-log`.
 6. **Permisos mínimos** en `capabilities/`: solo los comandos y plugins que se usan.
 7. **Sin frameworks de UI ni librerías de componentes.** El panel debe pesar muy poco.
-8. **Sin telemetría ni peticiones de red** (salvo el futuro updater, que será opt-in).
+8. **Sin telemetría ni peticiones de red**, salvo la búsqueda de actualizaciones de `update.rs` (activada por defecto y desactivable en Ajustes → Acerca de; decidido el 2026-11-05). No envía nada del usuario.
 9. **Diseño = SPEC §4.5.** Todo color, tamaño y duración sale de `src/styles/tokens.css`; ningún valor suelto en los componentes. Sencillo por fuera (panel) y completo por dentro (Ajustes). Si dudas entre añadir algo al panel o a Ajustes, va a Ajustes.
 10. **Cascos desconectados → pausa** por defecto (SPEC §3.3). Nunca soltar ruido por los altavoces sin que el usuario lo haya pedido.
 11. **El tiempo se mide con `Instant`, no sumando ticks.** El cronómetro debe cuadrar al segundo tras horas, suspensiones y pausas. Las fechas guardadas, en UTC; se muestran en hora local.

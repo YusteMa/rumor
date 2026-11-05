@@ -364,10 +364,22 @@ impl Default for Appearance {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct Startup {
     pub launch_at_login: bool,
+    /// Look for a newer version on GitHub (the only network request Rumor
+    /// makes, CLAUDE.md rule 8).
+    pub check_updates: bool,
+}
+
+impl Default for Startup {
+    fn default() -> Self {
+        Self {
+            launch_at_login: false,
+            check_updates: true,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -392,6 +404,12 @@ pub struct LastSession {
     /// The panel remembers the study mode last used.
     pub study_mode: StudyMode,
     pub study_tag: Option<i64>,
+    /// The last version announced by a notification, so each one is
+    /// announced once.
+    pub update_notified: Option<String>,
+    /// The output an update interrupted the noise on: play again on the next
+    /// launch, if it is still the output then (CLAUDE.md rule 10).
+    pub resume_after_update: Option<String>,
 }
 
 impl Default for LastSession {
@@ -404,6 +422,8 @@ impl Default for LastSession {
             output_volumes: BTreeMap::new(),
             study_mode: StudyMode::Stopwatch,
             study_tag: None,
+            update_notified: None,
+            resume_after_update: None,
         }
     }
 }
@@ -637,6 +657,7 @@ mod tests {
         assert_eq!(s.shortcuts.toggle.as_deref(), Some("Ctrl+Alt+P"));
         assert_eq!(s.tray.left_click, LeftClick::Toggle);
         assert!(!s.startup.launch_at_login);
+        assert!(s.startup.check_updates);
         assert_eq!(s.appearance.accent, AccentChoice::Noise);
         assert!(s.sound.per_output_volume);
         assert!(!s.sound.mono);
@@ -650,6 +671,13 @@ mod tests {
         assert_eq!(s.study.idle_minutes, 0);
         assert_eq!(s.shortcuts.study.as_deref(), Some("Ctrl+Alt+T"));
         assert_eq!(s.last.study_mode, StudyMode::Stopwatch);
+    }
+
+    #[test]
+    fn settings_from_before_updates_check_for_them() {
+        let s = Settings::from_json(json!({ "startup": { "launchAtLogin": true } })).unwrap();
+        assert!(s.startup.launch_at_login);
+        assert!(s.startup.check_updates);
     }
 
     #[test]

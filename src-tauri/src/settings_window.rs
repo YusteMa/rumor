@@ -14,6 +14,7 @@ use crate::shortcut::{self, ShortcutStatus};
 use crate::state::{self, AppState};
 use crate::study::db::Tag;
 use crate::taskbar;
+use crate::update::{self, UpdateView};
 
 pub const LABEL: &str = "settings";
 /// Opening size, in logical pixels: room for text and control side by side.
@@ -42,6 +43,8 @@ pub struct SettingsView {
     pub mica: bool,
     /// Study tags, for Settings → Study.
     pub tags: Vec<Tag>,
+    /// A newer version, for Settings → About.
+    pub update: Option<UpdateView>,
 }
 
 pub fn view(app: &AppHandle) -> Option<SettingsView> {
@@ -55,6 +58,7 @@ pub fn view(app: &AppHandle) -> Option<SettingsView> {
         system_accent: taskbar::system_accent(),
         mica: MICA.load(Ordering::Relaxed),
         tags: state::tags(app),
+        update: update::view(app),
     })
 }
 

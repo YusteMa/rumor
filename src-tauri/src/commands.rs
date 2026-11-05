@@ -16,6 +16,7 @@ use crate::state::{self, PanelState};
 use crate::study::StudyView;
 use crate::study::db::Tag;
 use crate::study::machine::Mode;
+use crate::update;
 
 #[tauri::command]
 pub fn get_state(app: AppHandle) -> Option<PanelState> {
@@ -234,4 +235,17 @@ pub fn open_logs(app: AppHandle) -> Result<(), String> {
         .spawn()
         .map(|_| ())
         .map_err(|e| e.to_string())
+}
+
+/// Settings → About's "Buscar ahora": the newer version, or `None` when this
+/// one is the latest.
+#[tauri::command]
+pub async fn update_check(app: AppHandle) -> Result<Option<String>, String> {
+    update::check(&app).await
+}
+
+/// The update's "Actualizar" button. Rumor closes and reopens on success.
+#[tauri::command]
+pub async fn update_install(app: AppHandle) -> Result<(), String> {
+    update::install(&app).await
 }

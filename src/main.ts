@@ -32,6 +32,7 @@ const ui = {
   footer: footer(
     () => api.openSettings(),
     () => api.quit(),
+    () => api.installUpdate(),
   ),
 };
 

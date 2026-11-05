@@ -192,7 +192,7 @@ El panel solo enseña lo que usas a diario. **Todo lo demás vive en Ajustes**, 
 | **Atajos** | Alternar ruido (`Ctrl+Alt+P`) · subir y bajar volumen · siguiente color · abrir panel · cronómetro (`Ctrl+Alt+T`, solo con el Modo estudio) · acción del clic izquierdo en el icono. Se graban pulsando la combinación |
 | **Apariencia** | Tema: sistema, claro u oscuro · acento: el del ruido *(por defecto)* o el del sistema · mostrar espectro · idioma |
 | **Avanzado** | *Sonido:* color al iniciar · duración del fundido (0,2–3 s) · volumen máximo (el 100 % del slider equivale a ese máximo) · volumen de cada salida (§3.3) · ajuste fino de tono (v0.2). *Temporizador:* tiempos rápidos (25/50/90) · fundido final (unos 10 s). *Salida de audio:* dispositivo fijo · buffer · salida actual. *Ventana:* efecto Mica. *Mantenimiento:* exportar/importar ajustes (JSON) · registros · restablecer todo |
-| **Acerca de** | Versión · enlace a GitHub · licencia · cómo reportar un fallo |
+| **Acerca de** | Versión · enlace a GitHub · licencia · cómo reportar un fallo · **actualizaciones**: buscar (activado por defecto) y "Buscar ahora" / "Actualizar" (§7) |
 
 - Los cambios se aplican **al instante**, sin botón de "Guardar".
 - Decidido el 2026-10-29: el volumen máximo escala el slider; "empezar sonando" y "recordar el último estado" se funden en una sola opción; "empezar minimizado" se elimina (Rumor siempre arranca en la bandeja); el acento puede ser el del ruido o el del sistema.
@@ -262,7 +262,7 @@ El panel solo enseña lo que usas a diario. **Todo lo demás vive en Ajustes**, 
 - Instalador NSIS (`.exe`) y `.msi` generados con **GitHub Actions** (`tauri-apps/tauri-action`) y publicados como **pre-release**.
 
 ❌ **Fuera de la beta** (va en ROADMAP.md)
-- Auto-actualización, firma de código, controles multimedia, ecualizador de tono, mezclador de sonidos, macOS y Linux.
+- Firma de código, controles multimedia, ecualizador de tono, mezclador de sonidos, macOS y Linux.
 
 ---
 
@@ -287,6 +287,13 @@ El panel solo enseña lo que usas a diario. **Todo lo demás vive en Ajustes**, 
   - **SignPath Foundation**: firma gratuita para proyectos open source (requiere solicitud y aprobación).
   - Certificado de pago o Azure Trusted Signing (revisar si está disponible para particulares en España).
 - **Después:** `winget` (manifiesto en `microsoft/winget-pkgs`) y quizá Microsoft Store.
+- **Auto-actualización** (desde la 0.1.0-beta.2, decidido el 2026-11-05), con `tauri-plugin-updater`:
+  - Busca versión nueva **30 s después de abrirse y cada 6 h**, activado por defecto (Ajustes → Acerca de lo desactiva). Es la única petición de red de Rumor y no envía nada del usuario.
+  - Al encontrarla: **una notificación por versión** y, en el pie del panel, el botón **"Actualizar"** en lugar del texto del atajo (el panel no cambia de alto). También en Ajustes → Acerca de.
+  - Un clic: descarga sin cortar el ruido, guarda la sesión de estudio y los ajustes, **funde el ruido**, instala en modo pasivo y **Rumor se vuelve a abrir solo**; si sonaba, sigue sonando, pero solo si la salida es la misma que antes (si se desenchufan los cascos durante la actualización, se queda en pausa: §3.3).
+  - Los instaladores van **firmados con la clave del updater** (la privada en los secretos del repo, la pública en `tauri.conf.json`); sin firma válida no se instala nada.
+  - El manifiesto `latest.json` vive en la rama `updater` (lo escribe el workflow de release), porque el enlace "latest release" de GitHub se salta las pre-releases.
+  - Las compilaciones de desarrollo no buscan solas; solo con "Buscar ahora".
 
 ---
 
@@ -314,3 +321,4 @@ El panel solo enseña lo que usas a diario. **Todo lo demás vive en Ajustes**, 
 | 9 | Modo estudio y vinculación | **Modo estudio desactivado por defecto**; al activarlo, vinculado con el ruido en los dos sentidos | Cerrada (2026-10-30) |
 | 10 | Icono de la app | **Tres barras de acento sobre tesela oscura con borde fino** | Cerrada (2026-10-31) |
 | 11 | Icono de la bandeja | **Animado solo al cambiar de estado** (~400 ms), quieto mientras suena | Cerrada (2026-10-31) |
+| 12 | Auto-actualización | **Activada por defecto**, aviso en el panel + un clic (§7) | Cerrada (2026-11-05) |

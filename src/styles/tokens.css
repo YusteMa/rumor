@@ -136,6 +136,7 @@
   --dur-close: 120ms;
   --dur-max: 250ms;
   --dur-breathe: 4s;
+  --dur-pulse: 1.2s;
   /* Accent change between noises; the spectrum curve morphs in step. */
   --dur-accent: 300ms;
   --open-offset: 8px;

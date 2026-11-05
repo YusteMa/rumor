@@ -552,6 +552,37 @@ const SECTIONS: { id: string; title: Key; build: () => Node[] }[] = [
     build: () => {
       const version = el("p", { className: "muted" });
       syncs.push((v) => (version.textContent = t("aboutVersion", { v: v.version })));
+      // One button: "Buscar ahora", or "Actualizar" once a version is found.
+      const result = status();
+      let checking = false;
+      const action = button("btnCheckNow", () => {
+        if (view?.update) {
+          void api.installUpdate().catch(() => result.say(t("updateFailed")));
+          return;
+        }
+        checking = true;
+        result.say("");
+        if (view) syncUpdate(view);
+        void api
+          .checkUpdate()
+          .then((v) => !v && result.say(t("updateLatest")))
+          .catch(() => result.say(t("updateCheckFail")))
+          .finally(() => {
+            checking = false;
+            if (view) syncUpdate(view);
+          });
+      });
+      const syncUpdate = (v: SettingsView) => {
+        const u = v.update;
+        action.textContent = t(
+          u ? (u.phase === "installing" ? "updateInstalling" : u.phase === "failed" ? "updateRetry" : "updateNow") : checking ? "updateChecking" : "btnCheckNow",
+        );
+        action.classList.toggle("primary", !!u && u.phase !== "installing");
+        action.disabled = checking || u?.phase === "installing";
+        if (u?.phase === "available") result.say(t("updateFound", { v: u.version }));
+        if (u?.phase === "failed") result.say(t("updateFailed"));
+      };
+      syncs.push(syncUpdate);
       return [
         el(
           "div",
@@ -564,6 +595,12 @@ const SECTIONS: { id: string; title: Key; build: () => Node[] }[] = [
           el("p", { textContent: t("aboutTelemetry") }),
           el("p", { className: "muted", textContent: t("aboutBugs") }),
         ),
+        subtitle("subUpdates"),
+        card(
+          row("optCheckUpdates", "hintCheckUpdates", toggle((s) => s.startup.checkUpdates, (on) => ({ startup: { checkUpdates: on } }))),
+          row("optUpdateNow", "hintUpdateNow", action),
+        ),
+        result.node,
       ];
     },
   },

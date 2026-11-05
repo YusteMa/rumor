@@ -45,5 +45,16 @@
         "installMode": "currentUser"
       }
     }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDg0NDRGNTI0QUYyREJDQjUKUldTMXZDMnZKUFZFaE8xVzZOWVE3dEVWSyt0RmVReU5lRWpZYUdGZ1pGanVsRnFRSWlQdzh0UUMK",
+      "endpoints": [
+        "https://raw.githubusercontent.com/YusteMa/rumor/updater/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

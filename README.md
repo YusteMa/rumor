@@ -24,7 +24,8 @@ Rumor **computes the noise sample by sample** on your PC, the way the iPhone's B
 - **Smooth everything:** fades on play, pause and every change. Not a single click.
 - **Sleep timer** with a fade-out, **global shortcut** (`Ctrl+Alt+P`), light and dark themes, Spanish and English.
 - **Study mode (optional):** a stopwatch or Pomodoro that follows the noise, with a synthesized singing-bowl chime, daily and weekly totals, and tags.
-- **Zero telemetry and zero network requests.** Rumor sends nothing anywhere.
+- **Updates itself** with one click when a new version is out.
+- **Zero telemetry.** Rumor sends nothing of yours; its only request is the update check on GitHub, which you can turn off in Settings → About.
 
 <p align="center">
   <img src="docs/screenshots/panel-light.png" width="270" alt="The panel in light mode playing pink noise with a 25-minute timer">
@@ -68,7 +69,8 @@ Tauri v2, a Rust audio engine (`cpal`, WASAPI) and a small TypeScript panel with
 - **Si se desconectan los cascos, se pausa**: nunca suena por los altavoces sin que lo pidas. También se pausa al bloquear el PC.
 - Temporizador con fundido, atajo global `Ctrl+Alt+P`, tema claro y oscuro.
 - **Modo estudio** opcional: cronómetro o Pomodoro vinculado al ruido, con un cuenco tibetano sintetizado como aviso, totales de hoy y de la semana, y etiquetas.
-- **Sin telemetría ni conexiones a internet.**
+- **Se actualiza sola** con un clic cuando sale una versión nueva.
+- **Sin telemetría:** Rumor no envía nada tuyo. Solo consulta GitHub para buscar actualizaciones, y se puede desactivar en Ajustes → Acerca de.
 
 **Instalación:** descarga `Rumor_…_x64-setup.exe` de la [última versión](https://github.com/YusteMa/rumor/releases) y ábrelo. Si Windows dice **«Windows protegió su PC»**, es porque la beta aún no está firmada: pulsa **Más información → Ejecutar de todas formas**. Clic izquierdo en el icono reproduce o pausa; clic derecho abre el panel.
 

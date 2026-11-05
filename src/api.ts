@@ -55,6 +55,13 @@ export interface PanelState {
   appearance: Appearance;
   systemAccent: string | null;
   study: StudyView | null;
+  /** A newer version, once a check found one. */
+  update: UpdateView | null;
+}
+
+export interface UpdateView {
+  version: string;
+  phase: "available" | "installing" | "failed";
 }
 
 export interface Appearance {
@@ -79,6 +86,8 @@ export interface Backend {
   hide(): Promise<void>;
   quit(): Promise<void>;
   openSettings(): Promise<void>;
+  /** Downloads and installs the update; Rumor reopens on its own. */
+  installUpdate(): Promise<void>;
   /** The page has rendered its first state. */
   ready(): Promise<void>;
   /** The first frame after being shown is on screen (timing). */
@@ -123,6 +132,7 @@ async function tauriBackend(): Promise<Backend> {
     studyResolveIdle: (keep) => call("study_resolve_idle", { keep }),
     hide: () => call("hide_panel"),
     quit: () => call("quit"),
+    installUpdate: () => call("update_install"),
     openSettings: () => call("open_settings"),
     ready: () => call("panel_ready"),
     painted: () => call("panel_painted"),
@@ -161,6 +171,9 @@ function mockBackend(): Backend {
     },
     systemAccent: params.get("accent") === "system" ? "#0078d4" : null,
     study: null,
+    update: params.get("update")
+      ? { version: "0.1.0-beta.2", phase: params.get("update") as UpdateView["phase"] }
+      : null,
   };
   // ?study=1 shows the card; ?study=pomodoro, ?idle=14 and ?tags=1 vary it.
   const study: StudyView | null = params.get("study")
@@ -302,6 +315,10 @@ function mockBackend(): Backend {
     },
     hide: async () => {},
     quit: async () => {},
+    installUpdate: async () => {
+      if (state.update) state.update = { ...state.update, phase: "installing" };
+      emit();
+    },
     openSettings: async () => {},
     ready: async () => {},
     painted: async () => {},

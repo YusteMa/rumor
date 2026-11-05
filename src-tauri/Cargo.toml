@@ -35,6 +35,7 @@ tauri-plugin-autostart = "2.7.0"
 tauri-plugin-dialog = "2.8.4"
 rusqlite = { version = "0.40.2", features = ["bundled"] }
 chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
+tauri-plugin-updater = "2.12.0"
 
 # The spectral tests run minutes of noise through FFTs; keep them fast in debug.
 [profile.dev.package.rustfft]

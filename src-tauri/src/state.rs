@@ -22,6 +22,7 @@ use crate::study::db::{DbError, Tag};
 use crate::study::machine::{Mode, Phase, Run};
 use crate::study::{self, Study, StudyView};
 use crate::timer::Timer;
+use crate::update::{self, UpdateView};
 use crate::{panel, settings_window, shortcut, tray};
 
 /// Volume shortcuts move the slider by this much.
@@ -86,6 +87,8 @@ pub struct PanelState {
     pub system_accent: Option<String>,
     /// The study card; `None` with "Modo estudio" off (SPEC §4.3c).
     pub study: Option<StudyView>,
+    /// A newer version, once a check found one.
+    pub update: Option<UpdateView>,
 }
 
 /// What the coordinator did on its own, to undo it at the right moment.
@@ -96,6 +99,9 @@ struct Link {
     noise_paused_for_break: bool,
     /// Locking the PC paused the stopwatch; unlocking continues it.
     study_paused_by_lock: bool,
+    /// An update interrupted the noise on this output: play again once the
+    /// engine opens it, and only there.
+    resume_on: Option<String>,
 }
 
 pub struct AppState {
@@ -216,6 +222,7 @@ pub fn panel_state(app: &AppHandle) -> Option<PanelState> {
             .flatten(),
         appearance: settings.appearance,
         study: state.study_view(),
+        update: update::view(app),
     })
 }
 
@@ -229,6 +236,7 @@ pub fn setup(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let color = settings.start_color();
     settings.last.color = color;
     let playing = settings.start_playing();
+    let resume_on = settings.last.resume_after_update.take();
     let fade = settings.sound.fade_ms as f32;
     let lang = resolve_lang(settings.appearance.language);
 
@@ -273,7 +281,10 @@ pub fn setup(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         settings: Mutex::new(settings),
         timer: Mutex::new(timer),
         study: Mutex::new(study),
-        link: Mutex::new(Link::default()),
+        link: Mutex::new(Link {
+            resume_on,
+            ..Link::default()
+        }),
         ears: Mutex::new(EarBreak::default()),
     });
     // Shortcuts first, so the tray and panel can show them.
@@ -282,6 +293,10 @@ pub fn setup(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     panel::init(app);
     sync_autostart(app, launch_at_login);
     start_ticker(app);
+    update::start(app);
+    if let Some(output) = app.state::<AppState>().engine.output() {
+        resume_after_update(app, &output.endpoint.id);
+    }
     if welcome {
         let state = app.state::<AppState>();
         let strings = state.strings();
@@ -355,6 +370,7 @@ fn on_engine_event(app: &AppHandle, event: EngineEvent) {
         EngineEvent::OutputChanged(output) => {
             if let Some(output) = output {
                 apply_output_volume(app, &output.endpoint.id);
+                resume_after_update(app, &output.endpoint.id);
             }
             settings_window::emit_changed(app);
         }
@@ -974,6 +990,77 @@ pub fn quit(app: &AppHandle) {
         std::thread::sleep(Duration::from_millis(u64::from(fade) + 150));
         app.exit(0);
     });
+}
+
+// ---- Updates -------------------------------------------------------------------
+
+/// A check found a newer version (update.rs): show it, and announce each
+/// version once.
+pub fn update_found(app: &AppHandle, version: &str) {
+    refresh(app);
+    settings_window::emit_changed(app);
+    let state = app.state::<AppState>();
+    if state.settings().last.update_notified.as_deref() == Some(version) {
+        return;
+    }
+    remember(app, |last| last.update_notified = Some(version.to_owned()));
+    let (title, body) = {
+        let t = state.strings();
+        (
+            t.get("updateTitle").to_owned(),
+            t.format("updateBody", &[("v", version)]),
+        )
+    };
+    notify(app, &title, &body);
+}
+
+/// The update is downloaded and about to install: store everything, close
+/// the windows and fade out, as quitting does, and play again after the
+/// restart if the noise was on. Returns whether it was.
+pub fn prepare_for_update(app: &AppHandle) -> bool {
+    let state = app.state::<AppState>();
+    lock(&state.study).finish(Instant::now());
+    let playing = state.engine.is_playing();
+    let output = state.engine.output().map(|o| o.endpoint.id);
+    remember(app, |last| {
+        last.was_playing = playing;
+        last.resume_after_update = output.filter(|_| playing);
+    });
+    settings::flush(app);
+    panel::hide(app);
+    settings_window::close(app);
+    if playing {
+        let fade = state.settings().sound.fade_ms;
+        state.engine.set_fade_out_ms(fade as f32);
+        state.engine.set_playing(false);
+        tray::refresh(app);
+        std::thread::sleep(Duration::from_millis(u64::from(fade) + 150));
+    }
+    playing
+}
+
+/// The first output after an update: the noise comes back if it is where it
+/// was playing. Only once, whichever of setup and the engine gets here first.
+fn resume_after_update(app: &AppHandle, output: &str) {
+    let state = app.state::<AppState>();
+    let Some(id) = lock(&state.link).resume_on.take() else {
+        return;
+    };
+    if id == output {
+        log::info!("playing again after the update");
+        noise_only(app, true);
+        refresh(app);
+    } else {
+        log::info!("not playing after the update: the output changed");
+    }
+}
+
+/// The installer didn't start: undo `prepare_for_update`.
+pub fn update_failed(app: &AppHandle, was_playing: bool) {
+    remember(app, |last| last.resume_after_update = None);
+    if was_playing {
+        noise_only(app, true);
+    }
 }
 
 /// Someone launched Rumor again (single instance): show the panel.

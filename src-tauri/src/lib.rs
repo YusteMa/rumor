@@ -17,6 +17,7 @@ mod taskbar;
 mod timer;
 mod tray;
 mod tray_glyph;
+mod update;
 
 use tauri::RunEvent;
 
@@ -48,6 +49,7 @@ pub fn run() {
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             None,
         ))
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(shortcut::plugin())
         .invoke_handler(tauri::generate_handler![
             commands::get_state,
@@ -78,6 +80,8 @@ pub fn run() {
             commands::import_settings,
             commands::reset_settings,
             commands::open_logs,
+            commands::update_check,
+            commands::update_install,
             commands::quit,
         ])
         .setup(|app| state::setup(app.handle()))

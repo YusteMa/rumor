@@ -1,7 +1,7 @@
 // The Settings window's link to Rust. Outside Tauri a mock stands in, for
 // design work in a browser.
 
-import { isTauri, type Appearance, type Color, type Lang, type StudyMode, type Tag } from "./api";
+import { isTauri, type Appearance, type Color, type Lang, type StudyMode, type Tag, type UpdateView } from "./api";
 
 export type Action = "toggle" | "volumeUp" | "volumeDown" | "nextColor" | "openPanel" | "study";
 export type Alerts = "bell" | "notification" | "both" | "none";
@@ -31,7 +31,7 @@ export interface Settings {
   shortcuts: Record<Action, string | null>;
   tray: { leftClick: "toggle" | "panel" };
   appearance: Appearance;
-  startup: { launchAtLogin: boolean };
+  startup: { launchAtLogin: boolean; checkUpdates: boolean };
   advanced: { outputDevice: string | null; buffer: "auto" | "ms20" | "ms50" | "ms100" };
   last: {
     color: Color;
@@ -59,6 +59,8 @@ export interface SettingsView {
   systemAccent: string | null;
   mica: boolean;
   tags: Tag[];
+  /** A newer version, once a check found one. */
+  update: UpdateView | null;
 }
 
 export type ShortcutError = { kind: "invalid" | "noModifier" | "typesCharacter" | "duplicate" | "taken" };
@@ -80,6 +82,10 @@ export interface SettingsBackend {
   /** Creates (`id` null) or renames / recolours a tag; rejects with a message. */
   upsertTag(id: number | null, name: string, color: string): Promise<Tag>;
   deleteTag(id: number): Promise<void>;
+  /** The newer version, or null when this one is the latest; rejects offline. */
+  checkUpdate(): Promise<string | null>;
+  /** Rumor closes and reopens on success; rejects with a message. */
+  installUpdate(): Promise<void>;
   onChanged(cb: (view: SettingsView) => void): void;
 }
 
@@ -98,6 +104,8 @@ async function tauriBackend(): Promise<SettingsBackend> {
     openLogs: () => invoke("open_logs"),
     upsertTag: (id, name, color) => invoke("tags_upsert", { id, name, color }),
     deleteTag: (id) => invoke("tags_delete", { id }),
+    checkUpdate: () => invoke("update_check"),
+    installUpdate: () => invoke("update_install"),
     onChanged: (cb) => void listen<SettingsView>("settings-changed", (e) => cb(e.payload)),
   };
 }
@@ -121,7 +129,7 @@ function defaults(): Settings {
     shortcuts: { toggle: "Ctrl+Alt+P", volumeUp: null, volumeDown: null, nextColor: null, openPanel: null, study: "Ctrl+Alt+T" },
     tray: { leftClick: "toggle" },
     appearance: { theme: "system", accent: "noise", mica: true, spectrum: true, language: "auto" },
-    startup: { launchAtLogin: false },
+    startup: { launchAtLogin: false, checkUpdates: true },
     advanced: { outputDevice: null, buffer: "auto" },
     last: {
       color: "pink",
@@ -148,6 +156,8 @@ function mockBackend(): SettingsBackend {
       ]
     : [];
   let nextTag = 3;
+  // ?update=1 finds a newer version on "Buscar ahora".
+  let update: UpdateView | null = null;
   const listeners: ((v: SettingsView) => void)[] = [];
   const view = (): SettingsView => ({
     settings: structuredClone(settings),
@@ -167,6 +177,7 @@ function mockBackend(): SettingsBackend {
     systemAccent: "#0078d4",
     mica: false,
     tags: structuredClone(tags),
+    update,
   });
   const merge = (target: Record<string, unknown>, patch: Record<string, unknown>) => {
     for (const [k, v] of Object.entries(patch)) {
@@ -211,6 +222,17 @@ function mockBackend(): SettingsBackend {
     },
     deleteTag: async (id) => {
       tags = tags.filter((g) => g.id !== id);
+      listeners.forEach((cb) => cb(view()));
+    },
+    checkUpdate: async () => {
+      await new Promise((r) => setTimeout(r, 800));
+      if (!params.get("update")) return null;
+      update = { version: "0.1.0-beta.2", phase: "available" };
+      listeners.forEach((cb) => cb(view()));
+      return update.version;
+    },
+    installUpdate: async () => {
+      if (update) update = { ...update, phase: "installing" };
       listeners.forEach((cb) => cb(view()));
     },
     onChanged: (cb) => listeners.push(cb),

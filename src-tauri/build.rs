@@ -29,6 +29,8 @@ const COMMANDS: &[&str] = &[
     "import_settings",
     "reset_settings",
     "open_logs",
+    "update_check",
+    "update_install",
     "quit",
 ];
 

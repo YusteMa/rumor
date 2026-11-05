@@ -86,7 +86,7 @@ Cada fase termina **compilando, con los tests en verde y con un commit**. No se 
 
 ### v0.2 — "Que no tenga que abrirlo"
 - **Controles multimedia de Windows** (SMTC, crate `souvlaki`): aparece en el panel multimedia de Windows 11 y responde a las **teclas play/pausa** del teclado y de los cascos Bluetooth.
-- **Auto-actualización** (`tauri-plugin-updater` con firma de Tauri y `latest.json` en Releases).
+- ~~**Auto-actualización**~~ → adelantada a la **0.1.0-beta.2** (SPEC §7): `tauri-plugin-updater` con firma de Tauri y `latest.json` en la rama `updater`.
 - **Slider de tono** continuo (filtro *tilt*): de oscuro a brillante sin cambiar de preset.
 - **Estadísticas de estudio:** gráfico semanal y mensual, tiempo por asignatura, racha de días y exportar a CSV.
 

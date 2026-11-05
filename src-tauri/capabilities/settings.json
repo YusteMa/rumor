@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "settings",
-  "description": "The Settings window: read and change settings, nothing else",
+  "description": "The Settings window: read and change settings, check for updates, nothing else",
   "windows": [
     "settings"
   ],
@@ -19,6 +19,8 @@
     "allow-open-logs",
     "allow-tags-list",
     "allow-tags-upsert",
-    "allow-tags-delete"
+    "allow-tags-delete",
+    "allow-update-check",
+    "allow-update-install"
   ]
 }

@@ -3,6 +3,10 @@ name: Release
 # Pushing a tag like v0.1.0-beta.1 builds the NSIS (.exe) and MSI installers
 # and publishes them as a GitHub pre-release (SPEC §7). Anything with a "-"
 # (beta, rc) stays a pre-release; a plain vX.Y.Z is a normal release.
+#
+# The installers are signed for the updater (TAURI_SIGNING_PRIVATE_KEY and its
+# password in the repo secrets; the public half is in tauri.conf.json), and
+# latest.json goes to the `updater` branch, where installed copies look.
 
 on:
   push:
@@ -38,7 +42,14 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
+          # Signed update bundles only here, so local builds need no key.
+          args: --config src-tauri/tauri.release.conf.json
+          includeUpdaterJson: true
+          # Most people install the .exe: update them with the .exe too.
+          updaterJsonPreferNsis: true
           tagName: ${{ github.ref_name }}
           releaseName: Rumor ${{ github.ref_name }}
           releaseBody: |
@@ -53,3 +64,21 @@ jobs:
             SmartScreen dirá «Windows protegió su PC» porque la beta aún no está firmada: pulsa **Más información → Ejecutar de todas formas**.
           releaseDraft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
+
+      # A fixed address for installed copies (tauri.conf.json → updater):
+      # GitHub's "latest release" link skips pre-releases, so latest.json is
+      # kept as the only file of the `updater` branch.
+      - name: Publish the update manifest
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release download "$TAG" --pattern latest.json --dir "$RUNNER_TEMP/manifest"
+          cd "$RUNNER_TEMP/manifest"
+          git init --quiet --initial-branch updater
+          git add latest.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --quiet -m "chore: update manifest for $TAG"
+          git push --force --quiet "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" updater

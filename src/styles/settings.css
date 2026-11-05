@@ -226,6 +226,13 @@ body {
   color: var(--on-accent);
 }
 
+.btn:disabled,
+.btn:disabled:hover {
+  cursor: default;
+  background: var(--surface);
+  color: var(--muted);
+}
+
 .shortcut-btn {
   min-width: var(--control-wide-sm);
   font-variant-numeric: normal;

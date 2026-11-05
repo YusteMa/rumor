@@ -134,6 +134,20 @@ Install from the GitHub release on a clean user account (or a VM), not from `tau
 - [ ] The .msi installs the same app.
 - [ ] README: the GIF plays, the screenshots load and the links work on github.com.
 
+## Updates
+
+Needs two releases, the second with a higher version (e.g. install beta.2 and publish beta.3).
+
+- [ ] Settings → About → Updates: "Buscar actualizaciones" is on; "Buscar ahora" says "Buscando…" and then "Tienes la última versión."
+- [ ] With the network off, "Buscar ahora" says it couldn't check, and nothing else changes.
+- [ ] After the newer release is out, within 30 s of opening Rumor (or 6 h of leaving it open): a notification "Hay una versión nueva de Rumor", once; restarting Rumor doesn't repeat it.
+- [ ] The panel footer shows "↑ Actualizar" instead of the shortcut, and the panel keeps its height. Hovering shows the version.
+- [ ] While playing, press "Actualizar": the arrow pulses while it downloads (the noise keeps playing), then the panel closes, the noise fades out without a click, a small installer window shows its progress, and Rumor opens again by itself **playing**. Unplug the headphones while it updates: it opens paused (SPEC §3.3).
+- [ ] With the stopwatch running, the session is in today's total after the update.
+- [ ] No ghost tray icon is left behind after the update.
+- [ ] Settings → About says the new version.
+- [ ] With "Buscar actualizaciones" off, nothing is checked (log: no "update check" lines after launch).
+
 ## Measurements (SPEC §3.4)
 - [ ] `cargo run --release --example engine -- --check 20`: frames ≈ 100 % of expected, CPU < 1 % of the machine, buffer 80 ms, 0 underruns.
 - [ ] Busy PC: with every core loaded (a big build, or a CPU stress test), the noise stays clean. The log shows `audio thread: MMCSS "Pro Audio"` and `device buffer: … (80.0 ms)`, and no `audio underrun` lines. Measured 2026-11-03 with 32–64 busy threads on 16: before (22 ms, normal priority) 2 underruns/15 s in release and 12–15 in debug; after, 0 in both.
