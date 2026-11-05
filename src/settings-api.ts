@@ -173,7 +173,7 @@ function mockBackend(): SettingsBackend {
       sampleFormat: "f32",
     },
     lang: (params.get("lang") as Lang) ?? "es",
-    version: "0.1.0-beta.1",
+    version: "0.1.0-beta.2",
     systemAccent: "#0078d4",
     mica: false,
     tags: structuredClone(tags),
@@ -227,7 +227,7 @@ function mockBackend(): SettingsBackend {
     checkUpdate: async () => {
       await new Promise((r) => setTimeout(r, 800));
       if (!params.get("update")) return null;
-      update = { version: "0.1.0-beta.2", phase: "available" };
+      update = { version: "0.1.0-beta.3", phase: "available" };
       listeners.forEach((cb) => cb(view()));
       return update.version;
     },
