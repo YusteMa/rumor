@@ -11,7 +11,9 @@ No loops, no compression, no account, no telemetry.</p>
   <img src="docs/screenshots/demo.gif" width="360" alt="The Rumor panel: play starts pink noise and the spectrum fades in; switching to brown and white reshapes the curve; then a 25-minute timer is set.">
 </p>
 
-<p align="center"><a href="#en-español">Leer en español</a></p>
+<p align="center">
+  <a href="https://github.com/YusteMa/rumor/releases"><b>Download for Windows</b></a> · <a href="#en-español">Leer en español</a>
+</p>
 
 ## Why
 
@@ -22,8 +24,8 @@ Rumor **computes the noise sample by sample** on your PC, the way the iPhone's B
 - **Three colours:** pink (balanced), brown (deep) and white (bright), each level-matched so switching never jumps in volume.
 - **Headphones-aware:** if your headphones disconnect, Rumor pauses instead of playing through the speakers. It also pauses when you lock the PC.
 - **Smooth everything:** fades on play, pause and every change. Not a single click.
-- **Sleep timer** with a fade-out, **global shortcut** (`Ctrl+Alt+P`), light and dark themes, Spanish and English.
-- **Study mode (optional):** a stopwatch or Pomodoro that follows the noise, with a synthesized singing-bowl chime, daily and weekly totals, and tags.
+- **Sleep timer** with a fade-out, **global shortcuts** (`Ctrl+Alt+P` plays or pauses, every other action can get its own), light and dark themes, Spanish and English.
+- **Study mode (optional):** a stopwatch or Pomodoro that follows the noise, with a synthesized singing-bowl chime, daily and weekly totals, and tags. `Ctrl+Alt+T` starts or pauses it.
 - **Updates itself** with one click when a new version is out.
 - **Zero telemetry.** Rumor sends nothing of yours; its only request is the update check on GitHub, which you can turn off in Settings → About.
 
@@ -67,14 +69,14 @@ Tauri v2, a Rust audio engine (`cpal`, WASAPI) and a small TypeScript panel with
 
 - Tres colores igualados en volumen, fundidos suaves y ni un clic.
 - **Si se desconectan los cascos, se pausa**: nunca suena por los altavoces sin que lo pidas. También se pausa al bloquear el PC.
-- Temporizador con fundido, atajo global `Ctrl+Alt+P`, tema claro y oscuro.
-- **Modo estudio** opcional: cronómetro o Pomodoro vinculado al ruido, con un cuenco tibetano sintetizado como aviso, totales de hoy y de la semana, y etiquetas.
+- Temporizador con fundido, atajos globales (`Ctrl+Alt+P` reproduce o pausa), tema claro y oscuro, en español e inglés.
+- **Modo estudio** opcional: cronómetro o Pomodoro vinculado al ruido, con un cuenco tibetano sintetizado como aviso, totales de hoy y de la semana, y etiquetas. `Ctrl+Alt+T` lo inicia o lo pausa.
 - **Se actualiza sola** con un clic cuando sale una versión nueva.
 - **Sin telemetría:** Rumor no envía nada tuyo. Solo consulta GitHub para buscar actualizaciones, y se puede desactivar en Ajustes → Acerca de.
 
-**Instalación:** descarga `Rumor_…_x64-setup.exe` de la [última versión](https://github.com/YusteMa/rumor/releases) y ábrelo. Si Windows dice **«Windows protegió su PC»**, es porque la beta aún no está firmada: pulsa **Más información → Ejecutar de todas formas**. Clic izquierdo en el icono reproduce o pausa; clic derecho abre el panel.
+**Instalación** (Windows 10 u 11, 64 bits): descarga `Rumor_…_x64-setup.exe` de la [última versión](https://github.com/YusteMa/rumor/releases) y ábrelo. Rumor aparece en la bandeja (puede quedar oculto bajo la flecha **^**; arrástralo a la barra para tenerlo a la vista). Si Windows dice **«Windows protegió su PC»**, es porque la beta aún no está firmada: pulsa **Más información → Ejecutar de todas formas**. Clic izquierdo en el icono reproduce o pausa; clic derecho abre el panel.
 
-Es una **beta**: los fallos van a [Issues](https://github.com/YusteMa/rumor/issues/new/choose) y las ideas y preguntas a [Discussions](https://github.com/YusteMa/rumor/discussions).
+Es una **beta**: los fallos (sobre todo de sonido, cascos y Bluetooth) van a [Issues](https://github.com/YusteMa/rumor/issues/new/choose) y las ideas y preguntas a [Discussions](https://github.com/YusteMa/rumor/discussions).
 
 ## License
 

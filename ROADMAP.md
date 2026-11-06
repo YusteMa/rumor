@@ -93,7 +93,8 @@ Cada fase termina **compilando, con los tests en verde y con un commit**. No se 
 - **Reacción a otro audio** (vídeos, llamadas): bajar el volumen (cuánto, configurable) / pausar / nada, con transiciones suaves como en iOS. Se detecta con las sesiones de audio de WASAPI.
 - ~~**Rediseño del cronómetro**~~ (la tarjeta de Estudio del panel): hecho, la esfera (SPEC §4.3b).
 - ~~**Mini widget flotante opcional**~~ con el tiempo de estudio: hecho, el mini reloj (SPEC §4.3b), desactivado por defecto.
-- **Revisión de Ajustes** tras el feedback de la beta.
+- **Revisión de Ajustes**: **después del feedback de la beta**, no antes; se ordenan y simplifican las secciones con lo que digan los usuarios.
+- **Modo focalizado** (minimizar las apps que distraen mientras cuenta el cronómetro): **aparcado** el 2026-11-06. En Windows es difícil de hacer bien y la idea aún no convence; se retomará más adelante.
 
 ### v0.3 — "Más sonidos, mismo principio"
 - Más colores: gris (ecualizado a la sensibilidad del oído), azul y violeta.
