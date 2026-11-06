@@ -24,7 +24,7 @@ use crate::study::stats::{CsvLabels, MonthView, SessionPage, WeekView};
 use crate::study::{self, Study, StudyView};
 use crate::timer::Timer;
 use crate::update::{self, UpdateView};
-use crate::{panel, settings_window, shortcut, stats_window, tray};
+use crate::{mini, panel, settings_window, shortcut, stats_window, tray};
 
 /// Volume shortcuts move the slider by this much.
 const VOLUME_STEP: f32 = 0.05;
@@ -259,11 +259,12 @@ pub fn setup(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     )?;
     let mut timer = Timer::default();
     timer.set(settings.last.timer_minutes, playing, Instant::now());
-    let data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| log::error!("no data folder for the study history: {e}"))
-        .ok();
+    let data_dir = settings::dev_data_dir().or_else(|| {
+        app.path()
+            .app_data_dir()
+            .map_err(|e| log::error!("no data folder for the study history: {e}"))
+            .ok()
+    });
     let study = Study::open(
         data_dir.as_deref(),
         settings.last.study_mode,
@@ -292,6 +293,7 @@ pub fn setup(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     shortcut::register_all(app);
     tray::create(app)?;
     panel::init(app);
+    mini::init(app);
     sync_autostart(app, launch_at_login);
     start_ticker(app);
     update::start(app);
@@ -446,7 +448,14 @@ fn remember(app: &AppHandle, f: impl FnOnce(&mut settings::LastSession)) {
 pub fn refresh(app: &AppHandle) {
     tray::refresh(app);
     panel::emit_state(app);
+    mini::sync(app);
+    mini::emit_state(app);
     stats_window::emit_context(app);
+}
+
+/// The mini clock was dragged here.
+pub fn remember_mini_position(app: &AppHandle, at: [i32; 2]) {
+    remember(app, |last| last.mini_position = Some(at));
 }
 
 // ---- Noise ---------------------------------------------------------------------
@@ -942,6 +951,7 @@ fn apply(app: &AppHandle, old: &Settings, new: &Settings) {
         panel::apply_appearance(app, &new.appearance);
         settings_window::apply_appearance(app, &new.appearance);
         stats_window::apply_appearance(app, &new.appearance);
+        mini::apply_appearance(app, &new.appearance);
     }
     if old.study.plan() != new.study.plan() {
         lock(&state.study).set_plan(new.study.plan());
@@ -1007,8 +1017,10 @@ fn start_ticker(app: &AppHandle) {
                         tray::refresh(&app);
                         if let Some(view) = state.study_view() {
                             panel::emit_study_tick(&app, &view);
+                            mini::emit_study_tick(&app, &view);
                         }
                     }
+                    mini::sync(&app);
                 }
             }
         });
@@ -1187,8 +1199,10 @@ pub fn update_failed(app: &AppHandle, was_playing: bool) {
 ///
 /// Debug builds also take `--dev-hide`, `--dev-prepare` and
 /// `--dev-color <pink|brown|white>`, to drive the panel for screenshots and
-/// timings, `--dev-settings` to open Settings, `--dev-bell` to ring and
-/// `--dev-study` / `--dev-study-finish` to drive the stopwatch.
+/// timings, `--dev-settings` to open Settings, `--dev-bell` to ring,
+/// `--dev-study` / `--dev-study-finish` to drive the stopwatch,
+/// `--dev-study-mode <stopwatch|pomodoro>` to pick its mode and
+/// `--dev-study-skip` to end the Pomodoro phase now.
 pub fn second_instance(app: &AppHandle, args: &[String]) {
     log::debug!("second instance: {args:?}");
     if cfg!(debug_assertions) {
@@ -1215,6 +1229,19 @@ pub fn second_instance(app: &AppHandle, args: &[String]) {
         }
         if args.iter().any(|a| a == "--dev-study-finish") {
             study_finish(app);
+            return;
+        }
+        if args.iter().any(|a| a == "--dev-study-skip") {
+            lock(&app.state::<AppState>().study).end_phase(Instant::now());
+            return;
+        }
+        let mode = args
+            .iter()
+            .position(|a| a == "--dev-study-mode")
+            .and_then(|i| args.get(i + 1))
+            .and_then(|m| serde_json::from_value(serde_json::Value::String(m.clone())).ok());
+        if let Some(mode) = mode {
+            study_set_mode(app, mode);
             return;
         }
         let color = args

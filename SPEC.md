@@ -145,11 +145,24 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
 | **Cronómetro** *(por defecto)* | Cuenta hacia arriba. Play, pausa y terminar sesión. Sin avisos ni descansos |
 | **Pomodoro** | Bloques de trabajo y descanso **configurables** (por defecto 25/5, y descanso largo de 15 cada 4). Cambia de fase solo, con el aviso elegido. En los descansos el ruido se **baja a la mitad** *(por defecto)*, se **pausa** o **sigue igual** (un solo desplegable), siempre con fundido |
 
-**Lo que se ve en el panel** (tarjeta de Estudio):
-- **Tiempo de la sesión actual** grande (`1:23:45`), con `tabular-nums`.
-- **Hoy: 3 h 10 min** y **esta semana: 12 h 40 min**, en pequeño.
-- Botones: play/pausa y terminar sesión.
-- En Pomodoro: la fase actual ("Trabajo 2/4") y un anillo de progreso fino alrededor del tiempo.
+**Lo que se ve en el panel** (tarjeta de Estudio; rediseño aprobado el 2026-11-06, maqueta en `docs/design/study-sphere.html`):
+- **La esfera** (120 px): un carril del tono suave del acento alrededor de una **cara** en relieve (la superficie de las tarjetas, apenas levantada). Dentro, **el tiempo** grande con `tabular-nums` (28 px; 21 px con horas, siempre con el mismo margen al anillo) y una línea debajo, **centrados como un solo bloque**.
+  - **Pomodoro:** el tiempo que queda de la fase, «de 25:00» debajo, y la fase como **arco del acento con un tirador en la punta** (el del volumen, en redondo).
+  - **Cronómetro:** el tiempo de la sesión, «Cronómetro» debajo, y una **estela corta** con su tirador que da la vuelta cada minuto.
+  - El tirador avanza con suavidad, de segundo en segundo; con «movimiento reducido», sin animación.
+  - **Descanso:** carril y arco en gris, uno que se lee en los dos temas (≥ 3:1 frente al carril). **En pausa:** el arco y el tirador a media intensidad y el tiempo en gris, en la tarjeta y en el mini reloj.
+- **Al lado, una columna de ancho fijo** (esfera y columna centradas juntas en la tarjeta, sin moverse entre estados):
+  - antes de empezar, el selector **Cronómetro / Pomodoro** y **«Empezar»**;
+  - durante la sesión, dónde estás («Trabajo 2 de 4» · «Sesión de 1:02:18»; «Estudiando» · «Desde las 15:12»; «Descanso» · «Después, trabajo 3 de 4»; «En pausa»), el botón principal del acento (**«Pausa»** / **«Seguir»**) ocupando la columna y **terminar** (el cuadrado) a su lado.
+- Arriba, «Estudio» y la **etiqueta** (si hay etiquetas). Abajo, tras una línea, **Hoy: 3 h 10 min · Semana: 12 h 40 min** y «Estadísticas».
+- **Pantallas bajas:** con la tarjeta, el panel mide 757 px; si la pantalla no tiene sitio (p. ej. 1366×768), el panel se queda a la altura que hay y su contenido se desplaza.
+
+**Mini reloj flotante** (opcional, **desactivado por defecto**; Ajustes → Estudio → «Mini reloj flotante»):
+- Una pastilla con **la misma esfera en pequeño**, que hace de **botón de play/pausa**, y al lado el tiempo y la fase en pocas palabras («Trabajo 2/4», «Descanso», «En pausa», «Cronómetro»). Tema claro/oscuro y acento del ruido, como el panel.
+- **Solo existe mientras hay una sesión** (contando o en pausa): aparece al empezarla y se va con un fundido al terminarla. Sin sesión no hay ventana (ni memoria gastada).
+- Por defecto **arriba a la derecha** de la pantalla principal; **se arrastra** a cualquier sitio y **recuerda** dónde se dejó (si esa posición ya no cae en ninguna pantalla, vuelve a la esquina).
+- **Siempre encima**, fuera de la barra de tareas y de Alt+Tab, y **nunca roba el foco**: se puede pausar sin dejar de escribir en otra app.
+- Con el ratón encima aparece una **×** que lo **oculta hasta la próxima sesión**. Un clic en el tiempo **abre el panel**.
 
 **Juntar los dos módulos** (solo con el Modo estudio activado; *"Vincular con el ruido"*, **activado por defecto**), **en los dos sentidos**:
 - Play en el ruido arranca el cronómetro y play en el cronómetro arranca el ruido; igual con la pausa. Un solo clic para "me pongo a estudiar".

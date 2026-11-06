@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rumor · mini</title>
+    <link rel="stylesheet" href="./styles/tokens.css" />
+    <link rel="stylesheet" href="./styles/controls.css" />
+    <link rel="stylesheet" href="./styles/mini.css" />
+    <script type="module" src="./mini.ts"></script>
+  </head>
+  <body>
+    <div class="mini" id="mini">
+      <button class="mini-toggle" id="mini-toggle" type="button">
+        <span class="dial" id="mini-dial">
+          <svg class="mini-glyph" viewBox="0 0 24 24" aria-hidden="true">
+            <path class="sglyph sglyph-a" />
+            <path class="sglyph sglyph-b" />
+          </svg>
+        </span>
+      </button>
+      <div class="mini-read" id="mini-read">
+        <span class="mini-time" id="mini-time">0:00</span>
+        <span class="mini-sub" id="mini-sub"></span>
+      </div>
+      <button class="mini-close" id="mini-close" type="button">
+        <svg viewBox="0 0 8 8" aria-hidden="true"><path d="M1 1l6 6M7 1 1 7" /></svg>
+      </button>
+    </div>
+  </body>
+</html>

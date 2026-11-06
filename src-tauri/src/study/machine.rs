@@ -158,6 +158,20 @@ impl Machine {
         self.plan
     }
 
+    /// Wall-clock start of the session, while there is one.
+    pub fn started(&self) -> Option<SystemTime> {
+        self.started.map(|(_, wall)| wall)
+    }
+
+    /// Debug builds: ends the current Pomodoro phase now, for screenshots.
+    #[cfg(debug_assertions)]
+    pub fn end_phase(&mut self, now: Instant) {
+        if self.mode == Mode::Pomodoro && self.run == Run::Running {
+            self.phase_spent = self.plan.length(self.phase);
+            self.phase_since = Some(now);
+        }
+    }
+
     pub fn has_session(&self) -> bool {
         self.run != Run::Stopped
     }
@@ -404,6 +418,27 @@ mod tests {
         fn at(&self, d: Duration) -> (Instant, SystemTime) {
             (self.t0 + d, self.w0 + d)
         }
+    }
+
+    #[test]
+    fn the_session_knows_when_it_started_and_a_phase_can_be_cut_short() {
+        let c = Clock::new();
+        let mut st = Machine::new(Mode::Pomodoro, Plan::default());
+        assert_eq!(st.started(), None);
+        let (now, wall) = c.at(s(0));
+        st.start(now, wall);
+        assert_eq!(st.started(), Some(c.w0));
+        // Ten minutes in, the phase is ended now: the next tick is the break,
+        // and the ten minutes worked stay.
+        let (now, wall) = c.at(m(10));
+        st.end_phase(now);
+        let changes = st.tick(now, wall);
+        assert_eq!(changes.len(), 1);
+        assert_eq!(st.phase(), Phase::ShortBreak);
+        assert_eq!(st.worked(now), m(10));
+        assert_eq!(st.started(), Some(c.w0), "same session");
+        st.finish(now);
+        assert_eq!(st.started(), None);
     }
 
     #[test]

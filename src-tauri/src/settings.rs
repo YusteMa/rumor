@@ -234,6 +234,8 @@ pub struct Study {
     /// Ask after this many minutes without input; 0 = off (the default:
     /// paper notes don't touch the computer).
     pub idle_minutes: u32,
+    /// The floating mini clock while a session is on (off by default).
+    pub mini_clock: bool,
 }
 
 impl Default for Study {
@@ -247,6 +249,7 @@ impl Default for Study {
             cycles: 4,
             break_noise: BreakNoise::Half,
             idle_minutes: 0,
+            mini_clock: false,
         }
     }
 }
@@ -410,6 +413,8 @@ pub struct LastSession {
     /// The output an update interrupted the noise on: play again on the next
     /// launch, if it is still the output then (CLAUDE.md rule 10).
     pub resume_after_update: Option<String>,
+    /// Where the mini clock was dragged to (physical pixels, top-left).
+    pub mini_position: Option<[i32; 2]>,
 }
 
 impl Default for LastSession {
@@ -424,6 +429,7 @@ impl Default for LastSession {
             study_tag: None,
             update_notified: None,
             resume_after_update: None,
+            mini_position: None,
         }
     }
 }
@@ -594,11 +600,25 @@ fn merge(target: &mut Value, patch: &Value) {
 const STORE_FILE: &str = "settings.json";
 const STORE_KEY: &str = "settings";
 
+/// Debug builds only: `RUMOR_DEV_DATA=<folder>` keeps the settings and the
+/// study history there instead of `%APPDATA%`, so screenshots and tests
+/// never touch the real ones.
+pub fn dev_data_dir() -> Option<std::path::PathBuf> {
+    if !cfg!(debug_assertions) {
+        return None;
+    }
+    std::env::var_os("RUMOR_DEV_DATA").map(std::path::PathBuf::from)
+}
+
+fn store_path() -> std::path::PathBuf {
+    dev_data_dir().map_or_else(|| STORE_FILE.into(), |dir| dir.join(STORE_FILE))
+}
+
 /// Reads the saved settings (`%APPDATA%\<id>\settings.json`). A missing or
 /// unreadable file gives the defaults; it never stops Rumor from starting.
 pub fn load(app: &tauri::AppHandle) -> Settings {
     use tauri_plugin_store::StoreExt;
-    let store = match app.store(STORE_FILE) {
+    let store = match app.store(store_path()) {
         Ok(store) => store,
         Err(e) => {
             log::warn!("settings store unavailable, using defaults: {e}");
@@ -619,7 +639,7 @@ pub fn load(app: &tauri::AppHandle) -> Settings {
 /// so a volume drag doesn't hammer the disk; `flush` writes now.
 pub fn save(app: &tauri::AppHandle, settings: &Settings) {
     use tauri_plugin_store::StoreExt;
-    match (app.store(STORE_FILE), serde_json::to_value(settings)) {
+    match (app.store(store_path()), serde_json::to_value(settings)) {
         (Ok(store), Ok(value)) => store.set(STORE_KEY, value),
         (Err(e), _) => log::warn!("settings not saved: {e}"),
         (_, Err(e)) => log::warn!("settings not saved: {e}"),
@@ -629,7 +649,7 @@ pub fn save(app: &tauri::AppHandle, settings: &Settings) {
 /// Writes pending changes to disk right away (on quit).
 pub fn flush(app: &tauri::AppHandle) {
     use tauri_plugin_store::StoreExt;
-    if let Ok(store) = app.store(STORE_FILE) {
+    if let Ok(store) = app.store(store_path()) {
         if let Err(e) = store.save() {
             log::warn!("settings not written: {e}");
         }
@@ -669,6 +689,8 @@ mod tests {
         assert_eq!(s.study.plan(), Plan::default());
         assert_eq!(s.study.break_noise, BreakNoise::Half);
         assert_eq!(s.study.idle_minutes, 0);
+        assert!(!s.study.mini_clock, "the mini clock is off by default");
+        assert_eq!(s.last.mini_position, None);
         assert_eq!(s.shortcuts.study.as_deref(), Some("Ctrl+Alt+T"));
         assert_eq!(s.last.study_mode, StudyMode::Stopwatch);
     }

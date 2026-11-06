@@ -44,6 +44,10 @@ pub struct StudyView {
     /// Pomodoro only: time left in the phase and its length.
     pub phase_left_secs: Option<u64>,
     pub phase_secs: Option<u64>,
+    /// A Pomodoro work block, as planned (shown before starting).
+    pub work_secs: u64,
+    /// When the session started (UTC ms), while there is one.
+    pub started_at: Option<i64>,
     pub today_secs: u64,
     pub week_secs: u64,
     pub tag: Option<i64>,
@@ -259,6 +263,12 @@ impl Study {
             log::info!("idle time discounted");
             self.save(now, false);
         }
+    }
+
+    /// Debug builds: the Pomodoro phase ends now (`--dev-study-skip`).
+    #[cfg(debug_assertions)]
+    pub fn end_phase(&mut self, now: Instant) {
+        self.machine.end_phase(now);
     }
 
     pub fn set_mode(&mut self, mode: Mode) -> bool {
@@ -561,6 +571,8 @@ impl Study {
             worked_secs: self.machine.worked(now).as_secs(),
             phase_left_secs: phase.map(|(left, _)| secs_up(left)),
             phase_secs: phase.map(|(_, total)| total.as_secs()),
+            work_secs: self.machine.plan().work.as_secs(),
+            started_at: self.machine.started().map(millis),
             today_secs,
             week_secs,
             tag: self.tag,

@@ -61,6 +61,11 @@
   --heat-3: color-mix(in srgb, var(--accent) 72%, var(--surface));
   --heat-4: color-mix(in srgb, var(--accent) 80%, var(--ink));
   --heat-3-text: var(--ink);
+  /* The sphere: breaks in grey, the face just lifted, the mini clock's
+     shadow (it has to fit in the window's transparent edge). */
+  --dial-rest: var(--muted);
+  --face-shadow: 0 1px 2px rgb(43 37 35 / 0.1);
+  --mini-shadow: 0 4px 12px rgb(43 37 35 / 0.16), 0 1px 3px rgb(43 37 35 / 0.1);
 
   /* Type: the Windows system font, 0 KB and native. */
   --font: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
@@ -103,10 +108,35 @@
   --dot-size: 6px;
   --icon-size: 16px;
 
-  /* Study card (panel). */
-  --study-ring: 48px;
-  --study-ring-stroke: 2px;
-  --study-glyph: 16px;
+  /* Study card (panel) and mini clock (SPEC §4.3b): the sphere, a ring
+     on the accent's soft tint round a raised face, with a knob at the tip
+     of the Pomodoro phase or the stopwatch's trail (a % of the turn). */
+  --dial-size: 120px;
+  --dial-stroke: 6px;
+  --dial-knob: 5.5px;
+  --dial-knob-ring: 2.5px;
+  --dial-face-gap: 5px;
+  --dial-tail: 14;
+  --dial-time: 28px;
+  --dial-time-hours: 21px;
+  --dial-sub: 11px;
+  --dial-glyph: 14px;
+  --dial-paused: 0.5;
+  --dial-tail-opacity: 0.35;
+  --study-side: 164px;
+  --study-phase-gap: 2px;
+  --mini-seg-pad: 2px;
+  --study-button: 32px;
+  --mini-dial: 40px;
+  --mini-dial-stroke: 3.5px;
+  --mini-knob: 3.5px;
+  --mini-knob-ring: 1.5px;
+  --mini-face-gap: 2.5px;
+  --mini-width: 172px;
+  --mini-height: 56px;
+  --mini-time: 20px;
+  --mini-close: 18px;
+  --mini-close-glyph: 8px;
   --icon-button: 28px;
   --stop-glyph: 10px;
   --stop-radius: 2px;
@@ -190,6 +220,8 @@
   --dur-max: 250ms;
   --dur-breathe: 4s;
   --dur-pulse: 1.2s;
+  /* The sphere's knob glides from one second to the next. */
+  --dur-tick: 1000ms;
   /* Accent change between noises; the spectrum curve morphs in step. */
   --dur-accent: 300ms;
   --open-offset: 8px;
@@ -239,6 +271,9 @@
     --heat-3: color-mix(in srgb, var(--accent) 80%, var(--surface));
     --heat-4: var(--accent);
     --heat-3-text: var(--on-accent);
+    --dial-rest: #c4bbb7;
+    --face-shadow: 0 1px 2px rgb(0 0 0 / 0.5);
+    --mini-shadow: 0 4px 12px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
     --good: #8fcf9c;
     --good-soft: #233528;
     --chart-shine-light: rgb(255 255 255 / 0.16);
@@ -277,6 +312,9 @@
   --heat-3: color-mix(in srgb, var(--accent) 80%, var(--surface));
   --heat-4: var(--accent);
   --heat-3-text: var(--on-accent);
+  --dial-rest: #c4bbb7;
+  --face-shadow: 0 1px 2px rgb(0 0 0 / 0.5);
+  --mini-shadow: 0 4px 12px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
   --good: #8fcf9c;
   --good-soft: #233528;
   --chart-shine-light: rgb(255 255 255 / 0.16);
@@ -335,5 +373,6 @@
     --hover-scale: 1;
     --thumb-hover-scale: 1;
     --dur-accent: 0ms;
+    --dur-tick: 0ms;
   }
 }

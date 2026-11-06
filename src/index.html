@@ -73,28 +73,33 @@
 
       <section class="study" id="study" hidden aria-labelledby="study-label">
         <div class="label">
-          <span class="study-head"><span id="study-label" data-i18n="labelStudy"></span><span class="value" id="study-phase"></span></span>
-          <div class="segmented mini" id="study-modes" role="radiogroup" aria-labelledby="study-label">
-            <button type="button" role="radio" data-value="stopwatch" data-i18n="modeStopwatch"></button>
-            <button type="button" role="radio" data-value="pomodoro" data-i18n="modePomodoro"></button>
-          </div>
+          <span id="study-label" data-i18n="labelStudy"></span>
+          <span class="study-tag" id="study-tag" hidden></span>
         </div>
         <div class="study-body" id="study-body">
-          <button class="study-play" id="study-play" type="button" aria-pressed="false">
-            <svg class="study-ring" viewBox="0 0 48 48" aria-hidden="true">
-              <circle class="ring-track" cx="24" cy="24" r="23" />
-              <circle class="ring-fill" id="study-ring" cx="24" cy="24" r="23" pathLength="100" />
-            </svg>
-            <svg class="study-glyph" viewBox="0 0 24 24" aria-hidden="true">
-              <path class="sglyph sglyph-a" />
-              <path class="sglyph sglyph-b" />
-            </svg>
-          </button>
-          <span class="study-time" id="study-time">0:00</span>
-          <span class="study-tag" id="study-tag" hidden></span>
-          <button class="icon-button" id="study-finish" type="button">
-            <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="3" width="10" height="10" /></svg>
-          </button>
+          <div class="dial" id="study-dial" role="timer">
+            <span class="dial-read">
+              <span class="dial-time" id="study-time">0:00</span>
+              <span class="dial-sub" id="study-sub"></span>
+            </span>
+          </div>
+          <div class="study-side">
+            <p class="study-phase" id="study-phase"><span id="study-title"></span><small id="study-detail"></small></p>
+            <div class="segmented mini" id="study-modes" role="radiogroup" aria-labelledby="study-label">
+              <button type="button" role="radio" data-value="stopwatch" data-i18n="modeStopwatch"></button>
+              <button type="button" role="radio" data-value="pomodoro" data-i18n="modePomodoro"></button>
+            </div>
+            <div class="study-controls">
+              <button class="study-main" id="study-play" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path class="sglyph sglyph-a" />
+                  <path class="sglyph sglyph-b" />
+                </svg>
+                <span id="study-play-text"></span>
+              </button>
+              <button class="study-stop" id="study-finish" type="button"><i aria-hidden="true"></i></button>
+            </div>
+          </div>
         </div>
         <div class="study-foot" id="study-foot">
           <p class="study-totals" id="study-totals"></p>

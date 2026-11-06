@@ -8,6 +8,7 @@ use tauri_plugin_dialog::DialogExt;
 use crate::audio::device_watch::Endpoint;
 use crate::audio::engine;
 use crate::audio::noise::NoiseColor;
+use crate::mini;
 use crate::panel;
 use crate::settings::{Settings, ShortcutAction};
 use crate::settings_window::{self, SettingsView};
@@ -131,6 +132,24 @@ pub fn panel_painted(app: AppHandle) {
 #[tauri::command]
 pub fn quit(app: AppHandle) {
     state::quit(&app);
+}
+
+/// The mini clock's page rendered its first state; show it.
+#[tauri::command]
+pub fn mini_ready(app: AppHandle) {
+    mini::on_ready(&app);
+}
+
+/// The mini clock's ×: hidden until the next session.
+#[tauri::command]
+pub fn mini_dismiss(app: AppHandle) {
+    mini::dismiss(&app);
+}
+
+/// A click on the mini clock's time opens the panel.
+#[tauri::command]
+pub fn mini_open_panel(app: AppHandle) {
+    panel::open(&app, None);
 }
 
 /// The panel's ⚙ button.

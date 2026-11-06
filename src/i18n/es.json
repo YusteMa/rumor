@@ -355,5 +355,18 @@
   "durationFormat": "h:mm",
   "durationHint": "h:mm o minutos",
   "insightAboveAverageSoFar": "Llevas un *{pct} % más* que tu media de las {weeks} semanas anteriores a estas alturas.",
-  "insightBelowAverageSoFar": "Llevas un {pct} % menos que tu media de las {weeks} semanas anteriores a estas alturas."
+  "insightBelowAverageSoFar": "Llevas un {pct} % menos que tu media de las {weeks} semanas anteriores a estas alturas.",
+  "phaseWorkOf": "Trabajo {n} de {total}",
+  "dialOf": "de {total}",
+  "studyStudying": "Estudiando",
+  "studySince": "Desde las {time}",
+  "studySession": "Sesión de {time}",
+  "studyNext": "Después, trabajo {n} de {total}",
+  "studyGo": "Empezar",
+  "studyHold": "Pausa",
+  "studyGoOn": "Seguir",
+  "optMiniClock": "Mini reloj flotante",
+  "hintMiniClock": "Mientras estudias, el tiempo de la sesión en una ventanita siempre encima, arriba a la derecha. Se puede arrastrar y se oculta con la ×.",
+  "miniHide": "Ocultar hasta la próxima sesión",
+  "miniOpen": "Abrir el panel de Rumor"
 }

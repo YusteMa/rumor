@@ -1,0 +1,179 @@
+/* The mini clock (SPEC §4.3b): a pill with the sphere as its play/pause
+   button and the time beside it, floating over everything. The window is
+   transparent; its edge is room for the shadow and the ×. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  overflow: hidden;
+  color: var(--ink);
+  font: var(--weight-regular) var(--text-sm) / var(--leading) var(--font);
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transform: translateY(calc(var(--open-offset) / -2));
+  transition:
+    opacity var(--dur-open) var(--ease-out),
+    transform var(--dur-open) var(--ease-out);
+}
+
+body.is-open {
+  opacity: 1;
+  transform: none;
+}
+
+body.is-closing {
+  opacity: 0;
+  transform: none;
+  transition: opacity var(--dur-close) var(--ease-out);
+}
+
+.mini {
+  position: relative;
+  width: var(--mini-width);
+  height: var(--mini-height);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-5) 0 var(--space-2);
+  border: var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  box-shadow: var(--mini-shadow);
+  cursor: default;
+}
+
+/* The sphere is the play/pause button. */
+.mini-toggle {
+  flex: none;
+  display: grid;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink);
+  transition: transform var(--dur-press) var(--ease-out);
+}
+
+.mini-toggle:active {
+  transform: scale(var(--press-scale));
+}
+
+#mini-dial {
+  width: var(--mini-dial);
+  height: var(--mini-dial);
+}
+
+/* No lift this small: the pill is the surface. */
+#mini-dial .dial-face {
+  filter: none;
+}
+
+.mini-glyph {
+  position: relative;
+  width: var(--dial-glyph);
+  height: var(--dial-glyph);
+  fill: currentColor;
+  overflow: visible;
+}
+
+.sglyph {
+  transition: d var(--dur-max) var(--ease-out);
+}
+
+.sglyph-a {
+  d: path("M8 5 L13 8.2 L13 15.8 L8 19 Z");
+}
+
+.sglyph-b {
+  d: path("M13 8.2 L19 12 L19 12 L13 15.8 Z");
+}
+
+.mini.is-running .sglyph-a {
+  d: path("M6.5 5 L10.5 5 L10.5 19 L6.5 19 Z");
+}
+
+.mini.is-running .sglyph-b {
+  d: path("M13.5 5 L17.5 5 L17.5 19 L13.5 19 Z");
+}
+
+.mini-read {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.mini-time {
+  font-family: var(--font-display);
+  font-size: var(--mini-time);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-tight);
+  line-height: 1;
+}
+
+.mini:not(.is-running) .mini-time {
+  color: var(--muted);
+}
+
+.mini-sub {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--dial-sub);
+  line-height: 1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* The ×: only with the pointer over the clock. */
+.mini-close {
+  position: absolute;
+  top: calc(var(--mini-close) / -3);
+  right: calc(var(--mini-close) / -3);
+  width: var(--mini-close);
+  height: var(--mini-close);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  color: var(--muted);
+  box-shadow: var(--shadow-popup);
+  opacity: 0;
+  transition:
+    opacity var(--dur-press) var(--ease-out),
+    color var(--dur-press) var(--ease-out);
+}
+
+.mini:hover .mini-close,
+.mini-close:focus-visible {
+  opacity: 1;
+}
+
+.mini-close:hover {
+  color: var(--ink);
+}
+
+.mini-close svg {
+  width: var(--mini-close-glyph);
+  height: var(--mini-close-glyph);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--chevron-stroke);
+  stroke-linecap: round;
+}

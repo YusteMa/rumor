@@ -212,3 +212,81 @@ button {
 .icon-button rect {
   rx: var(--stop-radius);
 }
+
+/* ---- The sphere (ui/dial.ts; study card and mini clock) ----------------------- */
+
+.dial {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+}
+
+.dial-svg {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+
+.dial-track {
+  fill: none;
+  stroke: var(--accent-soft);
+  transition: stroke var(--dur-max) var(--ease-out);
+}
+
+.dial-face {
+  fill: var(--surface);
+  filter: drop-shadow(var(--face-shadow));
+}
+
+.dial-arc {
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  transition:
+    stroke-dashoffset var(--dur-tick) linear,
+    stroke var(--dur-max) var(--ease-out);
+}
+
+.dial-tail {
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  opacity: var(--dial-tail-opacity);
+}
+
+/* At the tip: the volume slider's thumb, in round. */
+.dial-knob {
+  fill: var(--accent);
+  stroke: var(--surface);
+  transition: fill var(--dur-max) var(--ease-out);
+}
+
+.dial-hand {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  transition: transform var(--dur-tick) linear;
+}
+
+.dial-marks {
+  transition: opacity var(--dur-max) var(--ease-out);
+}
+
+/* Paused: the marks at half strength. A break: grey, readable on the track
+   in both themes (≥ 3:1). */
+.dial[data-look="paused"] .dial-marks {
+  opacity: var(--dial-paused);
+}
+
+.dial[data-look="break"] .dial-track {
+  stroke: var(--surface-hover);
+}
+
+.dial[data-look="break"] .dial-arc {
+  stroke: var(--dial-rest);
+}
+
+.dial[data-look="break"] .dial-knob {
+  fill: var(--dial-rest);
+}
+

@@ -26,8 +26,9 @@ pub const LABEL: &str = "panel";
 /// Logical size; the content is laid out for exactly this.
 const WIDTH: f64 = 360.0;
 const HEIGHT: f64 = 540.0;
-/// Room for the study card, with "Modo estudio" on (SPEC §4.3c).
-const STUDY_HEIGHT: f64 = 124.0;
+/// Room for the study card, with "Modo estudio" on (SPEC §4.3b, §4.3c):
+/// the card and the gap above it.
+const STUDY_HEIGHT: f64 = 217.0;
 /// Gap between the panel, the taskbar and the screen edge (logical px).
 const MARGIN: f64 = 12.0;
 /// Must match `--dur-close` in tokens.css: the UI fades out, then we hide.
@@ -84,7 +85,7 @@ fn panel_theme(app: &AppHandle) -> Option<Theme> {
     })
 }
 
-fn forced_theme() -> Option<Theme> {
+pub fn forced_theme() -> Option<Theme> {
     if !cfg!(debug_assertions) {
         return None;
     }
@@ -580,11 +581,20 @@ fn place(app: &AppHandle, window: &WebviewWindow, anchor: Option<Rect>) {
     };
 
     let scale = monitor.scale_factor();
-    let (w, h) = (WIDTH * scale, height(app) * scale);
     let m = MARGIN * scale;
     let mon_pos = monitor.position();
     let mon_size = monitor.size();
     let work = monitor.work_area();
+    // Never taller than the screen leaves room for (a 1366×768 laptop with
+    // the study card): the page scrolls instead.
+    let w = WIDTH * scale;
+    let h = (height(app) * scale).min(f64::from(work.size.height) - 2.0 * m);
+    let size = tauri::PhysicalSize::new(w.round() as u32, h.round() as u32);
+    if window.inner_size().ok() != Some(size) {
+        if let Err(e) = window.set_size(size) {
+            log::warn!("panel size: {e}");
+        }
+    }
     let (left, top) = (f64::from(work.position.x), f64::from(work.position.y));
     let (right, bottom) = (
         left + f64::from(work.size.width),

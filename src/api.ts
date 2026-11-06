@@ -30,6 +30,10 @@ export interface StudyView {
   workedSecs: number;
   phaseLeftSecs: number | null;
   phaseSecs: number | null;
+  /** A Pomodoro work block, as planned (shown before starting). */
+  workSecs: number;
+  /** When the session started (ms since the epoch), while there is one. */
+  startedAt: number | null;
   todaySecs: number;
   weekSecs: number;
   tag: number | null;
@@ -178,7 +182,8 @@ function mockBackend(): Backend {
       ? { version: "0.1.0-beta.3", phase: params.get("update") as UpdateView["phase"] }
       : null,
   };
-  // ?study=1 shows the card; ?study=pomodoro, ?idle=14 and ?tags=1 vary it.
+  // ?study=1 shows the card; ?study=pomodoro, ?idle=14 and ?tags=1 vary it,
+  // ?run=running|paused starts a session ?worked=<seconds> in, ?rest=1 in a break.
   const study: StudyView | null = params.get("study")
     ? {
         run: "stopped",
@@ -189,6 +194,8 @@ function mockBackend(): Backend {
         workedSecs: 0,
         phaseLeftSecs: null,
         phaseSecs: null,
+        workSecs: 25 * 60,
+        startedAt: null,
         todaySecs: 3 * 3600 + 10 * 60,
         weekSecs: 12 * 3600 + 40 * 60,
         tag: null,
@@ -215,6 +222,7 @@ function mockBackend(): Backend {
       const total = POMODORO[study.phase === "work" ? 0 : 1];
       study.phaseSecs = total;
       study.phaseLeftSecs = Math.max(0, total - (study.workedSecs % total));
+      study.cycle = Math.min(study.cycles, Math.floor(study.workedSecs / POMODORO[0]) + 1);
     } else {
       study.phaseSecs = study.phaseLeftSecs = null;
     }
@@ -256,6 +264,8 @@ function mockBackend(): Backend {
   // Linked, like the default: noise and stopwatch play and pause together.
   const studyRun = (run: StudyRun) => {
     if (!study || study.run === run) return;
+    if (study.run === "stopped") study.startedAt = Date.now() - workedBefore * 1000;
+    if (run === "stopped") study.startedAt = null;
     if (run === "running") workSince = Date.now();
     else {
       studyTick();
@@ -265,6 +275,12 @@ function mockBackend(): Backend {
     study.run = run;
     studyTick();
   };
+  if (study && params.get("run")) {
+    workedBefore = Number(params.get("worked") ?? 0);
+    if (params.get("rest")) study.phase = "shortBreak";
+    studyRun("running");
+    if (params.get("run") === "paused") studyRun("paused");
+  }
   return {
     getState: async () => ({ ...state }),
     toggle: async () => {

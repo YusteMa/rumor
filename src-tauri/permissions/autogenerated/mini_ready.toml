@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-mini-ready"
+description = "Enables the mini_ready command without any pre-configured scope."
+commands.allow = ["mini_ready"]
+
+[[permission]]
+identifier = "deny-mini-ready"
+description = "Denies the mini_ready command without any pre-configured scope."
+commands.deny = ["mini_ready"]

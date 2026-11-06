@@ -355,5 +355,18 @@
   "durationFormat": "h:mm",
   "durationHint": "h:mm or minutes",
   "insightAboveAverageSoFar": "You're *{pct} % ahead* of your average of the previous {weeks} weeks at this point.",
-  "insightBelowAverageSoFar": "You're {pct} % behind your average of the previous {weeks} weeks at this point."
+  "insightBelowAverageSoFar": "You're {pct} % behind your average of the previous {weeks} weeks at this point.",
+  "phaseWorkOf": "Work {n} of {total}",
+  "dialOf": "of {total}",
+  "studyStudying": "Studying",
+  "studySince": "Since {time}",
+  "studySession": "Session {time}",
+  "studyNext": "Then work {n} of {total}",
+  "studyGo": "Start",
+  "studyHold": "Pause",
+  "studyGoOn": "Resume",
+  "optMiniClock": "Floating mini clock",
+  "hintMiniClock": "While you study, the session time in a small window that stays on top, top right. Drag it anywhere; the × hides it.",
+  "miniHide": "Hide until the next session",
+  "miniOpen": "Open the Rumor panel"
 }

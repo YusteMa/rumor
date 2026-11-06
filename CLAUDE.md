@@ -25,10 +25,11 @@ rumor/
 │  ├─ index.html             # panel
 │  ├─ settings.html          # ventana de Ajustes (settings.ts, settings-api.ts)
 │  ├─ stats.html             # ventana de Estadísticas (stats.ts, stats-api.ts)
+│  ├─ mini.html              # mini reloj flotante (mini.ts)
 │  ├─ main.ts                # arranque, enlaza eventos ↔ comandos
-│  ├─ ui/                    # player.ts, colors.ts, volume.ts, timer.ts, spectrum.ts, accent.ts, radio.ts, footer.ts, charts.ts
+│  ├─ ui/                    # player.ts, colors.ts, volume.ts, timer.ts, spectrum.ts, accent.ts, radio.ts, footer.ts, charts.ts, study.ts, dial.ts (la esfera)
 │  ├─ i18n/                  # es.json, en.json
-│  └─ styles/                # tokens.css (tema), controls.css (compartido), panel.css, settings.css, stats.css
+│  └─ styles/                # tokens.css (tema), controls.css (compartido), panel.css, settings.css, stats.css, mini.css
 ├─ src-tauri/
 │  ├─ src/
 │  │  ├─ main.rs
@@ -46,6 +47,7 @@ rumor/
 │  │  ├─ settings.rs         # modelo de ajustes y store
 │  │  ├─ settings_window.rs  # ventana de Ajustes
 │  │  ├─ stats_window.rs     # ventana de Estadísticas
+│  │  ├─ mini.rs             # mini reloj flotante: existe solo durante una sesión
 │  │  ├─ panel.rs            # crear/posicionar/ocultar ventana, Mica
 │  │  └─ audio/
 │  │     ├─ mod.rs

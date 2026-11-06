@@ -148,6 +148,20 @@ Needs two releases, the second with a higher version (e.g. install beta.2 and pu
 - [ ] Settings → About says the new version.
 - [ ] With "Buscar actualizaciones" off, nothing is checked (log: no "update check" lines after launch).
 
+## Study card and mini clock (SPEC §4.3b)
+
+- [ ] Before a session: the sphere reads 0:00 (or the Pomodoro block, 25:00) with the mode below, and the column shows Cronómetro/Pomodoro and «Empezar».
+- [ ] Pomodoro: the arc and its knob fill the phase smoothly, second by second; «Trabajo 2 de 4 · Sesión de …». A break turns them grey, readable in dark mode.
+- [ ] Stopwatch: the trail goes round once a minute; hours («1:23:45») keep their margin to the ring.
+- [ ] Paused: arc and knob at half strength, time grey, «Seguir»; the same in the mini clock.
+- [ ] The sphere and its column stay centred and don't shift between states, in Spanish and English.
+- [ ] On a 1366×768 screen (or 125 % on 1080p) the panel fits the screen and scrolls; no part goes off screen.
+- [ ] Mini clock off by default; on, it appears top right when a session starts and fades out when it ends.
+- [ ] Dragging moves it and the spot is remembered after restarting Rumor; unplugging that screen brings it back to the corner.
+- [ ] Clicking its sphere pauses/resumes without taking the focus from the app you are typing in; clicking the time opens the panel.
+- [ ] The × (on hover) hides it until the next session. It never shows in the taskbar or Alt+Tab.
+- [ ] Light/dark and the noise colour change it live.
+
 ## Statistics (SPEC §4.3d)
 
 Run these on a copy of a real history if you can (`%APPDATA%\io.github.yustema.rumor\study.sqlite3`).

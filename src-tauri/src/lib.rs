@@ -7,6 +7,7 @@ pub mod audio;
 mod commands;
 mod ear_break;
 mod i18n;
+mod mini;
 mod panel;
 mod settings;
 mod settings_window;
@@ -70,6 +71,9 @@ pub fn run() {
             commands::tags_delete,
             commands::hide_panel,
             commands::panel_ready,
+            commands::mini_ready,
+            commands::mini_dismiss,
+            commands::mini_open_panel,
             commands::panel_painted,
             commands::open_settings,
             commands::get_settings,

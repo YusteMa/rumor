@@ -31,6 +31,10 @@ body {
   flex-direction: column;
   gap: var(--space-4);
   padding: var(--space-5);
+  /* Only on a screen too short for the whole panel (panel.rs). */
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
   opacity: 0;
   transform: translateY(var(--open-offset));
 }
@@ -310,7 +314,7 @@ body {
 .study {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .study[hidden],
@@ -323,13 +327,81 @@ body {
   min-height: var(--control-height-sm);
 }
 
-.study-head {
-  display: inline-flex;
-  gap: var(--space-2);
+.study-tag {
+  display: contents;
+}
+
+/* The sphere and its column, centred together; the column has a fixed
+   width, so nothing moves between states. */
+.study-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+}
+
+#study-dial {
+  width: var(--dial-size);
+  height: var(--dial-size);
+}
+
+.dial-read {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.dial-time {
+  font-family: var(--font-display);
+  font-size: var(--dial-time);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-tight);
+  line-height: 1;
+}
+
+.dial-time.has-hours {
+  font-size: var(--dial-time-hours);
+}
+
+.dial-sub {
+  color: var(--muted);
+  font-size: var(--dial-sub);
+  line-height: 1;
+}
+
+.dial[data-look="paused"] .dial-time,
+.dial[data-look="idle"] .dial-time {
+  color: var(--muted);
+}
+
+.study-side {
+  flex: none;
+  width: var(--study-side);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.study-phase {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading);
+}
+
+.study-phase small {
+  display: block;
+  margin-top: var(--study-phase-gap);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-regular);
 }
 
 .segmented.mini {
-  padding: 0;
+  padding: var(--mini-seg-pad);
   gap: 0;
   border-radius: var(--radius-control);
 }
@@ -339,81 +411,42 @@ body {
   font-size: var(--text-xs);
 }
 
-.study-body {
+.study-controls {
   display: flex;
-  align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
-/* Play/pause inside the ring: secondary to the noise's big play button. */
-.study-play {
-  position: relative;
-  flex: none;
-  width: var(--study-ring);
-  height: var(--study-ring);
-  display: grid;
-  place-items: center;
-  padding: 0;
+/* "Empezar", "Pausa", "Seguir": the accent, filling the column. */
+.study-main {
+  flex: 1;
+  height: var(--study-button);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
   border: 0;
   border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--ink);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
   transition:
-    background-color var(--dur-press) var(--ease-out),
+    filter var(--dur-press) var(--ease-out),
     transform var(--dur-press) var(--ease-out);
 }
 
-.study-play:hover {
-  background: var(--surface-hover);
+.study-main:hover {
+  filter: brightness(1.06);
 }
 
-.study-play:active {
+.study-main:active {
   transform: scale(var(--press-scale));
 }
 
-.study-ring {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
-  overflow: visible;
-}
-
-.ring-track,
-.ring-fill {
-  fill: none;
-  stroke-width: var(--study-ring-stroke);
-}
-
-.ring-track {
-  stroke: var(--line);
-}
-
-.ring-fill {
-  stroke: var(--accent);
-  stroke-dasharray: 100;
-  stroke-dashoffset: 100;
-  stroke-linecap: round;
-  opacity: 0;
-  transition:
-    stroke-dashoffset var(--dur-max) var(--ease-out),
-    stroke var(--dur-max) var(--ease-out),
-    opacity var(--dur-max) var(--ease-out);
-}
-
-/* Only a Pomodoro phase in progress fills the ring. */
-.study.has-phase .ring-fill {
-  opacity: 1;
-}
-
-.study.is-break .ring-fill {
-  stroke: var(--muted);
-}
-
-.study-glyph {
-  width: var(--study-glyph);
-  height: var(--study-glyph);
+.study-main svg {
+  width: var(--dial-glyph);
+  height: var(--dial-glyph);
   fill: currentColor;
   overflow: visible;
 }
@@ -439,21 +472,30 @@ body {
   d: path("M13.5 5 L17.5 5 L17.5 19 L13.5 19 Z");
 }
 
-.study-time {
-  flex: 1;
-  min-width: 0;
-  font-family: var(--font-display);
-  font-size: var(--text-xl);
-  font-weight: var(--weight-semibold);
-  line-height: 1;
+/* Finish: a square, quiet beside the main button. */
+.study-stop {
+  flex: none;
+  width: var(--study-button);
+  height: var(--study-button);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink);
+  transition: background-color var(--dur-press) var(--ease-out);
 }
 
-.study:not(.is-running) .study-time {
-  color: var(--muted);
+.study-stop:hover {
+  background: var(--surface-hover);
 }
 
-.study-tag {
-  display: contents;
+.study-stop i {
+  width: var(--stop-glyph);
+  height: var(--stop-glyph);
+  border-radius: var(--stop-radius);
+  background: currentColor;
 }
 
 /* The tag picker: a coloured dot before the name. */
@@ -487,6 +529,8 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: var(--border);
 }
 
 .study-totals {

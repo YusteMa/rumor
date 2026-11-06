@@ -1,0 +1,18 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "mini",
+  "description": "The mini clock: show the study state, play/pause it, open the panel and be dragged, nothing else",
+  "windows": [
+    "mini"
+  ],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "core:window:allow-start-dragging",
+    "allow-get-state",
+    "allow-study-toggle",
+    "allow-mini-ready",
+    "allow-mini-dismiss",
+    "allow-mini-open-panel"
+  ]
+}
