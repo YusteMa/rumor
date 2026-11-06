@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rumor · Dirección A, la esfera afinada</title>
+<!-- Segunda ronda del cronómetro (ROADMAP v0.2): la dirección A elegida, con
+     la esfera rehecha. Datos de ejemplo; tokens reales de tokens.css. -->
+<link rel="stylesheet" href="../../src/styles/tokens.css" />
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 32px 24px 48px; background: #ece6e3; font-family: var(--font); color: var(--ink); }
+  .dark {
+    --bg: #1c1a19; --surface: #262322; --surface-hover: #2e2a29; --ink: #f2ece9; --muted: #a39793;
+    --line: #38322f; --accent-pink: #e8899f; --accent-pink-soft: #3d2a2f; --accent-brown: #e5a05e;
+    --accent-brown-soft: #3b2e23; --accent-white: #afbacb; --accent-white-soft: #2b3038; --on-accent: #1c1a19;
+    --surface-raised: #2c2827; --tag-sky: #85b4d6; --tag-rose: #e48da1;
+    --accent: var(--accent-pink); --accent-soft: var(--accent-pink-soft);
+    --shadow-popup: 0 8px 24px rgb(0 0 0 / 0.42), 0 2px 6px rgb(0 0 0 / 0.3);
+    --border: var(--border-width) solid var(--line);
+    --face-shadow: 0 1px 2px rgb(0 0 0 / .5);
+    color-scheme: dark;
+  }
+  .brown { --accent: var(--accent-brown); --accent-soft: var(--accent-brown-soft); }
+  .white { --accent: var(--accent-white); --accent-soft: var(--accent-white-soft); }
+  :root { --face-shadow: 0 1px 2px rgb(43 37 35 / .1); --dial-rest: var(--muted); }
+  .dark { --dial-rest: #c4bbb7; }
+
+  .page { max-width: 1180px; margin: 0 auto; background: #f7f3f1; border-radius: 16px; padding: 24px; }
+  h1 { margin: 0 0 4px; font: var(--weight-semibold) 18px/1.2 var(--font-display); }
+  .why { margin: 6px 0 18px; font-size: 13px; line-height: 1.55; color: #5b524f; max-width: 920px; }
+  .why b { color: #2b2523; }
+  .shots { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+  .shot { display: flex; flex-direction: column; gap: 8px; width: 360px; }
+  .cap { font-size: 12px; color: #6b615d; }
+  .anatomy { display: flex; gap: 28px; align-items: center; margin: 4px 0 22px; padding: 16px 20px; background: #fff; border-radius: 12px; }
+  .anatomy ul { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; color: #3d3533; }
+
+  .panel { width: 360px; padding: var(--space-5); background: var(--bg); color: var(--ink); border-radius: var(--radius-control);
+    box-shadow: 0 1px 2px rgb(0 0 0 / .08), 0 8px 24px rgb(0 0 0 / .08); display: flex; flex-direction: column; gap: var(--space-3); }
+  .context { opacity: .45; display: flex; flex-direction: column; gap: var(--space-2); }
+  .context .row { display: flex; justify-content: space-between; font-size: var(--text-sm); color: var(--muted); }
+  .context .seg { height: 36px; border-radius: var(--radius-control); background: var(--surface-hover); }
+  .lbl { font-size: var(--text-sm); color: var(--muted); }
+  .foot { display: flex; justify-content: space-between; align-items: center; font-size: var(--text-xs); color: var(--muted); }
+  .stats { display: inline-flex; gap: 4px; align-items: center; }
+  .stats svg { width: 16px; height: 16px; fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; }
+  .num { font-family: var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: var(--tracking-tight); }
+  .mini-seg { display: flex; border-radius: var(--radius-control); background: var(--surface-hover); padding: 2px; }
+  .mini-seg span { flex: 1; text-align: center; font-size: var(--text-xs); padding: 3px 6px; border-radius: 6px; color: var(--muted); }
+  .mini-seg span.on { background: var(--surface-raised); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / .1); }
+  .chip-tag { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px 0 10px; border: var(--border);
+    border-radius: var(--radius-pill); background: var(--surface); font-size: var(--text-xs); color: var(--ink); }
+  .chip-tag i { width: 8px; height: 8px; border-radius: 50%; background: var(--tag-rose); }
+  .chip-tag.sky i { background: var(--tag-sky); }
+  .chip-tag svg { width: 10px; height: 10px; fill: none; stroke: var(--muted); stroke-width: 1.5; }
+  .glyph { fill: currentColor; }
+  .divider { height: 1px; background: var(--line); }
+
+  /* ---- The card ---- */
+  .card { display: flex; flex-direction: column; gap: var(--space-3); }
+  .head { display: flex; justify-content: space-between; align-items: center; min-height: 28px; }
+  .body { display: flex; align-items: center; justify-content: center; gap: var(--space-6); }
+  .side { display: flex; flex-direction: column; gap: var(--space-3); flex: none; width: 164px; }
+  .phase { font-size: var(--text-md); font-weight: var(--weight-semibold); line-height: 1.2; }
+  .phase small { display: block; font-weight: var(--weight-regular); color: var(--muted); font-size: var(--text-xs); margin-top: 3px; }
+  .ctrls { display: flex; gap: var(--space-2); align-items: center; }
+  .btn-main { flex: 1; justify-content: center; height: 32px; padding: 0 14px 0 11px; border-radius: var(--radius-pill); background: var(--accent); color: var(--on-accent);
+    display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-xs); font-weight: var(--weight-semibold); }
+  .btn-main svg { width: 13px; height: 13px; }
+  .btn-stop { width: 32px; height: 32px; border-radius: var(--radius-pill); border: var(--border); display: grid; place-items: center; color: var(--ink); background: var(--surface); }
+  .btn-stop i { width: 9px; height: 9px; border-radius: 2px; background: currentColor; }
+
+  /* ---- The sphere ----
+     Track in the accent's soft tint; on it, the phase in the accent with a
+     knob at its tip (the volume slider's thumb, in round); inside, a raised
+     face holding the time and one line under it, centred as one block. */
+  .dial { position: relative; flex: none; display: grid; place-items: center; }
+  .dial svg { position: absolute; inset: 0; overflow: visible; }
+  .dial .track { fill: none; stroke: var(--accent-soft); }
+  .dial .arc { fill: none; stroke: var(--accent); stroke-linecap: round; }
+  .dial .tail { fill: none; stroke: var(--accent); stroke-linecap: round; opacity: .35; }
+  .dial .knob { fill: var(--accent); stroke: var(--surface); }
+  .dial .face { fill: var(--surface); filter: drop-shadow(var(--face-shadow)); }
+  .dial.break .arc, .dial.break .knob { fill: none; }
+  .dial.break .arc { stroke: var(--dial-rest); }
+  .dial.break .knob { fill: var(--dial-rest); }
+  .dial.break .track { stroke: var(--surface-hover); }
+  .dial .read { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .dial .time { font-weight: var(--weight-semibold); line-height: 1; }
+  .dial .sub { font-size: 11px; line-height: 1; color: var(--muted); }
+  .dial.paused .time, .dial.idle .time { color: var(--muted); }
+  .dial.paused .marks { opacity: .5; }
+
+  /* ---- The floating clock ---- */
+  .desk { width: 360px; height: 180px; border-radius: 10px; position: relative; overflow: hidden;
+    background: linear-gradient(135deg, #c9d3dc 0%, #e6d9cf 55%, #d8c3b8 100%); }
+  .desk.night { background: linear-gradient(135deg, #2a3038 0%, #3a3230 60%, #2b2624 100%); }
+  .desk .win { position: absolute; left: 18px; top: 26px; width: 300px; height: 200px; border-radius: 8px; background: rgb(255 255 255 / .8); box-shadow: 0 8px 24px rgb(0 0 0 / .12); }
+  .desk.night .win { background: rgb(40 36 35 / .9); }
+  .desk .win::before { content: ""; position: absolute; left: 16px; right: 120px; top: 22px; height: 8px; border-radius: 4px; background: rgb(0 0 0 / .08); box-shadow: 0 18px 0 rgb(0 0 0 / .06), 0 36px 0 rgb(0 0 0 / .06), 0 54px 0 rgb(0 0 0 / .05); }
+  .desk.night .win::before { background: rgb(255 255 255 / .08); box-shadow: 0 18px 0 rgb(255 255 255 / .06), 0 36px 0 rgb(255 255 255 / .06), 0 54px 0 rgb(255 255 255 / .05); }
+  .desk .float { position: absolute; top: 12px; right: 12px; }
+  .w { position: relative; display: inline-flex; align-items: center; gap: 12px; height: 56px; padding: 0 20px 0 8px; border-radius: var(--radius-pill);
+    background: var(--surface-raised); color: var(--ink); box-shadow: var(--shadow-popup); border: var(--border); }
+  .w .dial .face { filter: none; }
+  .w .dial .play { position: relative; width: 14px; height: 14px; color: var(--ink); }
+  .w .t { font-size: 20px; font-weight: var(--weight-semibold); line-height: 1; }
+  .w .p { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1; }
+  .w.paused .t { color: var(--muted); }
+  .x { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--surface-raised); color: var(--muted); box-shadow: 0 1px 3px rgb(0 0 0 / .25); }
+  .x svg { width: 8px; height: 8px; stroke: currentColor; stroke-width: 1.6; fill: none; stroke-linecap: round; }
+  .notes { margin-top: 20px; font-size: 13px; line-height: 1.6; color: #3d3533; }
+  .notes ul { margin: 4px 0; padding-left: 18px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="pause" viewBox="0 0 24 24"><path d="M6.5 5h4v14h-4zM13.5 5h4v14h-4z" /></symbol>
+  <symbol id="play" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z" /></symbol>
+  <symbol id="chev" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3" /></symbol>
+  <symbol id="bars" viewBox="0 0 16 16"><path d="M3.5 13V8.5M8 13V3.5M12.5 13V6.5" /></symbol>
+  <symbol id="x" viewBox="0 0 8 8"><path d="M1 1l6 6M7 1L1 7" /></symbol>
+</svg>
+
+<div class="page">
+  <h1>A · Esfera, afinada</h1>
+  <p class="why">La esfera rehecha para que se vea como un reloj de verdad: <b>una cara</b> en relieve sobre el fondo, el tiempo y su línea de debajo <b>centrados como un solo bloque</b> (antes el tiempo quedaba alto y la línea lo empujaba), más aire entre las cifras y el anillo (las horas, «1:23:45», ya no lo rozan) y el anillo más grueso sobre un <b>carril del tono suave del acento</b>, con un <b>tirador en la punta</b> como el del volumen. En el cronómetro, en vez de la marca diminuta, una <b>estela corta</b> da la vuelta cada minuto. Al lado, la columna queda centrada en altura con la esfera.</p>
+
+  <div class="anatomy">
+    <span id="big"></span>
+    <ul>
+      <li><b>Carril:</b> el acento suave (rosa, caramelo o perla, según el ruido); en los descansos, gris.</li>
+      <li><b>Arco + tirador:</b> lo que lleva la fase de Pomodoro; en el cronómetro, una estela que marca los segundos.</li>
+      <li><b>Cara:</b> la superficie de las tarjetas, apenas levantada, para que las cifras no floten.</li>
+      <li><b>Cifras:</b> 28 px para m:ss y 21 px con horas, siempre con el mismo margen al anillo.</li>
+      <li><b>Línea de debajo:</b> «de 25:00», «Cronómetro», «En pausa» o «Descanso».</li>
+    </ul>
+  </div>
+
+  <div class="shots">
+    <div class="shot">
+      <div class="panel">
+        <div class="context"><div class="row"><span>Apagar en</span><span>Nunca</span></div><div class="seg"></div></div>
+        <div class="card">
+          <div class="head"><span class="lbl">Estudio</span><span class="chip-tag"><i></i>Cálculo<svg><use href="#chev" /></svg></span></div>
+          <div class="body">
+            <span data-dial='{"p":0.5,"time":"12:30","sub":"de 25:00"}'></span>
+            <div class="side">
+              <div class="phase">Trabajo 2 de 4<small>Sesión de 1:02:18</small></div>
+              <div class="ctrls"><span class="btn-main"><svg class="glyph"><use href="#pause" /></svg>Pausa</span><span class="btn-stop" title="Terminar sesión"><i></i></span></div>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="foot"><span>Hoy 3 h 10 min · Semana 12 h 40 min</span><span class="stats"><svg><use href="#bars" /></svg>Estadísticas</span></div>
+        </div>
+      </div>
+      <span class="cap">Pomodoro, trabajando · claro, ruido rosa</span>
+    </div>
+
+    <div class="shot">
+      <div class="panel dark brown">
+        <div class="context"><div class="row"><span>Apagar en</span><span>Nunca</span></div><div class="seg"></div></div>
+        <div class="card">
+          <div class="head"><span class="lbl">Estudio</span><span class="chip-tag sky"><i></i>Redes<svg><use href="#chev" /></svg></span></div>
+          <div class="body">
+            <span data-dial='{"tail":0.62,"time":"1:23:45","sub":"Cronómetro"}'></span>
+            <div class="side">
+              <div class="phase">Estudiando<small>Desde las 15:12</small></div>
+              <div class="ctrls"><span class="btn-main"><svg class="glyph"><use href="#pause" /></svg>Pausa</span><span class="btn-stop"><i></i></span></div>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="foot"><span>Hoy 4 h 02 min · Semana 13 h 32 min</span><span class="stats"><svg><use href="#bars" /></svg>Estadísticas</span></div>
+        </div>
+      </div>
+      <span class="cap">Cronómetro, contando · oscuro, ruido marrón</span>
+    </div>
+
+    <div class="shot">
+      <div class="panel white">
+        <div class="context"><div class="row"><span>Apagar en</span><span>Nunca</span></div><div class="seg"></div></div>
+        <div class="card">
+          <div class="head"><span class="lbl">Estudio</span><span class="chip-tag"><i></i>Cálculo<svg><use href="#chev" /></svg></span></div>
+          <div class="body">
+            <span data-dial='{"time":"0:00","sub":"Cronómetro","state":"idle"}'></span>
+            <div class="side">
+              <span class="mini-seg"><span class="on">Cronómetro</span><span>Pomodoro</span></span>
+              <div class="ctrls"><span class="btn-main"><svg class="glyph"><use href="#play" /></svg>Empezar</span></div>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="foot"><span>Hoy 0 min · Semana 12 h 40 min</span><span class="stats"><svg><use href="#bars" /></svg>Estadísticas</span></div>
+        </div>
+      </div>
+      <span class="cap">Antes de empezar · claro, ruido blanco</span>
+    </div>
+
+    <div class="shot">
+      <div class="panel dark">
+        <div class="context"><div class="row"><span>Apagar en</span><span>Nunca</span></div><div class="seg"></div></div>
+        <div class="card">
+          <div class="head"><span class="lbl">Estudio</span><span class="chip-tag"><i></i>Cálculo<svg><use href="#chev" /></svg></span></div>
+          <div class="body">
+            <span data-dial='{"p":0.18,"time":"4:06","sub":"Descanso","state":"break"}'></span>
+            <div class="side">
+              <div class="phase">Descanso<small>Después, trabajo 3 de 4</small></div>
+              <div class="ctrls"><span class="btn-main"><svg class="glyph"><use href="#pause" /></svg>Pausa</span><span class="btn-stop"><i></i></span></div>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="foot"><span>Hoy 3 h 35 min · Semana 13 h 05 min</span><span class="stats"><svg><use href="#bars" /></svg>Estadísticas</span></div>
+        </div>
+      </div>
+      <span class="cap">Pomodoro, descanso · oscuro, ruido rosa</span>
+    </div>
+
+    <div class="shot">
+      <div class="panel">
+        <div class="context"><div class="row"><span>Apagar en</span><span>Nunca</span></div><div class="seg"></div></div>
+        <div class="card">
+          <div class="head"><span class="lbl">Estudio</span><span class="chip-tag"><i></i>Cálculo<svg><use href="#chev" /></svg></span></div>
+          <div class="body">
+            <span data-dial='{"p":0.5,"time":"12:30","sub":"En pausa","state":"paused"}'></span>
+            <div class="side">
+              <div class="phase">En pausa<small>Trabajo 2 de 4</small></div>
+              <div class="ctrls"><span class="btn-main"><svg class="glyph"><use href="#play" /></svg>Seguir</span><span class="btn-stop"><i></i></span></div>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="foot"><span>Hoy 3 h 10 min · Semana 12 h 40 min</span><span class="stats"><svg><use href="#bars" /></svg>Estadísticas</span></div>
+        </div>
+      </div>
+      <span class="cap">En pausa · claro, ruido rosa</span>
+    </div>
+
+    <div class="shot">
+      <div class="desk"><div class="win"></div>
+        <div class="float"><div class="w"><span data-dial='{"p":0.5,"size":40,"glyph":"pause"}'></span><span><div class="t num">12:30</div><div class="p">Trabajo 2/4</div></span></div><span class="x"><svg><use href="#x" /></svg></span></div>
+      </div>
+      <div class="desk night dark brown"><div class="win"></div>
+        <div class="float"><div class="w paused"><span data-dial='{"tail":0.62,"size":40,"glyph":"play","state":"paused"}'></span><span><div class="t num">1:23:45</div><div class="p">En pausa</div></span></div></div>
+      </div>
+      <span class="cap">Mini reloj: la misma esfera en pequeño, que hace de botón; con el ratón encima (×) y en pausa</span>
+    </div>
+  </div>
+
+  <div class="notes">
+    <ul>
+      <li>El tirador y la estela se mueven con suavidad (una vez por segundo, con transición); con «movimiento reducido» de Windows, sin animación.</li>
+      <li>Botones con texto: «Empezar», «Pausa», «Seguir»; terminar es el cuadrado, con su descripción al pasar el ratón.</li>
+      <li>El selector Cronómetro/Pomodoro solo aparece antes de empezar, en el sitio de la fase.</li>
+      <li>Aprobada el 2026-11-06 con tres ajustes: esfera y columna centradas como bloque (la columna, de ancho fijo, con el botón principal ocupándola), un gris de descanso que se lee en oscuro (≥ 3:1 con el carril) y el arco y el tirador a media intensidad en pausa.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  // Draws each sphere from its data-dial: p (phase done, 0–1), tail (where
+  // the stopwatch's trail is), time, sub, state, size, glyph.
+  const ns = "http://www.w3.org/2000/svg";
+  function sphere(o) {
+    const size = o.size ?? 120;
+    // Larger than the panel's (the anatomy one): everything grows with it.
+    const k = size > 120 ? size / 120 : 1;
+    const stroke = size >= 100 ? 6 * k : 3.5;
+    const c = size / 2;
+    const r = c - stroke / 2 - 1;
+    const face = r - stroke / 2 - (size >= 100 ? 5 * k : 2.5);
+    const knobR = size >= 100 ? 5.5 * k : 3.5;
+    const at = (p) => {
+      const a = 2 * Math.PI * p - Math.PI / 2;
+      return [c + r * Math.cos(a), c + r * Math.sin(a)];
+    };
+    const arc = (cls, from, len, w) =>
+      `<circle class="${cls}" cx="${c}" cy="${c}" r="${r}" pathLength="100" stroke-width="${w}"
+        stroke-dasharray="${len * 100} ${100 - len * 100}" stroke-dashoffset="${-from * 100 + 25}" />`;
+    let marks = "";
+    if (o.p != null) {
+      const [x, y] = at(o.p);
+      marks = arc("arc", 0, o.p, stroke) + `<circle class="knob" cx="${x}" cy="${y}" r="${knobR}" stroke-width="${size >= 100 ? 2.5 : 1.5}" />`;
+    } else if (o.tail != null) {
+      const [x, y] = at(o.tail);
+      marks = arc("tail", o.tail - 0.14, 0.14, stroke) + `<circle class="knob" cx="${x}" cy="${y}" r="${knobR}" stroke-width="${size >= 100 ? 2.5 : 1.5}" />`;
+    }
+    const svg = `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
+      <circle class="track" cx="${c}" cy="${c}" r="${r}" stroke-width="${stroke}" />
+      <circle class="face" cx="${c}" cy="${c}" r="${face}" /><g class="marks">${marks}</g></svg>`;
+    const hours = (o.time ?? "").split(":").length > 2;
+    const inside = o.glyph
+      ? `<svg class="play glyph" style="position:relative;width:14px;height:14px"><use href="#${o.glyph}" /></svg>`
+      : `<span class="read" style="gap:${4 * k}px"><span class="time num" style="font-size:${(hours ? 21 : 28) * k}px">${o.time}</span>${o.sub ? `<span class="sub" style="font-size:${11 * k}px">${o.sub}</span>` : ""}</span>`;
+    return `<span class="dial ${o.state ?? ""}" style="width:${size}px;height:${size}px">${svg}${inside}</span>`;
+  }
+  document.querySelectorAll("[data-dial]").forEach((el) => (el.outerHTML = sphere(JSON.parse(el.dataset.dial))));
+  document.getElementById("big").outerHTML = sphere({ p: 0.5, time: "12:30", sub: "de 25:00", size: 180 });
+</script>
+</body>
+</html>
