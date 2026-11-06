@@ -57,6 +57,9 @@ enum Life {
 
 struct Panel {
     mica: AtomicBool,
+    /// The screen is too short for the whole panel: it was cut to fit and
+    /// its content scrolls.
+    short: AtomicBool,
     open: AtomicBool,
     /// Bumped on every open/hide so stale delayed work does nothing.
     generation: AtomicU64,
@@ -114,6 +117,7 @@ fn idle_ttl() -> Duration {
 pub fn init(app: &AppHandle) {
     app.manage(Panel {
         mica: AtomicBool::new(false),
+        short: AtomicBool::new(false),
         open: AtomicBool::new(false),
         generation: AtomicU64::new(0),
         last_hidden: Mutex::new(None),
@@ -460,6 +464,12 @@ pub fn apply_appearance(app: &AppHandle, appearance: &Appearance) {
     set_border(&window, window.theme().unwrap_or(Theme::Light));
 }
 
+/// Whether the panel had to be cut to fit the screen (`place`).
+pub fn is_short(app: &AppHandle) -> bool {
+    app.try_state::<Panel>()
+        .is_some_and(|p| p.short.load(Ordering::Relaxed))
+}
+
 pub fn uses_mica(app: &AppHandle) -> bool {
     app.try_state::<Panel>()
         .is_some_and(|p| p.mica.load(Ordering::Relaxed))
@@ -588,7 +598,13 @@ fn place(app: &AppHandle, window: &WebviewWindow, anchor: Option<Rect>) {
     // Never taller than the screen leaves room for (a 1366×768 laptop with
     // the study card): the page scrolls instead.
     let w = WIDTH * scale;
-    let h = (height(app) * scale).min(f64::from(work.size.height) - 2.0 * m);
+    let room = f64::from(work.size.height) - 2.0 * m;
+    let h = (height(app) * scale).min(room);
+    if let Some(panel) = app.try_state::<Panel>() {
+        panel
+            .short
+            .store(height(app) * scale > room, Ordering::Relaxed);
+    }
     let size = tauri::PhysicalSize::new(w.round() as u32, h.round() as u32);
     if window.inner_size().ok() != Some(size) {
         if let Err(e) = window.set_size(size) {

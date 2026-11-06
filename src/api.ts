@@ -55,6 +55,8 @@ export interface PanelState {
   shortcutTaken: string | null;
   lang: Lang;
   mica: boolean;
+  /** The screen is too short for the whole panel: it scrolls. */
+  short: boolean;
   timerPresets: [number, number, number];
   appearance: Appearance;
   systemAccent: string | null;
@@ -168,6 +170,7 @@ function mockBackend(): Backend {
     shortcutTaken: params.get("taken") ? "Ctrl+Alt+P" : null,
     lang: (params.get("lang") as Lang) ?? (navigator.language.startsWith("es") ? "es" : "en"),
     mica: false,
+    short: params.get("short") === "1",
     timerPresets: [25, 50, 90],
     appearance: {
       theme: "system",

@@ -83,6 +83,8 @@ pub struct PanelState {
     pub shortcut_taken: Option<String>,
     pub lang: Lang,
     pub mica: bool,
+    /// The screen is too short for the whole panel; it scrolls.
+    pub short: bool,
     pub appearance: settings::Appearance,
     /// Windows' accent colour, when Settings → Appearance asks for it.
     pub system_accent: Option<String>,
@@ -218,6 +220,7 @@ pub fn panel_state(app: &AppHandle) -> Option<PanelState> {
         shortcut_taken: shortcut::preferred_taken(app),
         lang: state.lang(),
         mica: panel::uses_mica(app),
+        short: panel::is_short(app),
         system_accent: (settings.appearance.accent == settings::AccentChoice::System)
             .then(crate::taskbar::system_accent)
             .flatten(),
