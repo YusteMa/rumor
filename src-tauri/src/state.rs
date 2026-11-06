@@ -1234,6 +1234,8 @@ pub fn second_instance(app: &AppHandle, args: &[String]) {
             study_finish(app);
             return;
         }
+        // `end_phase` only exists in debug builds; `cfg!` alone still compiles this.
+        #[cfg(debug_assertions)]
         if args.iter().any(|a| a == "--dev-study-skip") {
             lock(&app.state::<AppState>().study).end_phase(Instant::now());
             return;

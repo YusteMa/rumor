@@ -164,7 +164,7 @@ impl Machine {
     }
 
     /// Debug builds: ends the current Pomodoro phase now, for screenshots.
-    #[cfg(debug_assertions)]
+    #[cfg(any(debug_assertions, test))]
     pub fn end_phase(&mut self, now: Instant) {
         if self.mode == Mode::Pomodoro && self.run == Run::Running {
             self.phase_spent = self.plan.length(self.phase);

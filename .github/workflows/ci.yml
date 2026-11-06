@@ -40,6 +40,12 @@ jobs:
         working-directory: src-tauri
         run: cargo clippy --all-targets -- -D warnings
 
+      # Dev-only code sits behind cfg(debug_assertions): the installer is a
+      # release build, so check that one compiles too.
+      - name: cargo clippy (release)
+        working-directory: src-tauri
+        run: cargo clippy --release --all-targets -- -D warnings
+
       - name: cargo test
         working-directory: src-tauri
         run: cargo test
