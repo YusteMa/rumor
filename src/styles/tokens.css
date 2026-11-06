@@ -111,19 +111,18 @@
   /* Study card (panel) and mini clock (SPEC §4.3b): the sphere, a ring
      on the accent's soft tint round a raised face, with a knob at the tip
      of the Pomodoro phase or the stopwatch's trail (a % of the turn). */
-  --dial-size: 120px;
+  --dial-size: 100px;
   --dial-stroke: 6px;
   --dial-knob: 5.5px;
   --dial-knob-ring: 2.5px;
   --dial-face-gap: 5px;
   --dial-tail: 14;
-  --dial-time: 28px;
-  --dial-time-hours: 21px;
+  --dial-time: 24px;
+  --dial-time-hours: 18px;
   --dial-sub: 11px;
   --dial-glyph: 14px;
   --dial-paused: 0.5;
   --dial-tail-opacity: 0.35;
-  --study-side: 164px;
   --study-phase-gap: 2px;
   --mini-seg-pad: 2px;
   --study-button: 32px;

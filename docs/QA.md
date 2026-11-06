@@ -154,7 +154,7 @@ Needs two releases, the second with a higher version (e.g. install beta.2 and pu
 - [ ] Pomodoro: the arc and its knob fill the phase smoothly, second by second; «Trabajo 2 de 4 · Sesión de …». A break turns them grey, readable in dark mode.
 - [ ] Stopwatch: the trail goes round once a minute; hours («1:23:45») keep their margin to the ring.
 - [ ] Paused: arc and knob at half strength, time grey, «Seguir»; the same in the mini clock.
-- [ ] The sphere and its column stay centred and don't shift between states, in Spanish and English.
+- [ ] The sphere starts on the panel's left edge (with «Estudio», colour and volume); the finish button ends on the right edge, under the tag picker's; nothing shifts between states, in Spanish and English.
 - [ ] On a 1366×768 screen (or 125 % on 1080p) the panel fits the screen and scrolls; no part goes off screen.
 - [ ] Mini clock off by default; on, it appears top right when a session starts and fades out when it ends.
 - [ ] Dragging moves it and the spot is remembered after restarting Rumor; unplugging that screen brings it back to the corner.

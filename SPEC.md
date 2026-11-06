@@ -146,16 +146,16 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
 | **Pomodoro** | Bloques de trabajo y descanso **configurables** (por defecto 25/5, y descanso largo de 15 cada 4). Cambia de fase solo, con el aviso elegido. En los descansos el ruido se **baja a la mitad** *(por defecto)*, se **pausa** o **sigue igual** (un solo desplegable), siempre con fundido |
 
 **Lo que se ve en el panel** (tarjeta de Estudio; rediseño aprobado el 2026-11-06, maqueta en `docs/design/study-sphere.html`):
-- **La esfera** (120 px): un carril del tono suave del acento alrededor de una **cara** en relieve (la superficie de las tarjetas, apenas levantada). Dentro, **el tiempo** grande con `tabular-nums` (28 px; 21 px con horas, siempre con el mismo margen al anillo) y una línea debajo, **centrados como un solo bloque**.
+- **La esfera** (100 px): un carril del tono suave del acento alrededor de una **cara** en relieve (la superficie de las tarjetas, apenas levantada). Dentro, **el tiempo** grande con `tabular-nums` (24 px; 18 px con horas, siempre con el mismo margen al anillo) y una línea debajo, **centrados como un solo bloque**.
   - **Pomodoro:** el tiempo que queda de la fase, «de 25:00» debajo, y la fase como **arco del acento con un tirador en la punta** (el del volumen, en redondo).
   - **Cronómetro:** el tiempo de la sesión, «Cronómetro» debajo, y una **estela corta** con su tirador que da la vuelta cada minuto.
   - El tirador avanza con suavidad, de segundo en segundo; con «movimiento reducido», sin animación.
   - **Descanso:** carril y arco en gris, uno que se lee en los dos temas (≥ 3:1 frente al carril). **En pausa:** el arco y el tirador a media intensidad y el tiempo en gris, en la tarjeta y en el mini reloj.
-- **Al lado, una columna de ancho fijo** (esfera y columna centradas juntas en la tarjeta, sin moverse entre estados):
+- **Al lado, una columna** que ocupa el resto del ancho: la esfera empieza en el borde izquierdo del panel, como «Estudio», el color o el volumen, y el botón de terminar acaba en el borde derecho, alineado con el desplegable de etiqueta (decidido el 2026-11-06). Nada se mueve entre estados:
   - antes de empezar, el selector **Cronómetro / Pomodoro** y **«Empezar»**;
   - durante la sesión, dónde estás («Trabajo 2 de 4» · «Sesión de 1:02:18»; «Estudiando» · «Desde las 15:12»; «Descanso» · «Después, trabajo 3 de 4»; «En pausa»), el botón principal del acento (**«Pausa»** / **«Seguir»**) ocupando la columna y **terminar** (el cuadrado) a su lado.
-- Arriba, «Estudio» y la **etiqueta** (si hay etiquetas). Abajo, tras una línea, **Hoy: 3 h 10 min · Semana: 12 h 40 min** y «Estadísticas».
-- **Pantallas bajas:** con la tarjeta, el panel mide 757 px; si la pantalla no tiene sitio (p. ej. 1366×768), el panel se queda a la altura que hay y su contenido se desplaza.
+- Arriba, «Estudio» y la **etiqueta** (si hay etiquetas). Abajo, **Hoy: 3 h 10 min · Semana: 12 h 40 min** y «Estadísticas».
+- **Altura:** con la tarjeta, el panel mide 717 px (elegido el 2026-11-06 entre 757, 717 y 680 px, para no perder «Desde las…», la línea de sesión ni «Estadísticas»). **Pantallas bajas:** si la pantalla no tiene sitio (p. ej. 1366×768), el panel se queda a la altura que hay y su contenido se desplaza.
 
 **Mini reloj flotante** (opcional, **desactivado por defecto**; Ajustes → Estudio → «Mini reloj flotante»):
 - Una pastilla con **la misma esfera en pequeño**, que hace de **botón de play/pausa**, y al lado el tiempo y la fase en pocas palabras («Trabajo 2/4», «Descanso», «En pausa», «Cronómetro»). Tema claro/oscuro y acento del ruido, como el panel.

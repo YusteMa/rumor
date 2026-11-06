@@ -28,7 +28,7 @@ const WIDTH: f64 = 360.0;
 const HEIGHT: f64 = 540.0;
 /// Room for the study card, with "Modo estudio" on (SPEC §4.3b, §4.3c):
 /// the card and the gap above it.
-const STUDY_HEIGHT: f64 = 217.0;
+const STUDY_HEIGHT: f64 = 176.0;
 /// Gap between the panel, the taskbar and the screen edge (logical px).
 const MARGIN: f64 = 12.0;
 /// Must match `--dur-close` in tokens.css: the UI fades out, then we hide.
