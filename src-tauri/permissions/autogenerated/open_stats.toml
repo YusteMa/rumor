@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-open-stats"
+description = "Enables the open_stats command without any pre-configured scope."
+commands.allow = ["open_stats"]
+
+[[permission]]
+identifier = "deny-open-stats"
+description = "Denies the open_stats command without any pre-configured scope."
+commands.deny = ["open_stats"]

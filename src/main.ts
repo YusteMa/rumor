@@ -28,6 +28,7 @@ const ui = {
     setMode: (mode) => void api.studySetMode(mode),
     setTag: (tag) => void api.studySetTag(tag),
     resolveIdle: (keep) => void api.studyResolveIdle(keep),
+    openStats: () => void api.openStats(),
   }),
   footer: footer(
     () => api.openSettings(),

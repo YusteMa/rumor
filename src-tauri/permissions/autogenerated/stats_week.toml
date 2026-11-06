@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-stats-week"
+description = "Enables the stats_week command without any pre-configured scope."
+commands.allow = ["stats_week"]
+
+[[permission]]
+identifier = "deny-stats-week"
+description = "Denies the stats_week command without any pre-configured scope."
+commands.deny = ["stats_week"]

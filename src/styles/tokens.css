@@ -23,7 +23,7 @@
   --surface: #ffffff;
   --surface-hover: #f6f1ee;
   --ink: #2b2523;
-  --muted: #857a76;
+  --muted: #736863;
   --line: #ece4e0;
   --accent-pink: #c7647f;
   --accent-pink-soft: #f7e1e6;
@@ -45,6 +45,22 @@
   --tag-sky: #4f82a8;
   --tag-lilac: #8a6fb0;
   --tag-stone: #7d746f;
+  /* Study statistics (SPEC §4.3d): "Sin etiqueta" (≥ 3:1 against the
+     background, like the tags), what went up, the light and shadow on the
+     bars, and five heat levels of the accent. */
+  --tag-none: #988c87;
+  --good: #2e6b3a;
+  --good-soft: #e5f2e7;
+  --chart-shine-light: rgb(255 255 255 / 0.28);
+  --chart-shine-mid: rgb(255 255 255 / 0.06);
+  --chart-shine-shade: rgb(0 0 0 / 0.1);
+  --chart-floor: rgb(43 37 35 / 0.12);
+  --heat-0: var(--surface-hover);
+  --heat-1: color-mix(in srgb, var(--accent) 22%, var(--surface));
+  --heat-2: color-mix(in srgb, var(--accent) 45%, var(--surface));
+  --heat-3: color-mix(in srgb, var(--accent) 72%, var(--surface));
+  --heat-4: color-mix(in srgb, var(--accent) 80%, var(--ink));
+  --heat-3-text: var(--ink);
 
   /* Type: the Windows system font, 0 KB and native. */
   --font: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
@@ -113,6 +129,7 @@
   --switch-inset: 3px;
   --switch-travel: 18px;
   --icon-stroke: 1.2;
+  --icon-stroke-bold: 2;
   /* Content never stretches past this; explanations wrap at a reading width
      and keep at least --row-text-min beside their control, or the control
      moves under them. */
@@ -127,6 +144,42 @@
   --popup-max-height: 264px;
   --selected-bar-width: 3px;
   --selected-bar-height: 16px;
+
+  /* Statistics window (SPEC §4.3d). */
+  --stats-max: 880px;
+  --chart-height: 220px;
+  --chart-axis: 32px;
+  --chart-bar-max: 40px;
+  --chart-bar-radius: 7px;
+  --chart-seg-gap: 2px;
+  --chart-floor-height: 3px;
+  --chart-dim: 0.45;
+  --heat-row: 18px;
+  --heat-gap: 3px;
+  --heat-radius: 3px;
+  --hbar-height: 6px;
+  --goal-ring: 72px;
+  --goal-ring-stroke: 7px;
+  --calendar-cell: 44px;
+  --tip-width: 200px;
+  --card-min: 260px;
+  --session-time: 112px;
+  --session-dur: 88px;
+  --session-meta: 176px;
+  --swatch-radius: 2px;
+  --pill-pad-y: 2px;
+  --today-ring: 1.5px;
+  --ghost-dash: 4 4;
+  --tracking-tight: -0.01em;
+  --leading-text: 1.5;
+  --leading-icon: 1.8;
+  --shadow-tab: 0 1px 2px var(--chart-floor);
+  /* The chosen tab: lifted, and marked with the accent (≥ 3:1 in both
+     themes, where the lift alone is ~1.1:1). */
+  --tab-selected: var(--surface-raised);
+  --tab-mark-width: 16px;
+  --tab-mark-height: 3px;
+  --toast-hover: color-mix(in srgb, var(--bg) 14%, transparent);
 
   /* Motion. */
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -181,6 +234,17 @@
     --tag-sky: #85b4d6;
     --tag-lilac: #b9a0db;
     --tag-stone: #ada39e;
+    --tag-none: #7d736f;
+    --tab-selected: #3a3533;
+    --heat-3: color-mix(in srgb, var(--accent) 80%, var(--surface));
+    --heat-4: var(--accent);
+    --heat-3-text: var(--on-accent);
+    --good: #8fcf9c;
+    --good-soft: #233528;
+    --chart-shine-light: rgb(255 255 255 / 0.16);
+    --chart-shine-mid: rgb(255 255 255 / 0.03);
+    --chart-shine-shade: rgb(0 0 0 / 0.18);
+    --chart-floor: rgb(0 0 0 / 0.4);
     color-scheme: dark;
   }
 }
@@ -208,6 +272,17 @@
   --tag-sky: #85b4d6;
   --tag-lilac: #b9a0db;
   --tag-stone: #ada39e;
+  --tag-none: #7d736f;
+  --tab-selected: #3a3533;
+  --heat-3: color-mix(in srgb, var(--accent) 80%, var(--surface));
+  --heat-4: var(--accent);
+  --heat-3-text: var(--on-accent);
+  --good: #8fcf9c;
+  --good-soft: #233528;
+  --chart-shine-light: rgb(255 255 255 / 0.16);
+  --chart-shine-mid: rgb(255 255 255 / 0.03);
+  --chart-shine-shade: rgb(0 0 0 / 0.18);
+  --chart-floor: rgb(0 0 0 / 0.4);
   color-scheme: dark;
 }
 

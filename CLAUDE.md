@@ -24,10 +24,11 @@ rumor/
 ├─ src/                      # Panel (Vite + TS)
 │  ├─ index.html             # panel
 │  ├─ settings.html          # ventana de Ajustes (settings.ts, settings-api.ts)
+│  ├─ stats.html             # ventana de Estadísticas (stats.ts, stats-api.ts)
 │  ├─ main.ts                # arranque, enlaza eventos ↔ comandos
-│  ├─ ui/                    # player.ts, colors.ts, volume.ts, timer.ts, spectrum.ts, accent.ts, radio.ts, footer.ts
+│  ├─ ui/                    # player.ts, colors.ts, volume.ts, timer.ts, spectrum.ts, accent.ts, radio.ts, footer.ts, charts.ts
 │  ├─ i18n/                  # es.json, en.json
-│  └─ styles/                # tokens.css (tema), controls.css (compartido), panel.css, settings.css
+│  └─ styles/                # tokens.css (tema), controls.css (compartido), panel.css, settings.css, stats.css
 ├─ src-tauri/
 │  ├─ src/
 │  │  ├─ main.rs
@@ -44,6 +45,7 @@ rumor/
 │  │  ├─ ear_break.rs        # recordatorio de descanso de oídos (puro, testeable)
 │  │  ├─ settings.rs         # modelo de ajustes y store
 │  │  ├─ settings_window.rs  # ventana de Ajustes
+│  │  ├─ stats_window.rs     # ventana de Estadísticas
 │  │  ├─ panel.rs            # crear/posicionar/ocultar ventana, Mica
 │  │  └─ audio/
 │  │     ├─ mod.rs
@@ -59,8 +61,9 @@ rumor/
 │  │     ├─ mod.rs
 │  │     ├─ machine.rs       # estados cronómetro/Pomodoro (puro, testeable)
 │  │     ├─ idle.rs          # GetLastInputInfo
-│  │     ├─ calendar.rs      # hoy y esta semana en hora local
-│  │     └─ db.rs            # SQLite: sessions, segments, tags, migraciones
+│  │     ├─ calendar.rs      # ahora en hora local y primer día de la semana
+│  │     ├─ stats.rs         # agregación única: panel, Estadísticas y CSV (pura, testeable)
+│  │     └─ db.rs            # SQLite: sessions, segments, tags, migraciones reversibles
 │  ├─ tests/dsp.rs           # tests espectrales
 │  ├─ icons/                 # icono de la app, generado por scripts/gen-app-icon.mjs
 │  ├─ capabilities/default.json

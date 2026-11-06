@@ -482,10 +482,48 @@ body {
   background: var(--tag);
 }
 
+.study-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
 .study-totals {
   margin: 0;
   color: var(--muted);
   font-size: var(--text-xs);
+}
+
+/* Opens Statistics (SPEC §4.3d); as tall as the line of totals. */
+.study-stats {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: calc(-1 * var(--space-1)) calc(-1 * var(--space-2)) calc(-1 * var(--space-1)) 0;
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  transition:
+    background-color var(--dur-press) var(--ease-out),
+    color var(--dur-press) var(--ease-out);
+}
+
+.study-stats:hover {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+
+.study-stats svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: var(--icon-stroke-bold);
+  stroke-linecap: round;
 }
 
 /* "¿Seguías estudiando?": in place of the time, same height. */

@@ -21,6 +21,7 @@ export interface StudyActions {
   setMode(mode: StudyMode): void;
   setTag(tag: number | null): void;
   resolveIdle(keep: boolean): void;
+  openStats(): void;
 }
 
 export function study(actions: StudyActions) {
@@ -32,6 +33,7 @@ export function study(actions: StudyActions) {
   const ring = document.getElementById("study-ring") as unknown as SVGCircleElement;
   const time = document.getElementById("study-time") as HTMLElement;
   const totals = document.getElementById("study-totals") as HTMLElement;
+  const foot = document.getElementById("study-foot") as HTMLElement;
   const finish = document.getElementById("study-finish") as HTMLButtonElement;
   const tagSlot = document.getElementById("study-tag") as HTMLElement;
   const idle = document.getElementById("study-idle") as HTMLElement;
@@ -40,6 +42,7 @@ export function study(actions: StudyActions) {
   const modeGroup = radioGroup(modes, (v) => actions.setMode(v as StudyMode));
   play.addEventListener("click", () => actions.toggle());
   finish.addEventListener("click", () => actions.finish());
+  (document.getElementById("study-stats") as HTMLButtonElement).addEventListener("click", () => actions.openStats());
   (document.getElementById("idle-keep") as HTMLButtonElement).addEventListener("click", () =>
     actions.resolveIdle(true),
   );
@@ -105,7 +108,7 @@ export function study(actions: StudyActions) {
       const asking = s.idleMinutes !== null;
       idle.hidden = !asking;
       body.hidden = asking;
-      totals.hidden = asking;
+      foot.hidden = asking;
       if (asking) idleText.textContent = t("idleQuestion", { n: s.idleMinutes ?? 0 });
     },
   };

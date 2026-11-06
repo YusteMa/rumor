@@ -271,14 +271,6 @@ impl Machine {
         self.segments.iter().map(|s| s.len(now)).sum()
     }
 
-    /// Work in this session that falls inside a wall-clock interval.
-    pub fn worked_between(&self, now: Instant, from: SystemTime, to: SystemTime) -> Duration {
-        self.segments
-            .iter()
-            .map(|s| overlap((s.wall, s.wall + s.len(now)), (from, to)))
-            .sum()
-    }
-
     fn phase_elapsed(&self, now: Instant) -> Duration {
         self.phase_spent
             + self
@@ -383,13 +375,6 @@ impl Machine {
     pub fn is_counting(&self) -> bool {
         self.counts()
     }
-}
-
-/// Length of the overlap of two wall-clock intervals.
-pub fn overlap(a: (SystemTime, SystemTime), b: (SystemTime, SystemTime)) -> Duration {
-    let start = a.0.max(b.0);
-    let end = a.1.min(b.1);
-    end.duration_since(start).unwrap_or(Duration::ZERO)
 }
 
 #[cfg(test)]
@@ -572,21 +557,6 @@ mod tests {
         st.discount(c.at(m(5)).0, c.at(m(20)).0);
         // 0–5 and 20–30 remain.
         assert_eq!(st.worked(c.at(m(30)).0), m(15));
-    }
-
-    #[test]
-    fn a_session_across_midnight_splits_by_day() {
-        let c = Clock::new();
-        let mut st = Machine::new(Mode::Stopwatch, Plan::default());
-        // From 23:30 to 00:45 the next day.
-        let midnight = c.w0 + m(30);
-        let (t, w) = c.at(Duration::ZERO);
-        st.start(t, w);
-        let now = c.at(m(75)).0;
-        let before = st.worked_between(now, c.w0 - m(600), midnight);
-        let after = st.worked_between(now, midnight, midnight + m(24 * 60));
-        assert_eq!(before, m(30));
-        assert_eq!(after, m(45));
     }
 
     #[test]

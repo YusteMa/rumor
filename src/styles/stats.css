@@ -1,0 +1,872 @@
+/* The Statistics window (SPEC §4.3d): cards on the window's background, the
+   same family as Settings. Every value comes from tokens.css. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: var(--weight-regular) var(--text-sm) / var(--leading) var(--font);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.stats {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Header ------------------------------------------------------------------- */
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: var(--stats-max);
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-6) var(--space-4);
+}
+
+.head h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+
+.period {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--control-height-sm);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.nav {
+  width: var(--control-height-sm);
+  height: var(--control-height-sm);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  transition: background-color var(--dur-press) var(--ease-out);
+}
+
+.nav:first-child {
+  margin-left: calc(-1 * var(--space-2));
+}
+
+.nav:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.nav:disabled {
+  color: var(--line);
+}
+
+.nav svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--chevron-stroke);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The tabs: a quiet segmented control, the chosen tab lifted onto a surface
+   and marked with a short accent line. */
+.tabs {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-control);
+  background: var(--surface-hover);
+}
+
+.tabs [role="tab"] {
+  position: relative;
+  padding: var(--space-1) var(--space-3);
+  border: 0;
+  border-radius: calc(var(--radius-control) - var(--space-1) / 2);
+  background: transparent;
+  color: var(--ink);
+  transition:
+    background-color var(--dur-press) var(--ease-out),
+    color var(--dur-press) var(--ease-out);
+}
+
+.tabs [role="tab"]:hover {
+  color: var(--ink);
+}
+
+.tabs [role="tab"][aria-selected="true"] {
+  background: var(--tab-selected);
+  color: var(--ink);
+  box-shadow: var(--shadow-tab);
+}
+
+.tabs [role="tab"][aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--space-1) / 2);
+  width: var(--tab-mark-width);
+  height: var(--tab-mark-height);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  transform: translateX(-50%);
+}
+
+/* ---- Layout ------------------------------------------------------------------- */
+
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: var(--stats-max);
+  margin: 0 auto;
+  padding: 0 var(--space-6) var(--space-8);
+  overflow-y: auto;
+  outline: none;
+  scrollbar-color: var(--line) transparent;
+  scrollbar-width: thin;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.row > .card {
+  flex: 1 1 var(--card-min);
+  min-width: 0;
+}
+
+.row.month > .calendar-card {
+  flex-grow: 2;
+}
+
+.card {
+  position: relative;
+  margin: 0;
+  padding: var(--space-4);
+  border: var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.card-title {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.card-head .card-title {
+  margin: 0;
+}
+
+.label {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.label b {
+  color: var(--ink);
+  font-weight: var(--weight-semibold);
+}
+
+/* ---- Figures ------------------------------------------------------------------ */
+
+.total {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-1);
+}
+
+.big {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tight);
+  line-height: 1.1;
+}
+
+.total-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.pill {
+  padding: var(--pill-pad-y) var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface-hover);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.pill.is-up {
+  background: var(--good-soft);
+  color: var(--good);
+}
+
+.figures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3) var(--space-4);
+  align-content: center;
+}
+
+.month-total {
+  justify-content: flex-start;
+}
+
+.figures.inline {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: var(--border);
+}
+
+.figure {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.figure .value {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+}
+
+.records .value {
+  font-size: var(--text-sm);
+}
+
+/* ---- Bars per day -------------------------------------------------------------- */
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.legend-item,
+.tag-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.swatch {
+  flex: none;
+  width: var(--tag-dot);
+  height: var(--tag-dot);
+  border-radius: var(--swatch-radius);
+}
+
+.chart-host {
+  position: relative;
+  margin-top: var(--space-2);
+}
+
+.chart {
+  display: block;
+  overflow: visible;
+}
+
+.grid line {
+  stroke: var(--line);
+  stroke-width: var(--border-width);
+}
+
+.axis-label,
+.day-label {
+  fill: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.day-label.is-today {
+  fill: var(--ink);
+  font-weight: var(--weight-semibold);
+}
+
+.shine-light {
+  stop-color: var(--chart-shine-light);
+}
+
+.shine-mid {
+  stop-color: var(--chart-shine-mid);
+}
+
+.shine-clear,
+.floor-clear {
+  stop-color: transparent;
+}
+
+.shine-shade {
+  stop-color: var(--chart-shine-shade);
+}
+
+.floor-dark {
+  stop-color: var(--chart-floor);
+}
+
+.bar {
+  outline: none;
+  transition: opacity var(--dur-open) var(--ease-out);
+}
+
+.bar .hit {
+  fill: transparent;
+}
+
+/* Hovering or focusing a day dims the rest. */
+.bars:hover .bar,
+.bars:focus-within .bar {
+  opacity: var(--chart-dim);
+}
+
+.bars .bar:hover,
+.bars .bar:focus-visible {
+  opacity: 1;
+}
+
+.bar:focus-visible .hit {
+  stroke: var(--accent);
+  stroke-width: var(--border-width);
+  rx: var(--radius-control);
+}
+
+.ghost {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: var(--border-width);
+  stroke-dasharray: var(--ghost-dash);
+}
+
+.chart-tip {
+  position: absolute;
+  z-index: 1;
+  width: max-content;
+  max-width: var(--tip-width);
+  padding: var(--space-2) var(--space-3);
+  border: var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-popup);
+  font-size: var(--text-xs);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, calc(-100% - var(--space-2) + var(--open-offset)));
+  transition:
+    opacity var(--dur-press) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+
+.chart-tip.is-shown {
+  opacity: 1;
+  transform: translate(-50%, calc(-100% - var(--space-2)));
+}
+
+.tip-head,
+.tip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.tip-head {
+  margin-bottom: var(--space-1);
+  white-space: nowrap;
+}
+
+.tip-row {
+  color: var(--muted);
+}
+
+/* ---- Heat (map and calendar) --------------------------------------------------- */
+
+.heat-0 {
+  fill: var(--heat-0);
+  background: var(--heat-0);
+}
+
+.heat-1 {
+  fill: var(--heat-1);
+  background: var(--heat-1);
+}
+
+.heat-2 {
+  fill: var(--heat-2);
+  background: var(--heat-2);
+}
+
+.heat-3 {
+  fill: var(--heat-3);
+  background: var(--heat-3);
+  color: var(--heat-3-text);
+}
+
+.heat-4 {
+  fill: var(--heat-4);
+  background: var(--heat-4);
+  color: var(--on-accent);
+}
+
+.best {
+  margin: var(--space-2) 0 0;
+}
+
+/* ---- By tag ---------------------------------------------------------------------- */
+
+.tag-bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-xs);
+}
+
+.tag-bar-head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.tag-time {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.tag-bar {
+  display: block;
+  height: var(--hbar-height);
+  margin-top: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--surface-hover);
+  overflow: hidden;
+}
+
+.tag-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+}
+
+/* ---- Insights -------------------------------------------------------------------- */
+
+.insight-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.insight {
+  display: flex;
+  gap: var(--space-2);
+  line-height: var(--leading-text);
+}
+
+.insight b {
+  font-weight: var(--weight-semibold);
+}
+
+.insight-icon {
+  flex: none;
+  width: var(--icon-size);
+  font-size: var(--text-xs);
+  line-height: var(--leading-icon);
+  text-align: center;
+}
+
+.insight.is-up .insight-icon {
+  color: var(--good);
+}
+
+.insight.is-neutral .insight-icon {
+  color: var(--muted);
+}
+
+.insight.is-down .insight-icon {
+  color: var(--accent-brown);
+}
+
+/* ---- Empty states ---------------------------------------------------------------- */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-4) var(--space-1);
+  text-align: center;
+}
+
+.empty p {
+  margin: 0;
+  max-width: var(--measure);
+}
+
+.empty-title {
+  font-weight: var(--weight-semibold);
+}
+
+.empty-hint {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.empty .btn {
+  margin-top: var(--space-2);
+}
+
+/* ---- Month ----------------------------------------------------------------------- */
+
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, var(--calendar-cell)));
+  justify-content: center;
+  gap: var(--heat-gap);
+}
+
+.cal-head {
+  padding-bottom: var(--space-1);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+.cal-day {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-control);
+  font-size: var(--text-xs);
+  outline-offset: var(--border-width);
+}
+
+.cal-day.is-future {
+  background: transparent;
+  box-shadow: inset 0 0 0 var(--border-width) var(--line);
+  color: var(--muted);
+}
+
+.cal-day.is-today {
+  box-shadow: inset 0 0 0 var(--today-ring) var(--ink);
+}
+
+.scale {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+}
+
+.scale-step {
+  width: var(--tag-dot);
+  height: var(--tag-dot);
+  border-radius: var(--swatch-radius);
+}
+
+/* ---- Sessions -------------------------------------------------------------------- */
+
+.toolbar {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.btn {
+  height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  transition: background-color var(--dur-press) var(--ease-out);
+}
+
+.btn:hover {
+  background: var(--surface-hover);
+}
+
+.btn.primary {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.btn.subtle {
+  border-color: transparent;
+  background: var(--accent-soft);
+}
+
+.btn.more {
+  align-self: center;
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.day-head {
+  display: flex;
+  justify-content: space-between;
+  margin: var(--space-2) var(--space-1) 0;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.session-list {
+  margin: 0;
+  padding: var(--space-1) 0;
+  list-style: none;
+}
+
+.session {
+  display: grid;
+  grid-template-columns: var(--session-time) var(--session-dur) minmax(0, 1fr) var(--session-meta) auto;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--row-height-sm);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-4);
+}
+
+.session + .session {
+  border-top: var(--border);
+}
+
+.session-time {
+  color: var(--muted);
+}
+
+.session-dur {
+  font-weight: var(--weight-semibold);
+}
+
+.session-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.session-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.noise-dot {
+  width: var(--dot-size);
+  height: var(--dot-size);
+  border-radius: var(--radius-pill);
+}
+
+.noise-dot.is-pink {
+  background: var(--accent-pink);
+}
+
+.noise-dot.is-brown {
+  background: var(--accent-brown);
+}
+
+.noise-dot.is-white {
+  background: var(--accent-white);
+}
+
+.mark {
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface-hover);
+}
+
+.session.is-running .mark {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+.session-actions {
+  display: flex;
+  min-width: calc(2 * var(--icon-button));
+  opacity: 0;
+  transition: opacity var(--dur-press) var(--ease-out);
+}
+
+.session:hover .session-actions,
+.session:focus-within .session-actions {
+  opacity: 1;
+}
+
+.session-actions svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--icon-stroke);
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.session-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.session-list .session-form {
+  border: 0;
+  border-radius: 0;
+  background: var(--accent-soft);
+}
+
+.form-fields,
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.form-actions {
+  gap: var(--space-2);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* "h:mm": how to write the duration, next to its label. */
+.field-format {
+  padding: 0 var(--space-1);
+  border-radius: var(--swatch-radius);
+  background: var(--surface-hover);
+  font-variant-numeric: tabular-nums;
+}
+
+.field-static {
+  display: flex;
+  align-items: center;
+  height: var(--control-height);
+  color: var(--muted);
+}
+
+.input {
+  height: var(--control-height);
+  padding: 0 var(--space-2);
+  border: var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-raised);
+  user-select: text;
+}
+
+.input.narrow {
+  width: var(--number-width);
+  text-align: right;
+}
+
+/* Ink, not a tint: it has to read on any background (≥ 4.5:1). */
+.form-error {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-5);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--ink);
+  color: var(--bg);
+  box-shadow: var(--shadow-popup);
+  transform: translateX(-50%);
+}
+
+.toast .link {
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: inherit;
+  font-weight: var(--weight-semibold);
+}
+
+.toast .link:hover {
+  background: var(--toast-hover);
+}
+
+/* ---- Reduced motion -------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .bar,
+  .chart-tip,
+  .session-actions {
+    transition: none;
+  }
+}

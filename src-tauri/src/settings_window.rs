@@ -70,35 +70,46 @@ pub fn theme_of(choice: ThemeChoice) -> Option<Theme> {
     }
 }
 
-fn apply_mica(window: &WebviewWindow, appearance: &Appearance) {
+/// Mica behind a window, or a plain background; `true` if Mica took (it
+/// fails on Windows 10). Statistics uses it too.
+pub fn set_mica(window: &WebviewWindow, appearance: &Appearance) -> bool {
     let dark = theme_of(appearance.theme).map(|t| t == Theme::Dark);
-    let on = if appearance.mica {
+    if appearance.mica {
         window_vibrancy::apply_mica(window, dark).is_ok()
     } else {
         let _ = window_vibrancy::clear_mica(window);
         false
-    };
-    MICA.store(on, Ordering::Relaxed);
+    }
+}
+
+fn apply_mica(window: &WebviewWindow, appearance: &Appearance) {
+    MICA.store(set_mica(window, appearance), Ordering::Relaxed);
 }
 
 /// Opening and minimum sizes that fit the monitor under the cursor at any
 /// scaling (a 1080p screen at 200 % has only ~960 × 516 logical pixels).
-fn fitted_sizes(app: &AppHandle) -> ((f64, f64), (f64, f64)) {
+pub fn fitted_sizes(
+    app: &AppHandle,
+    size: (f64, f64),
+    min: (f64, f64),
+) -> ((f64, f64), (f64, f64)) {
+    let (width, height) = size;
+    let (min_width, min_height) = min;
     let monitor = app
         .cursor_position()
         .ok()
         .and_then(|p| app.monitor_from_point(p.x, p.y).ok().flatten())
         .or_else(|| app.primary_monitor().ok().flatten());
     let Some(monitor) = monitor else {
-        return ((WIDTH, HEIGHT), (MIN_WIDTH, MIN_HEIGHT));
+        return (size, min);
     };
     let work = monitor
         .work_area()
         .size
         .to_logical::<f64>(monitor.scale_factor());
     let room = (work.width - SCREEN_MARGIN, work.height - SCREEN_MARGIN);
-    let min = (MIN_WIDTH.min(room.0), MIN_HEIGHT.min(room.1));
-    let size = (WIDTH.min(room.0).max(min.0), HEIGHT.min(room.1).max(min.1));
+    let min = (min_width.min(room.0), min_height.min(room.1));
+    let size = (width.min(room.0).max(min.0), height.min(room.1).max(min.1));
     (size, min)
 }
 
@@ -117,7 +128,8 @@ pub fn open(app: &AppHandle) {
         };
         let appearance = state.settings().appearance;
         let title = state.strings().get("settingsTitle").to_owned();
-        let ((width, height), (min_width, min_height)) = fitted_sizes(&app);
+        let ((width, height), (min_width, min_height)) =
+            fitted_sizes(&app, (WIDTH, HEIGHT), (MIN_WIDTH, MIN_HEIGHT));
         let built = WebviewWindowBuilder::new(&app, LABEL, WebviewUrl::App("settings.html".into()))
             .title(title)
             .inner_size(width, height)

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-stats-sessions"
+description = "Enables the stats_sessions command without any pre-configured scope."
+commands.allow = ["stats_sessions"]
+
+[[permission]]
+identifier = "deny-stats-sessions"
+description = "Denies the stats_sessions command without any pre-configured scope."
+commands.deny = ["stats_sessions"]

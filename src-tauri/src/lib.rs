@@ -12,6 +12,7 @@ mod settings;
 mod settings_window;
 mod shortcut;
 mod state;
+mod stats_window;
 mod study;
 mod taskbar;
 mod timer;
@@ -81,6 +82,17 @@ pub fn run() {
             commands::reset_settings,
             commands::open_logs,
             commands::update_check,
+            commands::open_stats,
+            commands::stats_ready,
+            commands::stats_context,
+            commands::stats_week,
+            commands::stats_month,
+            commands::stats_sessions,
+            commands::session_update,
+            commands::session_add,
+            commands::session_delete,
+            commands::session_restore,
+            commands::stats_export_csv,
             commands::update_install,
             commands::quit,
         ])

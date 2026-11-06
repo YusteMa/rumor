@@ -62,6 +62,15 @@ impl NoiseColor {
             _ => Self::Pink,
         }
     }
+
+    /// As serialised ("pink", "brown", "white").
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::Pink => "pink",
+            Self::Brown => "brown",
+            Self::White => "white",
+        }
+    }
 }
 
 fn splitmix64(state: &mut u64) -> u64 {

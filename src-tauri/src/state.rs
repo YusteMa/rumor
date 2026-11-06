@@ -18,12 +18,13 @@ use crate::audio::noise::{Controls, NoiseColor};
 use crate::ear_break::EarBreak;
 use crate::i18n::{Lang, Strings};
 use crate::settings::{self, BreakNoise, LanguageChoice, Settings};
-use crate::study::db::{DbError, Tag};
+use crate::study::db::{DbError, SessionError, Tag};
 use crate::study::machine::{Mode, Phase, Run};
+use crate::study::stats::{CsvLabels, MonthView, SessionPage, WeekView};
 use crate::study::{self, Study, StudyView};
 use crate::timer::Timer;
 use crate::update::{self, UpdateView};
-use crate::{panel, settings_window, shortcut, tray};
+use crate::{panel, settings_window, shortcut, stats_window, tray};
 
 /// Volume shortcuts move the slider by this much.
 const VOLUME_STEP: f32 = 0.05;
@@ -193,7 +194,7 @@ impl AppState {
 
     fn study_view(&self) -> Option<StudyView> {
         self.study_on()
-            .then(|| lock(&self.study).view(Instant::now(), SystemTime::now()))
+            .then(|| lock(&self.study).view(Instant::now()))
     }
 }
 
@@ -445,6 +446,7 @@ fn remember(app: &AppHandle, f: impl FnOnce(&mut settings::LastSession)) {
 pub fn refresh(app: &AppHandle) {
     tray::refresh(app);
     panel::emit_state(app);
+    stats_window::emit_context(app);
 }
 
 // ---- Noise ---------------------------------------------------------------------
@@ -543,13 +545,17 @@ pub fn set_timer(app: &AppHandle, minutes: u32) {
 
 // ---- Study ---------------------------------------------------------------------
 
-/// Starts or continues the stopwatch, without touching the noise.
+/// Starts or continues the stopwatch, without touching the noise. A new
+/// session keeps the noise it starts with (SPEC §4.3d): the one playing, or
+/// the one about to play with it when they are linked.
 fn study_start_only(app: &AppHandle) {
     let state = app.state::<AppState>();
     if !state.study_on() {
         return;
     }
-    lock(&state.study).start(Instant::now(), SystemTime::now());
+    let noise =
+        (state.engine.is_playing() || state.linked()).then(|| state.settings().last.color.name());
+    lock(&state.study).start(Instant::now(), SystemTime::now(), noise);
     lock(&state.link).study_paused_by_lock = false;
 }
 
@@ -661,6 +667,114 @@ pub fn tags_delete(app: &AppHandle, id: i64) -> Result<(), DbError> {
     refresh(app);
     settings_window::emit_changed(app);
     Ok(())
+}
+
+// ---- Statistics (SPEC §4.3d) ---------------------------------------------------------
+
+pub fn stats_week(app: &AppHandle, offset: u32) -> Result<WeekView, DbError> {
+    lock(&app.state::<AppState>().study).week_view(offset, Instant::now())
+}
+
+pub fn stats_month(app: &AppHandle, offset: u32) -> Result<MonthView, DbError> {
+    lock(&app.state::<AppState>().study).month_view(offset, Instant::now())
+}
+
+pub fn stats_sessions(
+    app: &AppHandle,
+    before: Option<i64>,
+    days: usize,
+) -> Result<SessionPage, DbError> {
+    lock(&app.state::<AppState>().study).sessions_page(before, days, Instant::now())
+}
+
+/// After any change to the history: the panel's totals and Statistics.
+fn history_changed(app: &AppHandle) {
+    lock(&app.state::<AppState>().study).take_saved();
+    refresh(app);
+    stats_window::emit_changed(app);
+}
+
+pub fn session_update(
+    app: &AppHandle,
+    id: i64,
+    secs: u64,
+    tag: Option<i64>,
+) -> Result<(), SessionError> {
+    lock(&app.state::<AppState>().study).edit_session(id, secs, tag)?;
+    history_changed(app);
+    Ok(())
+}
+
+pub fn session_add(
+    app: &AppHandle,
+    start: i64,
+    secs: u64,
+    tag: Option<i64>,
+) -> Result<(), SessionError> {
+    lock(&app.state::<AppState>().study).add_session(start, secs, tag)?;
+    history_changed(app);
+    Ok(())
+}
+
+pub fn session_delete(app: &AppHandle, id: i64) -> Result<(), SessionError> {
+    lock(&app.state::<AppState>().study).delete_session(id)?;
+    history_changed(app);
+    Ok(())
+}
+
+pub fn session_restore(app: &AppHandle, id: i64) -> Result<(), SessionError> {
+    lock(&app.state::<AppState>().study).restore_session(id)?;
+    history_changed(app);
+    Ok(())
+}
+
+/// The whole history as CSV, in the user's language.
+pub fn stats_csv(app: &AppHandle) -> Result<String, DbError> {
+    let state = app.state::<AppState>();
+    let labels = {
+        let t = state.strings();
+        let get = |k: &str| t.get(k).to_owned();
+        let names = [
+            ("pink", get("colorPink")),
+            ("brown", get("colorBrown")),
+            ("white", get("colorWhite")),
+        ];
+        let modes = [
+            ("stopwatch", get("modeStopwatch")),
+            ("pomodoro", get("modePomodoro")),
+        ];
+        CsvLabels {
+            header: [
+                "csvDate",
+                "csvStart",
+                "csvEnd",
+                "csvDuration",
+                "csvSeconds",
+                "csvTag",
+                "csvNoise",
+                "csvMode",
+                "csvEdited",
+                "csvRunning",
+            ]
+            .map(get),
+            no_tag: get("tagNone"),
+            noise: Box::new(move |c| {
+                names
+                    .iter()
+                    .find(|(k, _)| *k == c)
+                    .map_or_else(|| c.to_owned(), |(_, v)| v.clone())
+            }),
+            mode: Box::new(move |m| {
+                modes
+                    .iter()
+                    .find(|(k, _)| *k == m)
+                    .map_or_else(|| m.to_owned(), |(_, v)| v.clone())
+            }),
+            edited: [String::new(), get("sessionEdited"), get("sessionAdded")],
+            running: get("sessionRunning"),
+        }
+    };
+    lock(&state.study).csv(&labels, Instant::now())
 }
 
 /// A Pomodoro phase began: tell the user, and (linked) do what Settings
@@ -827,6 +941,7 @@ fn apply(app: &AppHandle, old: &Settings, new: &Settings) {
     if old.appearance != new.appearance {
         panel::apply_appearance(app, &new.appearance);
         settings_window::apply_appearance(app, &new.appearance);
+        stats_window::apply_appearance(app, &new.appearance);
     }
     if old.study.plan() != new.study.plan() {
         lock(&state.study).set_plan(new.study.plan());
@@ -880,6 +995,11 @@ fn start_ticker(app: &AppHandle) {
                 last_shown = remaining;
 
                 study_tick(&app, now);
+                // Saved every minute while running, and at the end:
+                // Statistics follows.
+                if lock(&state.study).take_saved() {
+                    stats_window::emit_changed(&app);
+                }
                 if now.saturating_duration_since(last_second) >= Duration::from_secs(1) {
                     last_second = now;
                     ear_tick(&app, now);

@@ -13,9 +13,11 @@ use crate::settings::{Settings, ShortcutAction};
 use crate::settings_window::{self, SettingsView};
 use crate::shortcut::{self, ShortcutError};
 use crate::state::{self, PanelState};
+use crate::stats_window;
 use crate::study::StudyView;
-use crate::study::db::Tag;
+use crate::study::db::{SessionError, Tag};
 use crate::study::machine::Mode;
+use crate::study::stats::{MonthView, SessionPage, WeekView};
 use crate::update;
 
 #[tauri::command]
@@ -248,4 +250,104 @@ pub async fn update_check(app: AppHandle) -> Result<Option<String>, String> {
 #[tauri::command]
 pub async fn update_install(app: AppHandle) -> Result<(), String> {
     update::install(&app).await
+}
+
+/// The study card's "Estadísticas" (SPEC §4.3d).
+#[tauri::command]
+pub fn open_stats(app: AppHandle) {
+    panel::hide(&app);
+    stats_window::open(&app);
+}
+
+/// The Statistics page has rendered; show its window.
+#[tauri::command]
+pub fn stats_ready(app: AppHandle) {
+    stats_window::on_ready(&app);
+}
+
+#[tauri::command]
+pub fn stats_context(app: AppHandle) -> Option<stats_window::Context> {
+    stats_window::context(&app)
+}
+
+/// `offset` weeks back from the current one.
+#[tauri::command]
+pub fn stats_week(app: AppHandle, offset: u32) -> Result<WeekView, String> {
+    state::stats_week(&app, offset).map_err(|e| e.to_string())
+}
+
+/// `offset` months back from the current one.
+#[tauri::command]
+pub fn stats_month(app: AppHandle, offset: u32) -> Result<MonthView, String> {
+    state::stats_month(&app, offset).map_err(|e| e.to_string())
+}
+
+/// `days` whole days of sessions started before `before` (UTC ms), newest
+/// first.
+#[tauri::command]
+pub fn stats_sessions(
+    app: AppHandle,
+    before: Option<i64>,
+    days: u32,
+) -> Result<SessionPage, String> {
+    let days = usize::try_from(days.clamp(1, 60)).unwrap_or(14);
+    state::stats_sessions(&app, before, days).map_err(|e| e.to_string())
+}
+
+/// New work time (seconds) and tag for a finished session.
+#[tauri::command]
+pub fn session_update(
+    app: AppHandle,
+    id: i64,
+    secs: u64,
+    tag: Option<i64>,
+) -> Result<(), SessionError> {
+    state::session_update(&app, id, secs, tag)
+}
+
+/// A session studied without Rumor, from `start` (UTC ms).
+#[tauri::command]
+pub fn session_add(
+    app: AppHandle,
+    start: i64,
+    secs: u64,
+    tag: Option<i64>,
+) -> Result<(), SessionError> {
+    state::session_add(&app, start, secs, tag)
+}
+
+/// Undone with `session_restore` until the next launch.
+#[tauri::command]
+pub fn session_delete(app: AppHandle, id: i64) -> Result<(), SessionError> {
+    state::session_delete(&app, id)
+}
+
+#[tauri::command]
+pub fn session_restore(app: AppHandle, id: i64) -> Result<(), SessionError> {
+    state::session_restore(&app, id)
+}
+
+/// The whole study history to a CSV file the user picks. `false` if they
+/// cancelled.
+#[tauri::command]
+pub async fn stats_export_csv(app: AppHandle) -> Result<bool, String> {
+    let text = state::stats_csv(&app).map_err(|e| e.to_string())?;
+    let name = app
+        .state::<state::AppState>()
+        .strings()
+        .get("csvFileName")
+        .to_owned();
+    let Some(path) = app
+        .dialog()
+        .file()
+        .add_filter("CSV", &["csv"])
+        .set_file_name(name)
+        .blocking_save_file()
+    else {
+        return Ok(false);
+    };
+    let path = path.into_path().map_err(|e| e.to_string())?;
+    std::fs::write(&path, text).map_err(|e| e.to_string())?;
+    log::info!("study history exported to {}", path.display());
+    Ok(true)
 }

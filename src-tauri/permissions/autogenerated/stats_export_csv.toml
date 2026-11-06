@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-stats-export-csv"
+description = "Enables the stats_export_csv command without any pre-configured scope."
+commands.allow = ["stats_export_csv"]
+
+[[permission]]
+identifier = "deny-stats-export-csv"
+description = "Denies the stats_export_csv command without any pre-configured scope."
+commands.deny = ["stats_export_csv"]

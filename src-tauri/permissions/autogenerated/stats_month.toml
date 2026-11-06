@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-stats-month"
+description = "Enables the stats_month command without any pre-configured scope."
+commands.allow = ["stats_month"]
+
+[[permission]]
+identifier = "deny-stats-month"
+description = "Denies the stats_month command without any pre-configured scope."
+commands.deny = ["stats_month"]

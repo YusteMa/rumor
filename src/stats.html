@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rumor</title>
+    <link rel="stylesheet" href="./styles/tokens.css" />
+    <link rel="stylesheet" href="./styles/controls.css" />
+    <link rel="stylesheet" href="./styles/stats.css" />
+    <script type="module" src="./stats.ts"></script>
+  </head>
+  <body>
+    <div class="stats">
+      <header class="head">
+        <div class="head-title">
+          <h1 data-i18n="statsTitle"></h1>
+          <div class="period">
+            <button class="nav" id="prev" type="button">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8 10 12.5" /></svg>
+            </button>
+            <span id="period" aria-live="polite"></span>
+            <button class="nav" id="next" type="button">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" /></svg>
+            </button>
+          </div>
+        </div>
+        <div class="tabs" id="tabs" role="tablist">
+          <button type="button" role="tab" data-tab="week" data-i18n="tabWeek"></button>
+          <button type="button" role="tab" data-tab="month" data-i18n="tabMonth"></button>
+          <button type="button" role="tab" data-tab="sessions" data-i18n="tabSessions"></button>
+        </div>
+      </header>
+      <main class="body" id="body" role="tabpanel" tabindex="-1"></main>
+      <div class="toast" id="toast" role="status" hidden></div>
+    </div>
+  </body>
+</html>

@@ -165,7 +165,7 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
   - Si las notificaciones están activadas, además se manda una discreta.
   - Si no contestas antes de terminar la sesión, el tiempo cuenta.
 
-**Al terminar una sesión**, se guarda en SQLite: inicio, fin, duración neta (sin pausas), modo, etiqueta y sus tramos de trabajo (para repartir bien una sesión que cruza la medianoche). Una sesión en curso se guarda cada minuto, así que un cierre inesperado pierde como mucho un minuto. Al salir de Rumor la sesión se termina y se guarda. **Hoy** y **esta semana** se cuentan en hora local; la semana empieza el día que diga la configuración regional de Windows.
+**Al terminar una sesión**, se guarda en SQLite: inicio, fin, duración neta (sin pausas), modo, etiqueta el ruido con el que empezó y sus tramos de trabajo. **Una sesión cuenta entera en el día en que empezó**, aunque pase de la medianoche (§4.3d). Una sesión en curso se guarda cada minuto, así que un cierre inesperado pierde como mucho un minuto. Al salir de Rumor la sesión se termina y se guarda. **Hoy** y **esta semana** se cuentan en hora local; la semana empieza el día que diga la configuración regional de Windows.
 
 **Etiquetas** (opcionales): asignar la sesión a una asignatura o tema ("Cálculo", "EDA"…), elegida de una lista que creas en Ajustes. Si no las usas, no aparecen en ninguna parte.
 
@@ -173,7 +173,7 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
 
 **Descanso de oídos** (activado por defecto, desactivable): tras **X horas escuchando con cascos** (por defecto **3 h**, configurable) Rumor recuerda descansar con el aviso elegido. Cuenta solo el tiempo sonando por una salida de cascos; una pausa de **15 minutos o más** reinicia la cuenta. No para el ruido: solo avisa, una vez por tramo.
 
-**Fuera de la beta** (v0.2): pantalla de **estadísticas** (gráfico semanal, por asignatura, racha de días) y **exportar a CSV**.
+**Estadísticas:** en su propia ventana (§4.3d).
 
 ### 4.3c Módulos activables
 - **Por defecto Rumor es solo ruido.** El cronómetro es un **"Modo estudio" opcional, desactivado por defecto**. Con él desactivado, **nada** del cronómetro aparece en el panel, la bandeja, el tooltip ni los atajos.
@@ -181,6 +181,82 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
 - **Desactivado:** el panel queda exactamente como el del ruido; el cronómetro no existe (ni su atajo ni su punto en la bandeja ni su tooltip).
 - **Activado:** el ruido arriba (protagonista) y la tarjeta de Estudio debajo, compacta; el panel crece lo justo para ella.
 - El **tooltip** se adapta: `Rumor · Rosa 40 % · Estudiando 1:23:45`. El icono lleva un punto **solo** mientras espera la pregunta «¿Seguías estudiando?» (§4.3b); con el cronómetro corriendo sin más, no hay punto (decidido el 2026-11-03).
+
+### 4.3d Estadísticas de estudio
+*Aprobada el 2026-11-05 con los ajustes de la segunda ronda de capturas (`docs/fotos/v0.2-estadisticas-entrega-1/ronda-2`) y los retoques de la tercera (`ronda-3`). Referencia visual: `docs/design/stats-mockup.html`.*
+
+**Idea:** ver de un vistazo cuánto, cuándo y en qué estudias, con el mismo acabado que el resto de Rumor y **sin castigar el descanso**. Solo existe con el Modo estudio activado (§4.3c).
+
+**Dónde:** una **ventana propia, "Estadísticas"**, como Ajustes: barra de título de Windows, Mica, una sola instancia, 820×720 px al abrirse (mínimo 560×480, siempre dentro de la pantalla), tema claro y oscuro. Se abre con un botón pequeño en la línea de totales de la tarjeta de Estudio del panel (*"Hoy 3 h 10 min · Semana 12 h 40 min"* y, a la derecha, un icono de barras con *"Estadísticas"*); el panel no cambia de alto y se cierra al abrirla, como con Ajustes.
+
+**Cabecera:** título "Estadísticas", el periodo (*"27 oct – 2 nov"*) con flechas ‹ › para ir a periodos anteriores (› se apaga en el actual) y un segmentado con las pestañas **Semana** *(por defecto)* · **Mes** · **Año** · **Sesiones**. La ventana recuerda la última pestaña.
+
+**Semana**
+- **Total de la semana** grande, con la **comparación con la semana anterior** en una píldora (*"+18 % vs semana pasada"*: verde si sube, neutra si baja; nunca roja). En la semana en curso se compara **a la misma altura** (hasta el mismo día y hora de la anterior) y se dice al lado: *"hasta el jueves 20:44"*. Si la anterior, hasta ese punto, no llega a **30 min**, un porcentaje no significa nada: se da la diferencia en minutos (*"+25 min"*).
+- Junto al total, el **anillo del objetivo semanal** (opcional, ver *Objetivo y racha*), con el porcentaje dentro.
+- Cuatro cifras: **media diaria** (entre los días transcurridos de la semana), **sesión media**, y dos más según la entrega: *sesiones* y *días con estudio* en la primera; **racha** y **ruido favorito** en la segunda.
+- **Horas por día:** barras verticales **apiladas por etiqueta**, en el orden de la leyenda, con:
+  - **puntas redondeadas** arriba y base recta sobre el eje;
+  - **2 px de separación** entre los tramos de cada etiqueta;
+  - un **brillo lateral sutil** (gradiente horizontal: luz a la izquierda, un poco de sombra a la derecha) y una **sombra suave en la base**;
+  - **línea discontinua del objetivo diario** (objetivo semanal ÷ 7) con su rótulo, solo si hay objetivo;
+  - el día de hoy con la letra en negrita, y la cuadrícula en horas redondas con una **escala fija de al menos 6 h**, igual en todas las semanas para que las barras se puedan comparar al pasar de una a otra; solo crece si una semana la supera;
+  - **al pasar el ratón** (o con el teclado: cada barra es enfocable), las demás barras se atenúan y sale una etiqueta flotante con el día, su total y el reparto por etiqueta. Con movimiento reducido, sin transiciones.
+- **Por asignatura:** barras horizontales finas con nombre, tiempo y porcentaje, de más a menos; "Sin etiqueta" siempre al final. Si no usas etiquetas, esta tarjeta no aparece y las barras por día van en el color del acento.
+- **Cuándo estudias más:** mapa de calor **hora × día** de las **últimas 8 semanas** hasta la mostrada (filas: días de la semana; columnas: de 6 a 23 h, una por hora, y una columna aparte **"noche"** para lo que cae entre las 23 y las 6 h), con 5 niveles de intensidad del acento, y debajo **"Tu mejor franja: 10 – 12 h"** (las 2 horas seguidas con más tiempo entre las 6 y las 23 h; la noche no es franja). Cada sesión va en la fila del día en que empezó, y su trabajo en las horas en que pasó de verdad. Sin al menos 5 sesiones y 5 h en esas semanas, la tarjeta no aparece.
+- **Récords** (de todo el historial, sesiones terminadas): sesión más larga, mejor día, mejor semana y total histórico, cada uno con su fecha.
+- **Así ha ido:** hasta 3 **frases automáticas**: las que **más se desvían de la media del propio usuario**, ordenadas por cuánto se desvían, con **un solo ▼ como mucho**: si hay candidatas neutras o positivas, van antes que un segundo descenso. Nunca repiten lo que ya está en pantalla (la píldora del %, el récord de sesión más larga, los días con estudio) y nunca salen con pocos datos (la semana necesita al menos 2 sesiones y 1 h). En la semana en curso todo se compara a la misma altura. Las candidatas:
+  - una asignatura que baja o sube **dos semanas seguidas**, un 25 % o más cada vez, partiendo de al menos 1 h (*"Redes lleva dos semanas bajando"*). Solo con **semanas cerradas**: en la semana en curso se miran las tres anteriores, nunca la mitad que va de esta;
+  - la semana frente a **tu semana media** de las 8 anteriores con estudio (al menos 4), si se aparta un 20 % o más. Como la píldora compara con la semana pasada, la frase dice su base: *"Llevas un 30 % más que tu media de las 6 semanas anteriores a estas alturas"* (en una semana pasada, *"Estudiaste un 30 % más que…"*);
+  - la **duración de las sesiones** frente a la habitual (al menos 10 sesiones antes y 3 esta semana; un 20 % y 5 min de diferencia);
+  - **el momento del día**: más por la mañana (< 14 h), por la tarde (< 20 h) o por la noche que de costumbre (25 puntos de diferencia);
+  - **tu mejor día de la semana**, con al menos 4 semanas de historial (*"Los martes son tu mejor día"*), con menos peso porque cambia poco;
+  - ruido (segunda entrega): *"Con ruido marrón tus sesiones duran un 20 % más que con blanco"*, solo con al menos 5 sesiones de cada color comparado y una diferencia de al menos un 15 %.
+  - El tono siempre es positivo o neutro: un descenso se cuenta como dato, sin reproche. Marcadores: ▲ verde para lo que sube, ▼ caramelo para lo que baja y ● gris neutro para lo informativo; nunca rojo.
+
+**Mes**
+- **Calendario** del mes (semanas en filas y días en columnas, empezando el día que diga Windows), cada día **coloreado por intensidad** (5 niveles del acento, relativos al mejor día del mes) con su número; hoy, con contorno. Al pasar el ratón: fecha y total.
+- **Total del mes** con **comparación con el mes anterior** (a la misma altura en el mes en curso: el mismo día, o el último si el mes anterior es más corto, y la misma hora; con el mismo umbral de 30 min), días con estudio (*"24 de 31"*, o de los días transcurridos en el mes en curso), media por día de estudio y mejor día.
+- **Por asignatura** del mes, igual que en Semana.
+
+**Año** *(segunda entrega)*
+- **Mapa de cuadraditos tipo GitHub**: 53 columnas de semanas × 7 días, 5 niveles del acento y los meses rotulados arriba.
+- **Evolución mensual**: 12 barras con el mismo estilo que las de Semana (sin apilar), con el total y la media del año.
+
+**Sesiones**
+- **Lista por días** (los más recientes arriba, con el total de cada día en su cabecera). Cada sesión muestra la hora de inicio y fin, la duración, la etiqueta (punto + nombre), el color de ruido si se guardó y una marca discreta "editada" o "añadida a mano".
+- **Editar** una sesión, en la misma fila: corregir la **duración** o la **etiqueta**. El campo de duración lleva el formato a la vista (**"h:mm"** junto a la etiqueta y como texto de ayuda) y acepta también minutos sueltos (*"90"* = 1:30). Una sesión son sus **tramos de trabajo** (lo que hay entre pausas; sin pausas, un solo tramo del inicio al fin). Si acortas, se quitan minutos desde el final: primero del último tramo y, si no basta, del anterior. Si alargas, crece el último tramo, así que **el inicio nunca se mueve y solo cambia el fin**. Se valida igual que al añadir: no puede solaparse con otra sesión ni acabar en el futuro. El aviso de solape dice **con cuál**: *"Se solapa con la sesión de las 18:20"* (con el día delante si es de otro).
+- **Borrar**, con "Deshacer" durante unos segundos en lugar de pedir confirmación (la sesión solo se marca; desaparece del todo al volver a abrir Rumor).
+- **Añadir a mano** (*"+ Añadir sesión"*): fecha, hora de inicio, duración y etiqueta. No puede solaparse con otra sesión ni quedar en el futuro.
+- **Exportar a CSV** (botón en esta pestaña): **todo el historial**, no solo lo visible, una fila por sesión con fecha, inicio y fin (hora local), duración (h:mm:ss), segundos, etiqueta, ruido, modo, si está editada o añadida a mano y si está en curso. Separador ",", UTF-8 con BOM y saltos CRLF, para que Excel en español lo abra bien.
+- La sesión en curso aparece arriba como *"19:58 – ahora"* con la marca "En curso", y **no se puede editar ni borrar** hasta que termine.
+- La lista se carga **por días** (14 cada vez, con "Ver más"), nunca el historial entero.
+
+**Objetivo y racha** *(segunda entrega)*
+- **Objetivo semanal** opcional (Ajustes → Estudio, desactivado por defecto; de 1 a 80 h). Sin objetivo no hay anillo, ni línea de objetivo diario, ni racha.
+- **Racha por semanas, nunca por días:** cuántas semanas seguidas se ha cumplido el objetivo. La semana en curso suma en cuanto se cumple y no rompe la racha mientras no acabe. Descansar un día no castiga nada.
+- **Ruido favorito:** el color con más tiempo de estudio en las últimas 4 semanas.
+
+**Estados vacíos** (cuidados, nada de un simple "Sin datos"):
+- **Sin ninguna sesión:** las barras de la semana dibujadas en fantasma (solo contorno) y el texto *"Aquí verás tus horas de estudio. Pulsa play en la tarjeta de Estudio del panel para empezar tu primera sesión."*
+- **Semana o mes sin estudio, pero con historial:** las mismas barras en fantasma con *"Esta semana aún no has estudiado"* y *"Descansar también cuenta"*, un enlace a la última semana con datos y los récords visibles.
+- Las pestañas Mes y Sesiones nunca parecen deshabilitadas; en Sesiones vacía está **"+ Añadir sesión"**, para cargar sesiones pasadas.
+- **Pocos datos:** las tarjetas que los necesitan (mejor franja, frases) se ocultan en vez de mostrar cifras sin sentido.
+
+**Datos y rendimiento**
+- **Una sola agregación** (`study/stats.rs`, pura y testeada) alimenta el "Hoy" y "Semana" del panel, la ventana de Estadísticas y el CSV, así que siempre coinciden con la lista de sesiones. Editar, añadir, borrar o deshacer actualiza al momento todo lo que depende de esa sesión: semana, mes, panel, récords, mapa de calor y frases.
+- **La sesión en curso, una sola regla** (decidido el 2026-11-05, tercera ronda): **suma como tiempo** en todo lo que es tiempo (el total, las barras, las asignaturas, la media diaria, la comparación, el mes y el "Hoy" del panel), así que el panel, la ventana y el CSV cuadran al segundo con lo que lleva trabajado. **No cuenta como sesión hasta que termina**: queda fuera del número de sesiones, la sesión media, los récords (incluido el mejor día del mes), las frases y "Cuándo estudias más".
+- **Una sesión cuenta entera en el día local en que empezó**, aunque cruce la medianoche (decidido el 2026-11-05). Las fechas se guardan en UTC (milisegundos) y se agrupan en la hora local del sistema (Europe/Madrid en España): los días de cambio de hora tienen 23 o 25 horas y no se pierde nada.
+- **"A la misma altura"**: las sesiones de la semana (o el mes) anterior que empezaron antes de ese punto, con el trabajo que llevaban hecho en ese instante.
+- Migración 2 (reversible, `up` y `down`; **antes de migrar un historial existente se copia el archivo** a `study.sqlite3.v1.bak`): `sessions.noise`, `sessions.edited` (0 = no, 1 = editada, 2 = añadida a mano), `sessions.deleted_at` (borrado que aún se puede deshacer) e índice `sessions_by_start`. Las sesiones antiguas quedan con `noise = NULL`.
+- **El ruido de una sesión es el del inicio** (decidido el 2026-11-05): el color que suena al empezar o, si está vinculada con el ruido, el que va a sonar con ella; `NULL` si se estudia en silencio. No se actualiza si cambias de color a mitad: es lo que eligió para ponerse a estudiar. **Se empieza a guardar en la primera entrega**, para que en la segunda ya haya datos para las frases.
+- La ventana pide cada vista con un comando (`stats_week(offset)`, `stats_month(offset)`, `stats_sessions(before, days)`, `session_update`, `session_add`, `session_delete`, `session_restore`, `stats_export_csv`) y escucha `stats-changed` (al terminar, guardar cada minuto, editar, borrar o añadir una sesión) y `stats-context` (idioma, acento o Mica). Como siempre, el estado vive en Rust (regla 3).
+- **Gráficas en SVG propio**, sin librerías. Todos los colores, radios, separaciones, opacidades y duraciones salen de `tokens.css` (tokens nuevos `--chart-*`, y `--tag-none` para "Sin etiqueta"); las etiquetas usan sus `--tag-*`, ya armonizados con el acento.
+- Accesible: cada gráfica tiene un resumen en texto para lectores de pantalla y se puede recorrer con el teclado. **Contraste ≥ 4,5:1 en todo el texto** (decidido el 2026-11-05): el gris secundario de la app pasa a `#736863` en claro; los números del calendario van sobre niveles de intensidad que lo cumplen en claro y oscuro, y "Sin etiqueta" se distingue del fondo en los dos temas (≥ 3:1, como gráfico: `#988c87` en claro). La pestaña elegida lleva, además del fondo, una **raya corta del acento** (≥ 3:1 en claro y oscuro), porque el fondo solo no llega.
+
+**Entregas**
+1. **Primera:** la ventana, Semana (sin anillo, línea de objetivo, racha ni ruido favorito), Mes, Sesiones (editar, borrar, añadir y exportar a CSV), frases y estados vacíos; se empieza a guardar el ruido de cada sesión. La pestaña Año aún no aparece.
+2. **Segunda:** Año, objetivo semanal con anillo y línea, racha por semanas, ruido favorito y frases sobre el ruido.
 
 ### 4.4 Ajustes — sencillo por fuera, completo por dentro
 El panel solo enseña lo que usas a diario. **Todo lo demás vive en Ajustes**, una ventana aparte (720×640 px al abrirse, como mínimo 520×440, y siempre dentro de la pantalla) con barra lateral de secciones. Cada opción tiene una línea de explicación debajo y un valor por defecto sensato: **nadie debería necesitar entrar para que la app funcione bien**.

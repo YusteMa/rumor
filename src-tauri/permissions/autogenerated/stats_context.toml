@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-stats-context"
+description = "Enables the stats_context command without any pre-configured scope."
+commands.allow = ["stats_context"]
+
+[[permission]]
+identifier = "deny-stats-context"
+description = "Denies the stats_context command without any pre-configured scope."
+commands.deny = ["stats_context"]

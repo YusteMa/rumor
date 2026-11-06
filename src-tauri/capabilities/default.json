@@ -22,6 +22,7 @@
     "allow-panel-ready",
     "allow-panel-painted",
     "allow-open-settings",
+    "allow-open-stats",
     "allow-update-install",
     "allow-quit"
   ]

@@ -148,6 +148,30 @@ Needs two releases, the second with a higher version (e.g. install beta.2 and pu
 - [ ] Settings → About says the new version.
 - [ ] With "Buscar actualizaciones" off, nothing is checked (log: no "update check" lines after launch).
 
+## Statistics (SPEC §4.3d)
+
+Run these on a copy of a real history if you can (`%APPDATA%\io.github.yustema.rumor\study.sqlite3`).
+
+- [ ] The first launch with this version leaves `study.sqlite3.v1.bak` next to the history, and every old session is still there (Sesiones).
+- [ ] The study card's "Estadísticas" opens the window and closes the panel; a second click brings the same window to the front.
+- [ ] "Hoy" and "Semana" in the panel match the day header in Sesiones and the week total, also with a session running.
+- [ ] With a session running, its time is in the total and today's bar, but "Sesiones", "Sesión media", the records and "Así ha ido" leave it out until it ends.
+- [ ] A session from 23:30 to 00:30 counts on the day it started, in the panel, the bars and the list.
+- [ ] Monday morning with little studied last Monday: the pill shows minutes ("+25 min"), not a percentage. Later in the week it shows "… % vs semana pasada" and "hasta el <día> <hora>".
+- [ ] Hovering a bar dims the others and shows the day's total and tags; Tab reaches each bar.
+- [ ] "Así ha ido" shows at most three sentences, at most one ▼, none repeating the pill, the longest session or the days studied. The one about the usual week names its base ("tu media de las N semanas anteriores").
+- [ ] On a Monday, a subject not studied yet this week never reads "lleva dos semanas bajando" because of it.
+- [ ] Paging weeks with ‹ ›: the hour scale stays at 6 h (it grows only for a week above that), so bars compare.
+- [ ] Mes: today has an outline, future days have no colour, "Días con estudio" reads "N de M".
+- [ ] Sesiones: the running one reads "HH:MM – ahora" and has no edit or delete buttons.
+- [ ] Editing a session to overlap the next one says "Se solapa con la sesión de las HH:MM"; shortening it moves only its end. "h:mm" shows next to Duración, and "90" is read as 1:30.
+- [ ] Editing a session past the longest one updates "Sesión más larga" and "Mejor día" at once; deleting it and Deshacer put them back.
+- [ ] Deleting shows "Sesión borrada · Deshacer"; Deshacer brings it back; after restarting Rumor a deleted one is gone.
+- [ ] "+ Añadir sesión" with nothing recorded yet adds a past session; in the future or overlapping, it refuses.
+- [ ] Exportar a CSV: opens in Excel with accents right, one row per session, the running one marked; its seconds add up to the totals.
+- [ ] Changing the noise colour, the language or Mica updates the open window.
+- [ ] Light and dark, Mica on and off, 100 % and 150 %: secondary text and calendar numbers stay legible; the chosen tab is clear (accent line) and "Sin etiqueta" stands out from the card.
+
 ## Measurements (SPEC §3.4)
 - [ ] `cargo run --release --example engine -- --check 20`: frames ≈ 100 % of expected, CPU < 1 % of the machine, buffer 80 ms, 0 underruns.
 - [ ] Busy PC: with every core loaded (a big build, or a CPU stress test), the noise stays clean. The log shows `audio thread: MMCSS "Pro Audio"` and `device buffer: … (80.0 ms)`, and no `audio underrun` lines. Measured 2026-11-03 with 32–64 busy threads on 16: before (22 ms, normal priority) 2 underruns/15 s in release and 12–15 in debug; after, 0 in both.

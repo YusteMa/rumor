@@ -86,6 +86,8 @@ export interface Backend {
   hide(): Promise<void>;
   quit(): Promise<void>;
   openSettings(): Promise<void>;
+  /** The Statistics window (SPEC §4.3d). */
+  openStats(): Promise<void>;
   /** Downloads and installs the update; Rumor reopens on its own. */
   installUpdate(): Promise<void>;
   /** The page has rendered its first state. */
@@ -132,6 +134,7 @@ async function tauriBackend(): Promise<Backend> {
     studyResolveIdle: (keep) => call("study_resolve_idle", { keep }),
     hide: () => call("hide_panel"),
     quit: () => call("quit"),
+    openStats: () => call("open_stats"),
     installUpdate: () => call("update_install"),
     openSettings: () => call("open_settings"),
     ready: () => call("panel_ready"),
@@ -315,6 +318,7 @@ function mockBackend(): Backend {
     },
     hide: async () => {},
     quit: async () => {},
+    openStats: async () => void window.open("stats.html", "_blank"),
     installUpdate: async () => {
       if (state.update) state.update = { ...state.update, phase: "installing" };
       emit();

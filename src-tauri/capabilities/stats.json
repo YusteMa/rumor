@@ -1,0 +1,23 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "stats",
+  "description": "The Statistics window: read the study history, correct it and export it, nothing else",
+  "windows": [
+    "stats"
+  ],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "allow-stats-ready",
+    "allow-stats-context",
+    "allow-stats-week",
+    "allow-stats-month",
+    "allow-stats-sessions",
+    "allow-session-update",
+    "allow-session-add",
+    "allow-session-delete",
+    "allow-session-restore",
+    "allow-stats-export-csv",
+    "allow-tags-list"
+  ]
+}
