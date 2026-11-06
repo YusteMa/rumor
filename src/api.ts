@@ -183,7 +183,7 @@ function mockBackend(): Backend {
     systemAccent: params.get("accent") === "system" ? "#0078d4" : null,
     study: null,
     update: params.get("update")
-      ? { version: "0.1.0-beta.3", phase: params.get("update") as UpdateView["phase"] }
+      ? { version: "0.1.0-beta.4", phase: params.get("update") as UpdateView["phase"] }
       : null,
   };
   // ?study=1 shows the card; ?study=pomodoro, ?idle=14 and ?tags=1 vary it,

@@ -25,7 +25,7 @@ Rumor **computes the noise sample by sample** on your PC, the way the iPhone's B
 - **Headphones-aware:** if your headphones disconnect, Rumor pauses instead of playing through the speakers. It also pauses when you lock the PC.
 - **Smooth everything:** fades on play, pause and every change. Not a single click.
 - **Sleep timer** with a fade-out, **global shortcuts** (`Ctrl+Alt+P` plays or pauses, every other action can get its own), light and dark themes, Spanish and English.
-- **Study mode (optional):** a stopwatch or Pomodoro that follows the noise, with a synthesized singing-bowl chime, daily and weekly totals, and tags. `Ctrl+Alt+T` starts or pauses it.
+- **Study mode (optional):** a stopwatch or Pomodoro that follows the noise, with a synthesized singing-bowl chime, tags, daily and weekly totals and a Statistics window. An optional floating mini clock keeps the time in view. `Ctrl+Alt+T` starts or pauses it.
 - **Updates itself** with one click when a new version is out.
 - **Zero telemetry.** Rumor sends nothing of yours; its only request is the update check on GitHub, which you can turn off in Settings → About.
 
@@ -70,7 +70,7 @@ Tauri v2, a Rust audio engine (`cpal`, WASAPI) and a small TypeScript panel with
 - Tres colores igualados en volumen, fundidos suaves y ni un clic.
 - **Si se desconectan los cascos, se pausa**: nunca suena por los altavoces sin que lo pidas. También se pausa al bloquear el PC.
 - Temporizador con fundido, atajos globales (`Ctrl+Alt+P` reproduce o pausa), tema claro y oscuro, en español e inglés.
-- **Modo estudio** opcional: cronómetro o Pomodoro vinculado al ruido, con un cuenco tibetano sintetizado como aviso, totales de hoy y de la semana, y etiquetas. `Ctrl+Alt+T` lo inicia o lo pausa.
+- **Modo estudio** opcional: cronómetro o Pomodoro vinculado al ruido, con un cuenco tibetano sintetizado como aviso, etiquetas, totales de hoy y de la semana y una ventana de Estadísticas. Un mini reloj flotante opcional deja el tiempo a la vista. `Ctrl+Alt+T` lo inicia o lo pausa.
 - **Se actualiza sola** con un clic cuando sale una versión nueva.
 - **Sin telemetría:** Rumor no envía nada tuyo. Solo consulta GitHub para buscar actualizaciones, y se puede desactivar en Ajustes → Acerca de.
 

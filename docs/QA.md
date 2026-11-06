@@ -129,7 +129,7 @@ Install from the GitHub release on a clean user account (or a VM), not from `tau
 
 - [ ] The setup .exe shows SmartScreen's "Windows protected your PC"; More info → Run anyway installs without asking for admin rights. The installer speaks Spanish on a Spanish Windows and English otherwise.
 - [ ] The app icon (three bars on a dark tile with a fine rim) looks crisp in the installer, Start menu, Settings → Apps, Alt+Tab with Settings open, and the taskbar, both in light and dark mode, at 100 % and 150 %.
-- [ ] Settings → About says "Versión 0.1.0-beta.2".
+- [ ] Settings → About says "Versión 0.1.0-beta.3".
 - [ ] Uninstall from Settings → Apps: the tray icon goes away and its folder in `%LOCALAPPDATA%\Rumor` is gone; settings and study history stay in `%APPDATA%\io.github.yustema.rumor` (on purpose, for reinstalling).
 - [ ] The .msi installs the same app.
 - [ ] README: the GIF plays, the screenshots load and the links work on github.com.
