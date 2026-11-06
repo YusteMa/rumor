@@ -155,7 +155,7 @@ Needs two releases, the second with a higher version (e.g. install beta.2 and pu
 - [ ] Stopwatch: the trail goes round once a minute; hours («1:23:45») keep their margin to the ring.
 - [ ] Paused: arc and knob at half strength, time grey, «Seguir»; the same in the mini clock.
 - [ ] The sphere starts on the panel's left edge (with «Estudio», colour and volume); the finish button ends on the right edge, under the tag picker's; nothing shifts between states, in Spanish and English.
-- [ ] On a 1366×768 screen (or 125 % on 1080p) the panel fits the screen and scrolls; no part goes off screen.
+- [ ] On 1366×768 at 100 % (Windows 11 and 10) the panel uses the compact spacing and fits without scrolling; on a normal screen it looks exactly as before. Only a shorter screen still makes it scroll; no part ever goes off screen.
 - [ ] Mini clock off by default; on, it appears top right when a session starts and fades out when it ends.
 - [ ] Dragging moves it and the spot is remembered after restarting Rumor; unplugging that screen brings it back to the corner.
 - [ ] Clicking its sphere pauses/resumes without taking the focus from the app you are typing in; clicking the time opens the panel.

@@ -56,7 +56,7 @@ function render(s: PanelState): void {
   // The accent follows the noise (tokens.css), or Windows' own; text stays neutral.
   document.documentElement.dataset.noise = s.color;
   applyAccent(s.appearance.accent === "system" ? s.systemAccent : null);
-  document.documentElement.toggleAttribute("data-short", s.short);
+  document.documentElement.dataset.fit = s.fit;
   spectrumCard.hidden = !s.appearance.spectrum;
   spectrum.setEnabled(s.appearance.spectrum);
   ui.player.render(s);

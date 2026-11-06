@@ -29,6 +29,11 @@ const HEIGHT: f64 = 540.0;
 /// Room for the study card, with "Modo estudio" on (SPEC §4.3b, §4.3c):
 /// the card and the gap above it.
 const STUDY_HEIGHT: f64 = 176.0;
+/// What the compact spacing of a short screen saves (panel.css,
+/// `[data-fit]`): per gap between blocks (16 → 12 px), and top plus bottom
+/// (20 → 16 px each).
+const COMPACT_GAP_SAVING: f64 = 4.0;
+const COMPACT_PAD_SAVING: f64 = 8.0;
 /// Gap between the panel, the taskbar and the screen edge (logical px).
 const MARGIN: f64 = 12.0;
 /// Must match `--dur-close` in tokens.css: the UI fades out, then we hide.
@@ -57,9 +62,8 @@ enum Life {
 
 struct Panel {
     mica: AtomicBool,
-    /// The screen is too short for the whole panel: it was cut to fit and
-    /// its content scrolls.
-    short: AtomicBool,
+    /// How it fits its screen (`Fit` as a number).
+    fit: AtomicU8,
     open: AtomicBool,
     /// Bumped on every open/hide so stale delayed work does nothing.
     generation: AtomicU64,
@@ -117,7 +121,7 @@ fn idle_ttl() -> Duration {
 pub fn init(app: &AppHandle) {
     app.manage(Panel {
         mica: AtomicBool::new(false),
-        short: AtomicBool::new(false),
+        fit: AtomicU8::new(Fit::Full as u8),
         open: AtomicBool::new(false),
         generation: AtomicU64::new(0),
         last_hidden: Mutex::new(None),
@@ -464,10 +468,40 @@ pub fn apply_appearance(app: &AppHandle, appearance: &Appearance) {
     set_border(&window, window.theme().unwrap_or(Theme::Light));
 }
 
-/// Whether the panel had to be cut to fit the screen (`place`).
-pub fn is_short(app: &AppHandle) -> bool {
-    app.try_state::<Panel>()
-        .is_some_and(|p| p.short.load(Ordering::Relaxed))
+/// How the panel fits its screen (`place`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Fit {
+    /// As designed.
+    #[default]
+    Full,
+    /// A short screen (1366×768 with the study card): tighter spacing, the
+    /// same content, no scrolling.
+    Compact,
+    /// Too short even for that: cut to the screen, the content scrolls.
+    Scroll,
+}
+
+/// The panel's fit and height (physical px) for `room` on the screen.
+fn fit(full: f64, compact: f64, room: f64) -> (Fit, f64) {
+    if full <= room {
+        (Fit::Full, full)
+    } else if compact <= room {
+        (Fit::Compact, compact)
+    } else {
+        (Fit::Scroll, room)
+    }
+}
+
+pub fn fit_of(app: &AppHandle) -> Fit {
+    match app
+        .try_state::<Panel>()
+        .map(|p| p.fit.load(Ordering::Relaxed))
+    {
+        Some(f) if f == Fit::Compact as u8 => Fit::Compact,
+        Some(f) if f == Fit::Scroll as u8 => Fit::Scroll,
+        _ => Fit::Full,
+    }
 }
 
 pub fn uses_mica(app: &AppHandle) -> bool {
@@ -599,11 +633,9 @@ fn place(app: &AppHandle, window: &WebviewWindow, anchor: Option<Rect>) {
     // the study card): the page scrolls instead.
     let w = WIDTH * scale;
     let room = f64::from(work.size.height) - 2.0 * m;
-    let h = (height(app) * scale).min(room);
+    let (fitted, h) = fit(height(app) * scale, compact_height(app) * scale, room);
     if let Some(panel) = app.try_state::<Panel>() {
-        panel
-            .short
-            .store(height(app) * scale > room, Ordering::Relaxed);
+        panel.fit.store(fitted as u8, Ordering::Relaxed);
     }
     let size = tauri::PhysicalSize::new(w.round() as u32, h.round() as u32);
     if window.inner_size().ok() != Some(size) {
@@ -671,6 +703,18 @@ fn height(app: &AppHandle) -> f64 {
     if study { HEIGHT + STUDY_HEIGHT } else { HEIGHT }
 }
 
+/// Logical height with the compact spacing: a gap less wide between each
+/// pair of blocks (header, player, spectrum, three settings, study card,
+/// footer) and less padding.
+fn compact_height(app: &AppHandle) -> f64 {
+    let (spectrum, study) = app.try_state::<AppState>().map_or((true, false), |s| {
+        let settings = s.settings();
+        (settings.appearance.spectrum, settings.study.enabled)
+    });
+    let blocks = 6 + u8::from(spectrum) + u8::from(study);
+    height(app) - f64::from(blocks - 1) * COMPACT_GAP_SAVING - COMPACT_PAD_SAVING
+}
+
 /// "Modo estudio" was switched: the card comes or goes.
 pub fn resize(app: &AppHandle) {
     if let Some(window) = app.get_webview_window(LABEL) {
@@ -723,5 +767,39 @@ struct StudyIdle {
 pub fn emit_study_idle(app: &AppHandle, minutes: u64) {
     if is_open(app) {
         let _ = app.emit_to(LABEL, "study-idle", StudyIdle { minutes });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn short_screens_get_the_compact_spacing_before_any_scrolling() {
+        // The study card on: 716 px whole, 680 px compact (logical).
+        let (full, compact) = (
+            HEIGHT + STUDY_HEIGHT,
+            HEIGHT + STUDY_HEIGHT - 7.0 * 4.0 - 8.0,
+        );
+        assert_eq!(compact, 680.0);
+        // 1366×768 at 100 %: the work area minus the taskbar (48 px on
+        // Windows 11, 40 on 10) and a 12 px margin above and below.
+        for taskbar in [48.0, 40.0] {
+            let room = 768.0 - taskbar - 2.0 * MARGIN;
+            assert_eq!(
+                fit(full, compact, room),
+                (Fit::Compact, compact),
+                "{taskbar}"
+            );
+        }
+        // A normal screen keeps the panel exactly as it is.
+        assert_eq!(fit(full, compact, 1032.0), (Fit::Full, full));
+        // At 150 % everything scales together.
+        assert_eq!(
+            fit(full * 1.5, compact * 1.5, 1416.0),
+            (Fit::Full, full * 1.5)
+        );
+        // Shorter still: cut to the screen, scrolling.
+        assert_eq!(fit(full, compact, 600.0), (Fit::Scroll, 600.0));
     }
 }

@@ -23,9 +23,19 @@ body {
 }
 
 
-/* A screen too short for the whole panel (panel.rs cut it to fit): the
-   content scrolls. Never otherwise, so rounding can't show a scrollbar. */
-:root[data-short] .panel {
+/* A short screen (panel.rs, `Fit`): the same panel with tighter spacing,
+   a gap less between blocks and less padding above and below; the sides
+   don't move. panel.rs counts on exactly these savings. */
+:root[data-fit="compact"] .panel,
+:root[data-fit="scroll"] .panel {
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  padding-bottom: var(--space-4);
+}
+
+/* Too short even for that: cut to the screen, the content scrolls. Never
+   otherwise, so rounding can't show a scrollbar. */
+:root[data-fit="scroll"] .panel {
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--line) transparent;
