@@ -6,6 +6,13 @@ Guía para Claude Code en este repositorio. **Lee `SPEC.md` y `ROADMAP.md` antes
 1. **La calidad de sonido es la prioridad número uno**, por encima de cualquier función nueva.
 2. **El producto tiene que sentirse premium:** cada detalle visual pulido, nada que parezca hecho deprisa.
 
+## Modo aprendizaje
+Mario está aprendiendo a programar con este proyecto.
+- Antes de cambiar código, explica qué vas a hacer y por qué.
+- Los cambios pequeños los escribe Mario: dale pistas, no la solución.
+- Revisa su código como un compañero senior: qué está bien, qué mejorarías.
+- Git lo maneja Mario (ramas, commits, PR). No hagas commits por él.
+
 ## Qué es
 App de bandeja para Windows que genera ruido rosa, marrón y blanco en tiempo real. Tauri v2 + motor de audio en Rust (`cpal`) + panel en TypeScript sin framework. Diseño de referencia: `docs/prototype.html`.
 
@@ -97,7 +104,7 @@ rumor/
 - Eventos de Rust al panel: `state-changed` (estado completo, incluido el del estudio), `spectrum` (`[f32; 64]`, solo con el panel visible), `timer-tick` (segundos restantes), `study-tick` (1 Hz, solo con el panel visible), `study-idle` (minutos inactivo).
 
 ## Forma de trabajar
-- **Una fase del ROADMAP cada vez.** Al terminar: tests, clippy, fmt, tsc → commit con Conventional Commits (`feat:`, `fix:`, `chore:`…).
+- **Una fase del ROADMAP cada vez.** Al terminar: tests, clippy, fmt, tsc → Mario hace el commit con Conventional Commits (`feat:`, `fix:`, `chore:`…); Claude puede proponerle el mensaje.
 - Antes de una decisión de diseño no cubierta por `SPEC.md`, **pregunta**.
 - Crates sugeridos (comprueba la última versión estable antes de añadirlos): `cpal`, `fastrand`, `rtrb`, `thiserror`, `log`, `serde`, `window-vibrancy`, `rustfft` (dev). Plugins: `global-shortcut`, `autostart`, `store`, `single-instance`, `positioner`, `notification`, `log`.
 - Código, nombres y commits **en inglés**. Textos de la UI con i18n.
