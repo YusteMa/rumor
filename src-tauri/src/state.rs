@@ -90,6 +90,8 @@ pub struct PanelState {
     pub system_accent: Option<String>,
     /// The study card; `None` with "Modo estudio" off (SPEC §4.3c).
     pub study: Option<StudyView>,
+    /// Noise and stopwatch go together (the study card's link button).
+    pub linked: bool,
     /// A newer version, once a check found one.
     pub update: Option<UpdateView>,
 }
@@ -105,6 +107,10 @@ struct Link {
     /// An update interrupted the noise on this output: play again once the
     /// engine opens it, and only there.
     resume_on: Option<String>,
+    /// The panel's link button chose differently from Settings for this
+    /// session: `Some(false)` keeps noise and stopwatch apart, `Some(true)`
+    /// joins them. Gone when the session ends or the setting changes.
+    session_link: Option<bool>,
 }
 
 pub struct AppState {
@@ -120,6 +126,17 @@ pub struct AppState {
 
 fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
     m.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+/// The link in force: this session's choice, or else the setting.
+fn resolve_link(setting: bool, session: Option<bool>) -> bool {
+    session.unwrap_or(setting)
+}
+
+/// What to remember after the link button asks for `linked`: nothing when
+/// it matches the setting, so the setting is back in charge.
+fn session_choice(setting: bool, linked: bool) -> Option<bool> {
+    (linked != setting).then_some(linked)
 }
 
 fn resolve_lang(choice: LanguageChoice) -> Lang {
@@ -157,10 +174,12 @@ impl AppState {
         lock(&self.settings).study.enabled
     }
 
-    /// Noise and stopwatch play and pause together.
+    /// Noise and stopwatch play and pause together: what Settings says,
+    /// unless the panel's link button changed it for this session.
     fn linked(&self) -> bool {
+        let session = lock(&self.link).session_link;
         let s = lock(&self.settings);
-        s.study.enabled && s.study.link_noise
+        s.study.enabled && resolve_link(s.study.link_noise, session)
     }
 
     pub fn snapshot(&self) -> Snapshot {
@@ -226,6 +245,7 @@ pub fn panel_state(app: &AppHandle) -> Option<PanelState> {
             .flatten(),
         appearance: settings.appearance,
         study: state.study_view(),
+        linked: state.linked(),
         update: update::view(app),
     })
 }
@@ -611,7 +631,64 @@ pub fn study_finish(app: &AppHandle) {
     if had_session && state.linked() && state.engine.is_playing() {
         noise_only(app, false);
     }
+    // The link button's choice was for this session only.
+    lock(&state.link).session_link = None;
     refresh(app);
+}
+
+/// The study card's link button: joins or splits noise and stopwatch until
+/// the session ends. Joining them evens them out at once: whichever is
+/// running starts the other (a Pomodoro break still has its say).
+pub fn study_set_linked(app: &AppHandle, linked: bool) {
+    let state = app.state::<AppState>();
+    if !state.study_on() {
+        return;
+    }
+    let was = state.linked();
+    let setting = state.settings().study.link_noise;
+    lock(&state.link).session_link = session_choice(setting, linked);
+    if was == linked {
+        refresh(app);
+        return;
+    }
+    log::info!(
+        "noise and stopwatch {} for this session",
+        if linked { "linked" } else { "apart" }
+    );
+    if linked {
+        even_out(app);
+    } else {
+        end_break_effects(app);
+    }
+    refresh(app);
+}
+
+/// Just linked: the one that is still brings itself in line with the one
+/// that runs.
+fn even_out(app: &AppHandle) {
+    let state = app.state::<AppState>();
+    let run = lock(&state.study).run();
+    let playing = state.engine.is_playing();
+    match (run, playing) {
+        (Run::Running, false) => {
+            let in_break = lock(&state.study).phase().is_break();
+            if in_break && state.settings().study.break_noise == BreakNoise::Pause {
+                // Quiet until the next work block, which plays it.
+                lock(&state.link).noise_paused_for_break = true;
+            } else {
+                noise_only(app, true);
+            }
+        }
+        (Run::Paused | Run::Stopped, true) => study_start_only(app),
+        _ => {}
+    }
+    let (run, phase) = {
+        let st = lock(&state.study);
+        (st.run(), st.phase())
+    };
+    if run == Run::Running && phase.is_break() {
+        break_noise(app, phase);
+    }
 }
 
 /// Undoes what a break did to the noise.
@@ -822,11 +899,16 @@ fn on_phase(app: &AppHandle, phase: Phase, cycle: u32, cycles: u32) {
     };
     log::info!("pomodoro: {phase:?} {cycle}/{cycles}");
     alert(app, &title, &body);
-    if !state.linked() {
-        return;
+    if state.linked() {
+        break_noise(app, phase);
     }
+}
+
+/// Linked, what Settings says the noise does in a Pomodoro phase.
+fn break_noise(app: &AppHandle, phase: Phase) {
+    let state = app.state::<AppState>();
     if phase.is_break() {
-        match settings.study.break_noise {
+        match state.settings().study.break_noise {
             BreakNoise::Half => state.engine.set_duck(true),
             BreakNoise::Pause if state.engine.is_playing() => {
                 noise_only(app, false);
@@ -959,9 +1041,20 @@ fn apply(app: &AppHandle, old: &Settings, new: &Settings) {
     if old.study.plan() != new.study.plan() {
         lock(&state.study).set_plan(new.study.plan());
     }
-    let was_linked = old.study.enabled && old.study.link_noise;
-    let is_linked = new.study.enabled && new.study.link_noise;
-    if old.study.enabled && !new.study.enabled {
+    let was_linked = {
+        let session = lock(&state.link).session_link;
+        old.study.enabled && resolve_link(old.study.link_noise, session)
+    };
+    let study_off = old.study.enabled && !new.study.enabled;
+    if study_off || old.study.link_noise != new.study.link_noise {
+        // Settings speaks again: the link button's choice is over.
+        lock(&state.link).session_link = None;
+    }
+    let is_linked = {
+        let session = lock(&state.link).session_link;
+        new.study.enabled && resolve_link(new.study.link_noise, session)
+    };
+    if study_off {
         // "Modo estudio" off: the session in progress is stored and ends,
         // and nothing of the stopwatch is left anywhere (SPEC §4.3c).
         lock(&state.study).finish(Instant::now());
@@ -1205,7 +1298,9 @@ pub fn update_failed(app: &AppHandle, was_playing: bool) {
 /// timings, `--dev-settings` to open Settings, `--dev-bell` to ring,
 /// `--dev-study` / `--dev-study-finish` to drive the stopwatch,
 /// `--dev-study-mode <stopwatch|pomodoro>` to pick its mode and
-/// `--dev-study-skip` to end the Pomodoro phase now.
+/// `--dev-study-skip` to end the Pomodoro phase now, `--dev-link <on|off>`
+/// to press the study card's link button and `--dev-state` to log where
+/// noise, stopwatch and link stand.
 pub fn second_instance(app: &AppHandle, args: &[String]) {
     log::debug!("second instance: {args:?}");
     if cfg!(debug_assertions) {
@@ -1240,6 +1335,24 @@ pub fn second_instance(app: &AppHandle, args: &[String]) {
             lock(&app.state::<AppState>().study).end_phase(Instant::now());
             return;
         }
+        let link = args
+            .iter()
+            .position(|a| a == "--dev-link")
+            .and_then(|i| args.get(i + 1))
+            .map(|v| v == "on");
+        if let Some(linked) = link {
+            study_set_linked(app, linked);
+        }
+        if link.is_some() || args.iter().any(|a| a == "--dev-state") {
+            let state = app.state::<AppState>();
+            let run = lock(&state.study).run();
+            log::info!(
+                "dev state: linked={} playing={} study={run:?}",
+                state.linked(),
+                state.engine.is_playing()
+            );
+            return;
+        }
         let mode = args
             .iter()
             .position(|a| a == "--dev-study-mode")
@@ -1264,5 +1377,28 @@ pub fn second_instance(app: &AppHandle, args: &[String]) {
 pub fn notify(app: &AppHandle, title: &str, body: &str) {
     if let Err(e) = app.notification().builder().title(title).body(body).show() {
         log::warn!("notification failed: {e}");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_session_choice_wins_over_the_setting() {
+        assert!(resolve_link(true, None));
+        assert!(!resolve_link(false, None));
+        assert!(!resolve_link(true, Some(false)));
+        assert!(resolve_link(false, Some(true)));
+    }
+
+    #[test]
+    fn choosing_what_settings_says_hands_it_back_to_settings() {
+        // Split for this session, then joined again: nothing left over.
+        assert_eq!(session_choice(true, false), Some(false));
+        assert_eq!(session_choice(true, true), None);
+        // Apart by default, joined for this session.
+        assert_eq!(session_choice(false, true), Some(true));
+        assert_eq!(session_choice(false, false), None);
     }
 }

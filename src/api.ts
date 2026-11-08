@@ -62,6 +62,8 @@ export interface PanelState {
   appearance: Appearance;
   systemAccent: string | null;
   study: StudyView | null;
+  /** Noise and stopwatch go together (the study card's link button). */
+  linked: boolean;
   /** A newer version, once a check found one. */
   update: UpdateView | null;
 }
@@ -90,6 +92,8 @@ export interface Backend {
   studySetMode(mode: StudyMode): Promise<void>;
   studySetTag(tag: number | null): Promise<void>;
   studyResolveIdle(keep: boolean): Promise<void>;
+  /** Noise and stopwatch together or apart, for this session only. */
+  studySetLinked(linked: boolean): Promise<void>;
   hide(): Promise<void>;
   quit(): Promise<void>;
   openSettings(): Promise<void>;
@@ -139,6 +143,7 @@ async function tauriBackend(): Promise<Backend> {
     studySetMode: (mode) => call("study_set_mode", { mode }),
     studySetTag: (tag) => call("study_set_tag", { tag }),
     studyResolveIdle: (keep) => call("study_resolve_idle", { keep }),
+    studySetLinked: (linked) => call("study_set_linked", { linked }),
     hide: () => call("hide_panel"),
     quit: () => call("quit"),
     openStats: () => call("open_stats"),
@@ -182,6 +187,7 @@ function mockBackend(): Backend {
     },
     systemAccent: params.get("accent") === "system" ? "#0078d4" : null,
     study: null,
+    linked: params.get("linked") !== "0",
     update: params.get("update")
       ? { version: "0.1.0-beta.4", phase: params.get("update") as UpdateView["phase"] }
       : null,
@@ -265,7 +271,8 @@ function mockBackend(): Backend {
     studyTick();
     emit();
   }, 1000);
-  // Linked, like the default: noise and stopwatch play and pause together.
+  // Linked by default (?linked=0 starts apart): noise and stopwatch play and
+  // pause together.
   const studyRun = (run: StudyRun) => {
     if (!study || study.run === run) return;
     if (study.run === "stopped") study.startedAt = Date.now() - workedBefore * 1000;
@@ -291,7 +298,7 @@ function mockBackend(): Backend {
       state.playing = !state.playing;
       state.pausedFor = null;
       onPlaying();
-      studyRun(state.playing ? "running" : "paused");
+      if (state.linked) studyRun(state.playing ? "running" : "paused");
       emit();
     },
     setColor: async (c) => {
@@ -311,14 +318,20 @@ function mockBackend(): Backend {
       if (!study) return;
       const run = study.run === "running" ? "paused" : "running";
       studyRun(run);
-      state.playing = run === "running";
-      onPlaying();
+      if (state.linked) {
+        state.playing = run === "running";
+        onPlaying();
+      }
       emit();
     },
     studyFinish: async () => {
+      const linked = state.linked;
       studyRun("stopped");
-      state.playing = false;
-      onPlaying();
+      if (linked) {
+        state.playing = false;
+        onPlaying();
+      }
+      state.linked = params.get("linked") !== "0";
       emit();
     },
     studySetMode: async (mode) => {
@@ -328,6 +341,18 @@ function mockBackend(): Backend {
     },
     studySetTag: async (tag) => {
       if (study) study.tag = tag;
+      emit();
+    },
+    studySetLinked: async (linked) => {
+      if (!study || state.linked === linked) return;
+      state.linked = linked;
+      // Joined: whichever runs starts the other.
+      if (linked && study.run === "running" && !state.playing) {
+        state.playing = true;
+        onPlaying();
+      } else if (linked && state.playing && study.run !== "running") {
+        studyRun("running");
+      }
       emit();
     },
     studyResolveIdle: async (keep) => {

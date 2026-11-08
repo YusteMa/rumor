@@ -84,6 +84,13 @@ pub fn study_resolve_idle(app: AppHandle, keep: bool) {
     state::study_resolve_idle(&app, keep);
 }
 
+/// The study card's link button: noise and stopwatch together or apart,
+/// for this session only (Settings keeps the default).
+#[tauri::command]
+pub fn study_set_linked(app: AppHandle, linked: bool) {
+    state::study_set_linked(&app, linked);
+}
+
 /// Session, today and this week; `None` with "Modo estudio" off.
 #[tauri::command]
 pub fn study_totals(app: AppHandle) -> Option<StudyView> {

@@ -100,7 +100,7 @@ rumor/
 
 ## Comandos y eventos (contrato)
 - Comandos: `get_state`, `toggle`, `set_playing(bool)`, `set_color("pink"|"brown"|"white")`, `set_volume(f32 0..1)`, `set_timer(minutes: u32 | 0)`, `get_settings`, `update_settings(partial)`, `set_shortcut(action, String)`, `quit`.
-- Comandos de estudio: `study_toggle`, `study_finish`, `study_set_mode("stopwatch"|"pomodoro")`, `study_set_tag(id|null)`, `study_resolve_idle(keep: bool)`, `study_totals`, `tags_list`, `tags_upsert`, `tags_delete`.
+- Comandos de estudio: `study_toggle`, `study_finish`, `study_set_mode("stopwatch"|"pomodoro")`, `study_set_tag(id|null)`, `study_resolve_idle(keep: bool)`, `study_set_linked(bool)` (solo esta sesión), `study_totals`, `tags_list`, `tags_upsert`, `tags_delete`.
 - Eventos de Rust al panel: `state-changed` (estado completo, incluido el del estudio), `spectrum` (`[f32; 64]`, solo con el panel visible), `timer-tick` (segundos restantes), `study-tick` (1 Hz, solo con el panel visible), `study-idle` (minutos inactivo).
 
 ## Forma de trabajar

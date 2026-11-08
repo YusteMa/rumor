@@ -81,6 +81,8 @@ export interface StudyActions {
   setTag(tag: number | null): void;
   resolveIdle(keep: boolean): void;
   openStats(): void;
+  /** Noise and stopwatch together or apart, for this session. */
+  setLinked(linked: boolean): void;
 }
 
 export function study(actions: StudyActions) {
@@ -102,8 +104,10 @@ export function study(actions: StudyActions) {
   const tagSlot = $("study-tag");
   const idle = $("study-idle");
   const idleText = $("study-idle-text");
+  const link = $("study-link") as HTMLButtonElement;
 
   const ring = dial(sphere, "panel");
+  link.addEventListener("click", () => actions.setLinked(link.getAttribute("aria-pressed") !== "true"));
   const modeGroup = radioGroup(modes, (v) => actions.setMode(v as StudyMode));
   play.addEventListener("click", () => actions.toggle());
   finish.addEventListener("click", () => actions.finish());
@@ -119,9 +123,13 @@ export function study(actions: StudyActions) {
   let tagKey = "";
 
   return {
-    render(s: StudyView | null) {
+    render(s: StudyView | null, linked: boolean) {
       root.hidden = s === null;
       if (!s) return;
+      // The noise above and the stopwatch here: one link between them.
+      link.setAttribute("aria-pressed", String(linked));
+      link.setAttribute("aria-label", t("studyLinkLabel"));
+      link.title = t(linked ? "studyLinkedTip" : "studyApartTip");
       const session = s.run !== "stopped";
       const running = s.run === "running";
       root.classList.toggle("is-running", running);

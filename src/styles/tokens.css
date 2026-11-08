@@ -137,6 +137,10 @@
   --mini-close: 18px;
   --mini-close-glyph: 8px;
   --icon-button: 28px;
+  /* The study card's link button: how far each half draws back when noise
+     and stopwatch go apart. */
+  --link-stroke: 1.6;
+  --link-spread: 1.25px;
   --stop-glyph: 10px;
   --stop-radius: 2px;
   --control-height-sm: 28px;

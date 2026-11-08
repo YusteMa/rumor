@@ -346,6 +346,78 @@ body {
   display: contents;
 }
 
+.study-head {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* Noise and stopwatch together (closed link, accent) or apart for this
+   session (the halves draw back and the bar between them fades). */
+.study-link {
+  width: var(--icon-button);
+  height: var(--icon-button);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--muted);
+  transition:
+    background-color var(--dur-press) var(--ease-out),
+    color var(--dur-press) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+
+.study-link:hover {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+
+.study-link:active {
+  transform: scale(var(--press-scale));
+}
+
+.study-link[aria-pressed="true"] {
+  color: var(--accent);
+}
+
+.study-link svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--link-stroke);
+  stroke-linecap: round;
+  overflow: visible;
+}
+
+.link-half,
+.link-bar {
+  transition:
+    transform var(--dur-max) var(--ease-out),
+    opacity var(--dur-max) var(--ease-out);
+}
+
+.link-bar {
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+.study-link[aria-pressed="false"] .link-left {
+  transform: translateX(calc(-1 * var(--link-spread)));
+}
+
+.study-link[aria-pressed="false"] .link-right {
+  transform: translateX(var(--link-spread));
+}
+
+.study-link[aria-pressed="false"] .link-bar {
+  opacity: 0;
+  transform: scaleX(0);
+}
+
 /* The sphere on the panel's left edge, like everything above it; its
    column takes the rest of the width, so the finish button lines up with
    the tag picker's right edge. Nothing moves between states. */

@@ -17,6 +17,7 @@
     "allow-study-set-mode",
     "allow-study-set-tag",
     "allow-study-resolve-idle",
+    "allow-study-set-linked",
     "allow-study-totals",
     "allow-hide-panel",
     "allow-panel-ready",

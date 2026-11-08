@@ -65,6 +65,7 @@ pub fn run() {
             commands::study_set_mode,
             commands::study_set_tag,
             commands::study_resolve_idle,
+            commands::study_set_linked,
             commands::study_totals,
             commands::tags_list,
             commands::tags_upsert,

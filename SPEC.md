@@ -154,7 +154,7 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
 - **Al lado, una columna** que ocupa el resto del ancho: la esfera empieza en el borde izquierdo del panel, como «Estudio», el color o el volumen, y el botón de terminar acaba en el borde derecho, alineado con el desplegable de etiqueta (decidido el 2026-11-06). Nada se mueve entre estados:
   - antes de empezar, el selector **Cronómetro / Pomodoro** y **«Empezar»**;
   - durante la sesión, dónde estás («Trabajo 2 de 4» · «Sesión de 1:02:18»; «Estudiando» · «Desde las 15:12»; «Descanso» · «Después, trabajo 3 de 4»; «En pausa»), el botón principal del acento (**«Pausa»** / **«Seguir»**) ocupando la columna y **terminar** (el cuadrado) a su lado.
-- Arriba, «Estudio» y la **etiqueta** (si hay etiquetas). Abajo, **Hoy: 3 h 10 min · Semana: 12 h 40 min** y «Estadísticas».
+- Arriba, «Estudio» con el **eslabón** a su lado (ver «Juntar los dos módulos») y la **etiqueta** (si hay etiquetas). Abajo, **Hoy: 3 h 10 min · Semana: 12 h 40 min** y «Estadísticas».
 - **Altura:** con la tarjeta, el panel mide 717 px (elegido el 2026-11-06 entre 757, 717 y 680 px, para no perder «Desde las…», la línea de sesión ni «Estadísticas»). **Pantallas bajas** (decidido el 2026-11-06): si no cabe entero, el panel usa un **espaciado compacto** (12 px entre bloques en vez de 16 y 16 px arriba y abajo en vez de 20; los laterales no cambian) y mide 680 px, así que en 1366×768 al 100 % cabe sin scroll en Windows 11 (barra de 48 px: 696 de sitio) y en Windows 10 (barra de 40: 704). En pantallas normales queda exactamente igual. Solo si ni así cabe, se recorta a la pantalla y su contenido se desplaza.
 
 **Mini reloj flotante** (opcional, **desactivado por defecto**; Ajustes → Estudio → «Mini reloj flotante»):
@@ -168,6 +168,8 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
 - Play en el ruido arranca el cronómetro y play en el cronómetro arranca el ruido; igual con la pausa. Un solo clic para "me pongo a estudiar".
 - Las pausas automáticas del ruido (cascos desconectados, bloqueo del PC, suspensión) también pausan el cronómetro. Los descansos del Pomodoro no: los gobierna el Pomodoro.
 - Si no está vinculado, cada módulo va por libre.
+- **Eslabón en el panel** (decidido el 2026-11-08): un icono de cadena junto a «Estudio» cambia la vinculación **solo para la sesión en curso**, para estudiar en silencio o escuchar ruido sin que cuente tiempo sin tocar Ajustes. Cerrado y en el acento: juntos; abierto y en gris (las dos mitades se apartan y el puente se desvanece): por separado. Al **terminar la sesión** (o al cambiar «Vincular con el ruido» en Ajustes) manda otra vez lo que diga Ajustes. Si se pulsa sin sesión, vale hasta que termine la siguiente.
+- **Al volver a juntarlos se igualan al momento**: el que está parado se pone al paso del que va (ruido sonando → arranca el cronómetro; cronómetro contando → suena el ruido). En un descanso del Pomodoro manda el Pomodoro (con «Pausar», el ruido espera al siguiente bloque de trabajo).
 
 **Lo que cuenta:** solo el **tiempo de trabajo**. Pausas, descansos del Pomodoro, el PC bloqueado o suspendido no suman a la sesión ni a los totales de hoy y de la semana.
 
@@ -411,3 +413,4 @@ El panel solo enseña lo que usas a diario. **Todo lo demás vive en Ajustes**, 
 | 10 | Icono de la app | **Tres barras de acento sobre tesela oscura con borde fino** | Cerrada (2026-10-31) |
 | 11 | Icono de la bandeja | **Animado solo al cambiar de estado** (~400 ms), quieto mientras suena | Cerrada (2026-10-31) |
 | 12 | Auto-actualización | **Activada por defecto**, aviso en el panel + un clic (§7) | Cerrada (2026-11-05) |
+| 13 | Separar ruido y estudio desde el panel | **Eslabón junto a «Estudio», solo para la sesión en curso**; al juntarlos de nuevo se igualan al momento (§4.3b) | Cerrada (2026-11-08) |

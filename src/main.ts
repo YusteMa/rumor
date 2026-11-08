@@ -29,6 +29,7 @@ const ui = {
     setTag: (tag) => void api.studySetTag(tag),
     resolveIdle: (keep) => void api.studyResolveIdle(keep),
     openStats: () => void api.openStats(),
+    setLinked: (linked) => void api.studySetLinked(linked),
   }),
   footer: footer(
     () => api.openSettings(),
@@ -63,7 +64,7 @@ function render(s: PanelState): void {
   ui.colors.render(s);
   ui.volume.render(s);
   ui.timer.render(s);
-  ui.study.render(s.study);
+  ui.study.render(s.study, s.linked);
   ui.footer.render(s);
   spectrum.setColor(s.color);
   spectrum.setPlaying(s.playing);
@@ -75,7 +76,7 @@ api.onTimerTick((remaining) => {
   if (state) ui.timer.render({ ...state, timerRemaining: remaining });
 });
 api.onStudyTick((view) => {
-  if (state?.study) ui.study.render((state = { ...state, study: view }).study);
+  if (state?.study) ui.study.render((state = { ...state, study: view }).study, state.linked);
 });
 api.onShown(() => {
   panel.classList.remove("is-closing");

@@ -12,6 +12,7 @@ const COMMANDS: &[&str] = &[
     "study_set_mode",
     "study_set_tag",
     "study_resolve_idle",
+    "study_set_linked",
     "study_totals",
     "tags_list",
     "tags_upsert",
