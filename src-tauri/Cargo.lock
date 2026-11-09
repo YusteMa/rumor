@@ -3362,7 +3362,7 @@ checksum = "5974e397833d890f2f74963408e0d4a6cd8eda2f6a445ae06750291b5d7a997e"
 
 [[package]]
 name = "rumor"
-version = "0.1.0-beta.3"
+version = "0.1.0-beta.4"
 dependencies = [
  "chrono",
  "chrono-tz",
