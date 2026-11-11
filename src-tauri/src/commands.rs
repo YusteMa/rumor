@@ -147,7 +147,14 @@ pub fn mini_ready(app: AppHandle) {
     mini::on_ready(&app);
 }
 
-/// The mini clock's ×: hidden until the next session.
+/// The study card's pop-out button: brings the mini clock out for the
+/// session in progress, or puts it away.
+#[tauri::command]
+pub fn mini_set_shown(app: AppHandle, shown: bool) {
+    mini::set_shown(&app, shown);
+}
+
+/// The mini clock's ×: puts it away.
 #[tauri::command]
 pub fn mini_dismiss(app: AppHandle) {
     mini::dismiss(&app);

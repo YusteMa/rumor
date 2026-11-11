@@ -82,6 +82,14 @@ export interface Heat {
   bestSlot: number | null;
 }
 
+/** The weekly goal (Settings → Study) and how it is going. */
+export interface Goal {
+  /** Seconds a week. */
+  secs: number;
+  /** Weeks in a row that met it, counted back from the current one. */
+  streak: number;
+}
+
 export const HEAT_FIRST_HOUR = 6;
 export const HEAT_HOURS = 17;
 
@@ -105,6 +113,16 @@ export interface WeekView {
   days: DayBar[];
   /** Legend order: most time first, "Sin etiqueta" last. */
   byTag: TagTime[];
+  /** The previous week per tag, up to the same point in the current one;
+   *  empty with nothing before to compare with. */
+  tagPrevious: TagTime[];
+  /** The last 8 weeks, oldest first (`date`: the week's first day); the
+   *  last one is this week. */
+  trend: Dated[];
+  /** The mean of the earlier weeks of `trend` that had study. */
+  typicalSecs: number | null;
+  /** `null` without a weekly goal. */
+  goal: Goal | null;
   heat: Heat | null;
   records: Records;
   insights: Insight[];
@@ -331,9 +349,11 @@ function sum(sessions: Session[], from: number, to: number, until = Infinity): n
   return sessions.filter((s) => startedIn(s, from, Math.min(to, until))).reduce((a, s) => a + Math.min(s.secs, workBy(s, until)), 0);
 }
 
-function byTagOf(sessions: Session[], from: number, to: number): TagTime[] {
+function byTagOf(sessions: Session[], from: number, to: number, until = Infinity): TagTime[] {
   const map = new Map<TagId, number>();
-  for (const s of sessions) if (startedIn(s, from, to)) map.set(s.tag, (map.get(s.tag) ?? 0) + s.secs);
+  for (const s of sessions) {
+    if (startedIn(s, from, Math.min(to, until))) map.set(s.tag, (map.get(s.tag) ?? 0) + Math.min(s.secs, workBy(s, until)));
+  }
   return [...map]
     .map(([tag, secs]) => ({ tag, secs }))
     .sort((a, b) => (a.tag === null ? 1 : b.tag === null ? -1 : b.secs - a.secs));
@@ -523,6 +543,19 @@ function mockBackend(): StatsBackend {
     const done = sessions;
     const inWeek = done.filter((s) => startedIn(s, from, to));
     const elapsed = current ? ((now.getDay() + 6) % 7) + 1 : 7;
+    // ?goal=15 sets a weekly goal of 15 h.
+    const goalSecs = Number(params.get("goal") ?? 0) * 3600;
+    const weekSecs = (back: number) => {
+      const a = addDays(mondayOf(now), -7 * back);
+      return sum(list, a.getTime(), addDays(a, 7).getTime());
+    };
+    const trend: Dated[] = Array.from({ length: 8 }, (_, i) => {
+      const back = offset + 7 - i;
+      return { date: isoDate(addDays(mondayOf(now), -7 * back)), secs: weekSecs(back) };
+    });
+    const earlier = trend.slice(0, -1).map((w) => w.secs).filter((s) => s > 0);
+    let streak = goalSecs > 0 && weekSecs(0) >= goalSecs ? 1 : 0;
+    for (let back = 1; goalSecs > 0 && weekSecs(back) >= goalSecs; back++) streak++;
     let lastWithData: number | null = null;
     if (secs === 0) {
       for (let k = offset + 1; k < offset + 60; k++) {
@@ -547,6 +580,10 @@ function mockBackend(): StatsBackend {
       elapsedDays: elapsed,
       days,
       byTag: byTagOf(list, from, to),
+      tagPrevious: hasPrev ? byTagOf(list, prevFrom, from, until ? until.getTime() : Infinity) : [],
+      trend,
+      typicalSecs: earlier.length >= 3 ? earlier.reduce((x, y) => x + y, 0) / earlier.length : null,
+      goal: goalSecs > 0 ? { secs: goalSecs, streak } : null,
       heat: heatOf(done, start, 8),
       records: records(done),
       insights: insightsOf(done, start, current ? now.getTime() : to, tags),

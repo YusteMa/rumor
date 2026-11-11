@@ -19,6 +19,7 @@
     "allow-study-resolve-idle",
     "allow-study-set-linked",
     "allow-study-totals",
+    "allow-mini-set-shown",
     "allow-hide-panel",
     "allow-panel-ready",
     "allow-panel-painted",

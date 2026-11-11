@@ -22,7 +22,7 @@ import {
   type WeekView,
 } from "./stats-api";
 import { applyAccent } from "./ui/accent";
-import { dayBars, heatmap, level, tagColor } from "./ui/charts";
+import { dayBars, goalRing, heatmap, level, px, tagColor, weekTrend } from "./ui/charts";
 import { dropdown } from "./ui/dropdown";
 
 const api = await statsBackend;
@@ -41,6 +41,10 @@ let tab: Tab = remembered();
 const offsets: Record<Tab, number> = { week: 0, month: 0, sessions: 0 };
 /** Redraws the charts at the new width. */
 let onResize: (() => void) | null = null;
+/** Arriving at a view (a tab, another week): its cards come in and its
+ *  bars rise. A refresh of the view already on screen changes in place. */
+let entering = true;
+const calm = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 // ---- Helpers ---------------------------------------------------------------------
 
@@ -73,6 +77,20 @@ function dur(secs: number): string {
   const m = total % 60;
   if (h === 0) return t("durMinutes", { m });
   return m === 0 ? t("durHoursOnly", { h }) : t("durHours", { h, m });
+}
+
+/** Counts a duration up to its value, on arriving at a view. */
+function countUp(node: HTMLElement, secs: number): void {
+  const ms = px("--count-up");
+  if (!entering || calm.matches || ms <= 0 || secs < 60) return;
+  const start = performance.now();
+  const step = (now: number) => {
+    const k = Math.min(1, (now - start) / ms);
+    // Ease out, like every other movement.
+    node.textContent = dur(secs * (1 - (1 - k) ** 3));
+    if (k < 1 && node.isConnected) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
 }
 
 /** A `YYYY-MM-DD` as a local date. */
@@ -155,8 +173,21 @@ function insight(i: Insight): HTMLElement {
   );
 }
 
-/** Thin horizontal bars per tag (SPEC §4.3d "Por asignatura"). */
-function tagBars(byTag: TagTime[]): HTMLElement {
+/** Below this, a subject did the same as the week before. */
+const DELTA_FLOOR = 5 * 60;
+
+/** "▲ 40 min" against the week before: green up, quiet down, never red. */
+function delta(secs: number, before: number, tip: string): HTMLElement[] {
+  const d = secs - before;
+  if (Math.abs(d) < DELTA_FLOOR) return [];
+  const chip = el("span", { className: `delta${d > 0 ? " is-up" : ""}`, textContent: `${d > 0 ? "▲" : "▼"} ${dur(Math.abs(d))}` });
+  chip.title = tip;
+  return [chip];
+}
+
+/** Thin horizontal bars per tag (SPEC §4.3d "Por asignatura"); with
+ *  `before`, each one says how it moved against the previous week. */
+function tagBars(byTag: TagTime[], before?: { rows: TagTime[]; tip: string }): HTMLElement {
   const sum = byTag.reduce((a, b) => a + b.secs, 0) || 1;
   return el(
     "ul",
@@ -173,7 +204,12 @@ function tagBars(byTag: TagTime[]): HTMLElement {
           "div",
           { className: "tag-bar-head" },
           el("span", { className: "tag-name" }, swatch(row.tag), tagName(row.tag)),
-          el("span", { className: "tag-time", textContent: `${dur(row.secs)} · ${pct} %` }),
+          el(
+            "span",
+            { className: "tag-side" },
+            ...(before ? delta(row.secs, before.rows.find((p) => p.tag === row.tag)?.secs ?? 0, before.tip) : []),
+            el("span", { className: "tag-time", textContent: `${dur(row.secs)} · ${pct} %` }),
+          ),
         ),
         el("span", { className: "tag-bar" }, bar),
       );
@@ -236,8 +272,12 @@ function renderWeek(w: WeekView): void {
           )
         : []),
     );
-  const draw = () =>
+  const goal = w.goal;
+  let rise = entering && !calm.matches;
+  const draw = () => {
     dayBars(chart, {
+      goal: goal ? { secs: goal.secs / 7, label: t("goalDaily", { d: dur(goal.secs / 7) }) } : null,
+      rise,
       days: w.days,
       order,
       fill,
@@ -248,6 +288,9 @@ function renderWeek(w: WeekView): void {
       tip,
       describe: (d) => `${capital(longDay(d.date))}: ${dur(d.secs)}`,
     });
+    // Only the first draw rises; a resize just redraws.
+    rise = false;
+  };
 
   if (!w.hasHistory) {
     barsCard.append(emptyCard("emptyFirstTitle", "emptyFirstHint"));
@@ -258,7 +301,55 @@ function renderWeek(w: WeekView): void {
   }
 
   const content: Node[] = [];
+  const draws = [draw];
   if (!empty) {
+    const big = el("span", { className: "big", textContent: dur(w.secs) });
+    countUp(big, w.secs);
+    const pct = goal ? Math.round((w.secs / goal.secs) * 100) : 0;
+    const ring = goal
+      ? [
+          el(
+            "div",
+            { className: "goal" },
+            goalRing(w.secs / goal.secs, `${pct} %`, t("goalRingLabel", { pct, goal: dur(goal.secs) })),
+            el("span", { className: "label", textContent: t("goalOf", { goal: dur(goal.secs) }) }),
+          ),
+        ]
+      : [];
+    // The last weeks, once there are at least two to look at.
+    const trend: HTMLElement[] = [];
+    if (w.trend.filter((x) => x.secs > 0).length >= 2) {
+      const host = el("div", { className: "chart-host trend-host" });
+      const weekRange = (start: string) => {
+        const first = day(start);
+        return range(start, isoDate(new Date(first.getFullYear(), first.getMonth(), first.getDate() + 6)));
+      };
+      draws.push(() =>
+        weekTrend(host, {
+          weeks: w.trend,
+          typical: w.typicalSecs,
+          tip: (i) => el("div", { className: "tip-head" }, el("span", { textContent: weekRange(w.trend[i].date) }), el("b", { textContent: dur(w.trend[i].secs) })),
+          describe: (i) => t("trendWeek", { range: weekRange(w.trend[i].date), d: dur(w.trend[i].secs) }),
+          onPick: (i) => {
+            offsets.week = w.offset + (w.trend.length - 1 - i);
+            void show();
+          },
+        }),
+      );
+      trend.push(
+        el(
+          "div",
+          { className: "trend" },
+          el(
+            "div",
+            { className: "trend-head" },
+            el("span", { className: "label", textContent: t("statsTrend", { n: w.trend.length }) }),
+            ...(w.typicalSecs !== null ? [el("span", { className: "label trend-key", textContent: t("trendTypical", { d: dur(w.typicalSecs) }) })] : []),
+          ),
+          host,
+        ),
+      );
+    }
     const pill = comparison(w.comparison, w.offset === 0 ? "compareLastWeek" : "comparePrevWeek", (d) =>
       `${fmt(d, { weekday: "long" })} ${clockTime(d.getTime())}`,
     );
@@ -268,16 +359,29 @@ function renderWeek(w: WeekView): void {
         { className: "row" },
         card(
           "total",
-          el("span", { className: "label", textContent: t(w.offset === 0 ? "statsThisWeek" : "statsTotal") }),
-          el("span", { className: "big", textContent: dur(w.secs) }),
-          ...(pill.length ? [el("div", { className: "total-foot" }, ...pill)] : []),
+          el(
+            "div",
+            { className: "total-main" },
+            el(
+              "div",
+              { className: "total-text" },
+              el("span", { className: "label", textContent: t(w.offset === 0 ? "statsThisWeek" : "statsTotal") }),
+              big,
+              ...(pill.length ? [el("div", { className: "total-foot" }, ...pill)] : []),
+            ),
+            ...ring,
+          ),
+          ...trend,
         ),
         card(
           "figures",
           figure(t("statsDailyAverage"), dur(w.dailyAverage)),
           figure(t("statsSessionAverage"), dur(w.sessionAverage)),
           figure(t("statsSessions"), String(w.sessions)),
-          figure(t("statsActiveDays"), t("countOf", { n: w.activeDays, of: w.elapsedDays })),
+          // With a goal, the streak of weeks that met it takes this place.
+          goal
+            ? figure(t("statsStreak"), goal.streak === 1 ? t("streakOne") : t("streakMany", { n: goal.streak }), goal.streak > 0 ? t("streakNote") : undefined)
+            : figure(t("statsActiveDays"), t("countOf", { n: w.activeDays, of: w.elapsedDays })),
         ),
       ),
     );
@@ -296,8 +400,10 @@ function renderWeek(w: WeekView): void {
 
   if (!empty) {
     const second: Node[] = [];
-    if (tags.length) second.push(card("by-tag", cardTitle("statsByTag"), tagBars(w.byTag)));
-    const draws = [draw];
+    if (tags.length) {
+      const before = w.comparison ? { rows: w.tagPrevious, tip: t(w.offset === 0 ? "tagDeltaNow" : "tagDelta") } : undefined;
+      second.push(card("by-tag", cardTitle("statsByTag"), tagBars(w.byTag, before)));
+    }
     const h = w.heat;
     if (h) {
       const heat = el("div", { className: "chart-host" });
@@ -655,7 +761,9 @@ function say(text: string): void {
 
 // ---- Tabs and periods ------------------------------------------------------------
 
-async function show(): Promise<void> {
+async function show(arriving = true): Promise<void> {
+  entering = arriving;
+  body.classList.toggle("is-entering", arriving);
   for (const b of tabs.querySelectorAll<HTMLButtonElement>("[role=tab]")) {
     const on = b.dataset.tab === tab;
     b.setAttribute("aria-selected", String(on));
@@ -704,7 +812,8 @@ next.addEventListener("click", () => {
   void show();
 });
 new ResizeObserver(() => onResize?.()).observe(body);
-api.onChanged(() => void show());
+// The history changed under the view on screen: no entrance, just the new numbers.
+api.onChanged(() => void show(false));
 
 /** Language, accent and Mica, as in the rest of Rumor. */
 function applyContext(cx: StatsContext): void {

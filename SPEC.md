@@ -154,15 +154,18 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
 - **Al lado, una columna** que ocupa el resto del ancho: la esfera empieza en el borde izquierdo del panel, como «Estudio», el color o el volumen, y el botón de terminar acaba en el borde derecho, alineado con el desplegable de etiqueta (decidido el 2026-11-06). Nada se mueve entre estados:
   - antes de empezar, el selector **Cronómetro / Pomodoro** y **«Empezar»**;
   - durante la sesión, dónde estás («Trabajo 2 de 4» · «Sesión de 1:02:18»; «Estudiando» · «Desde las 15:12»; «Descanso» · «Después, trabajo 3 de 4»; «En pausa»), el botón principal del acento (**«Pausa»** / **«Seguir»**) ocupando la columna y **terminar** (el cuadrado) a su lado.
-- Arriba, «Estudio» con el **eslabón** a su lado (ver «Juntar los dos módulos») y la **etiqueta** (si hay etiquetas). Abajo, **Hoy: 3 h 10 min · Semana: 12 h 40 min** y «Estadísticas».
+- Arriba, «Estudio» con el **eslabón** a su lado (ver «Juntar los dos módulos»), el botón que **saca el mini reloj** (ver «Mini reloj flotante») y la **etiqueta** (si hay etiquetas). Abajo, **Hoy: 3 h 10 min · Semana: 12 h 40 min** y «Estadísticas».
 - **Altura:** con la tarjeta, el panel mide 717 px (elegido el 2026-11-06 entre 757, 717 y 680 px, para no perder «Desde las…», la línea de sesión ni «Estadísticas»). **Pantallas bajas** (decidido el 2026-11-06): si no cabe entero, el panel usa un **espaciado compacto** (12 px entre bloques en vez de 16 y 16 px arriba y abajo en vez de 20; los laterales no cambian) y mide 680 px, así que en 1366×768 al 100 % cabe sin scroll en Windows 11 (barra de 48 px: 696 de sitio) y en Windows 10 (barra de 40: 704). En pantallas normales queda exactamente igual. Solo si ni así cabe, se recorta a la pantalla y su contenido se desplaza.
 
-**Mini reloj flotante** (opcional, **desactivado por defecto**; Ajustes → Estudio → «Mini reloj flotante»):
+**Mini reloj flotante** (**solo cuando se pide**, con un botón del panel; decidido el 2026-11-10, antes era un ajuste):
+- **Botón «sacar fuera»** en la fila de «Estudio», junto al eslabón y con su mismo tamaño: un recuadro del que sale una flecha. Un clic saca el reloj; con el reloj fuera el icono queda en el acento (la flecha, un punto más fuera) y otro clic lo guarda. **Sin sesión está apagado** (atenuado, no hace nada) y su tooltip dice por qué.
+- **Nunca aparece solo:** vale para la sesión en curso. Al terminarla se va, y en la siguiente hay que volver a pedirlo.
 - Una pastilla con **la misma esfera en pequeño**, que hace de **botón de play/pausa**, y al lado el tiempo y la fase en pocas palabras («Trabajo 2/4», «Descanso», «En pausa», «Cronómetro»). Tema claro/oscuro y acento del ruido, como el panel.
-- **Solo existe mientras hay una sesión** (contando o en pausa): aparece al empezarla y se va con un fundido al terminarla. Sin sesión no hay ventana (ni memoria gastada).
+- **Solo existe mientras hay una sesión** (contando o en pausa) y se ha pedido: se va con un fundido al guardarlo o al terminar la sesión. El resto del tiempo no hay ventana (ni memoria gastada).
 - Por defecto **arriba a la derecha** de la pantalla principal; **se arrastra** a cualquier sitio y **recuerda** dónde se dejó (si esa posición ya no cae en ninguna pantalla, vuelve a la esquina).
 - **Siempre encima**, fuera de la barra de tareas y de Alt+Tab, y **nunca roba el foco**: se puede pausar sin dejar de escribir en otra app.
-- Con el ratón encima aparece una **×** que lo **oculta hasta la próxima sesión**. Un clic en el tiempo **abre el panel**.
+- Con el ratón encima aparece una **×** que lo **guarda**, igual que el botón del panel. Un clic en el tiempo **abre el panel**.
+- **Migración:** el ajuste «Mini reloj flotante» desaparece de Ajustes → Estudio; a quien lo tenía activado se le descarta sin más (ya no le aparece solo) y se conserva la posición donde lo dejó.
 
 **Juntar los dos módulos** (solo con el Modo estudio activado; *"Vincular con el ruido"*, **activado por defecto**), **en los dos sentidos**:
 - Play en el ruido arranca el cronómetro y play en el cronómetro arranca el ruido; igual con la pausa. Un solo clic para "me pongo a estudiar".
@@ -208,8 +211,9 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
 
 **Semana**
 - **Total de la semana** grande, con la **comparación con la semana anterior** en una píldora (*"+18 % vs semana pasada"*: verde si sube, neutra si baja; nunca roja). En la semana en curso se compara **a la misma altura** (hasta el mismo día y hora de la anterior) y se dice al lado: *"hasta el jueves 20:44"*. Si la anterior, hasta ese punto, no llega a **30 min**, un porcentaje no significa nada: se da la diferencia en minutos (*"+25 min"*).
-- Junto al total, el **anillo del objetivo semanal** (opcional, ver *Objetivo y racha*), con el porcentaje dentro.
-- Cuatro cifras: **media diaria** (entre los días transcurridos de la semana), **sesión media**, y dos más según la entrega: *sesiones* y *días con estudio* en la primera; **racha** y **ruido favorito** en la segunda.
+- Junto al total, el **anillo del objetivo semanal** (opcional, ver *Objetivo y racha*), con el porcentaje dentro y «de 12 h» debajo; se cierra al 100 % y sigue cerrado por encima.
+- Debajo del total, **las últimas 8 semanas** en barras pequeñas (decidido el 2026-11-10): la que está en pantalla en el acento y las demás más suaves, con una **línea discontinua en «tu media»** (la media de las anteriores con estudio; hacen falta al menos 3). Al pasar el ratón o con el teclado, la semana y su total; **un clic lleva a esa semana**. Solo aparece cuando hay al menos dos semanas con estudio.
+- Cuatro cifras: **media diaria** (entre los días transcurridos de la semana), **sesión media**, **sesiones** y **días con estudio**. Con objetivo semanal, la **racha** («3 semanas cumpliendo el objetivo») ocupa el sitio de *días con estudio* (decidido el 2026-11-10). El **ruido favorito** queda para la entrega del Año.
 - **Horas por día:** barras verticales **apiladas por etiqueta**, en el orden de la leyenda, con:
   - **puntas redondeadas** arriba y base recta sobre el eje;
   - **2 px de separación** entre los tramos de cada etiqueta;
@@ -217,7 +221,7 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
   - **línea discontinua del objetivo diario** (objetivo semanal ÷ 7) con su rótulo, solo si hay objetivo;
   - el día de hoy con la letra en negrita, y la cuadrícula en horas redondas con una **escala fija de al menos 6 h**, igual en todas las semanas para que las barras se puedan comparar al pasar de una a otra; solo crece si una semana la supera;
   - **al pasar el ratón** (o con el teclado: cada barra es enfocable), las demás barras se atenúan y sale una etiqueta flotante con el día, su total y el reparto por etiqueta. Con movimiento reducido, sin transiciones.
-- **Por asignatura:** barras horizontales finas con nombre, tiempo y porcentaje, de más a menos; "Sin etiqueta" siempre al final. Si no usas etiquetas, esta tarjeta no aparece y las barras por día van en el color del acento.
+- **Por asignatura:** barras horizontales finas con nombre, tiempo y porcentaje, de más a menos; "Sin etiqueta" siempre al final. En Semana, cada una dice además **cuánto ha subido o bajado frente a la semana anterior** («▲ 40 min», «▼ 1 h 10 min»; a la misma altura en la semana en curso): verde si sube, gris si baja, nunca rojo, y nada si la diferencia no llega a 5 min. Si no usas etiquetas, esta tarjeta no aparece y las barras por día van en el color del acento.
 - **Cuándo estudias más:** mapa de calor **hora × día** de las **últimas 8 semanas** hasta la mostrada (filas: días de la semana; columnas: de 6 a 23 h, una por hora, y una columna aparte **"noche"** para lo que cae entre las 23 y las 6 h), con 5 niveles de intensidad del acento, y debajo **"Tu mejor franja: 10 – 12 h"** (las 2 horas seguidas con más tiempo entre las 6 y las 23 h; la noche no es franja). Cada sesión va en la fila del día en que empezó, y su trabajo en las horas en que pasó de verdad. Sin al menos 5 sesiones y 5 h en esas semanas, la tarjeta no aparece.
 - **Récords** (de todo el historial, sesiones terminadas): sesión más larga, mejor día, mejor semana y total histórico, cada uno con su fecha.
 - **Así ha ido:** hasta 3 **frases automáticas**: las que **más se desvían de la media del propio usuario**, ordenadas por cuánto se desvían, con **un solo ▼ como mucho**: si hay candidatas neutras o positivas, van antes que un segundo descenso. Nunca repiten lo que ya está en pantalla (la píldora del %, el récord de sesión más larga, los días con estudio) y nunca salen con pocos datos (la semana necesita al menos 2 sesiones y 1 h). En la semana en curso todo se compara a la misma altura. Las candidatas:
@@ -269,9 +273,12 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
 - **Gráficas en SVG propio**, sin librerías. Todos los colores, radios, separaciones, opacidades y duraciones salen de `tokens.css` (tokens nuevos `--chart-*`, y `--tag-none` para "Sin etiqueta"); las etiquetas usan sus `--tag-*`, ya armonizados con el acento.
 - Accesible: cada gráfica tiene un resumen en texto para lectores de pantalla y se puede recorrer con el teclado. **Contraste ≥ 4,5:1 en todo el texto** (decidido el 2026-11-05): el gris secundario de la app pasa a `#736863` en claro; los números del calendario van sobre niveles de intensidad que lo cumplen en claro y oscuro, y "Sin etiqueta" se distingue del fondo en los dos temas (≥ 3:1, como gráfico: `#988c87` en claro). La pestaña elegida lleva, además del fondo, una **raya corta del acento** (≥ 3:1 en claro y oscuro), porque el fondo solo no llega.
 
+**Movimiento** (decidido el 2026-11-10): al llegar a una vista (otra pestaña, otra semana) las tarjetas entran con el fundido y el desplazamiento de 8 px del panel (180 ms), las barras suben desde el eje una tras otra (250 ms cada una, 15 ms entre ellas), el anillo se llena y el total cuenta hasta su valor (250 ms). Un refresco de la vista que ya está en pantalla (el guardado de cada minuto, una edición) cambia las cifras sin animar nada. El mapa de calor usa la misma etiqueta flotante que las barras. Con movimiento reducido, solo el fundido.
+
 **Entregas**
 1. **Primera:** la ventana, Semana (sin anillo, línea de objetivo, racha ni ruido favorito), Mes, Sesiones (editar, borrar, añadir y exportar a CSV), frases y estados vacíos; se empieza a guardar el ruido de cada sesión. La pestaña Año aún no aparece.
-2. **Segunda:** Año, objetivo semanal con anillo y línea, racha por semanas, ruido favorito y frases sobre el ruido.
+2. **Segunda** (2026-11-10): objetivo semanal con anillo y línea, racha por semanas, las últimas 8 semanas junto al total, la variación por asignatura y las entradas animadas.
+3. **Tercera:** Año, ruido favorito y frases sobre el ruido.
 
 ### 4.4 Ajustes — sencillo por fuera, completo por dentro
 El panel solo enseña lo que usas a diario. **Todo lo demás vive en Ajustes**, una ventana aparte (720×640 px al abrirse, como mínimo 520×440, y siempre dentro de la pantalla) con barra lateral de secciones. Cada opción tiene una línea de explicación debajo y un valor por defecto sensato: **nadie debería necesitar entrar para que la app funcione bien**.
@@ -279,7 +286,7 @@ El panel solo enseña lo que usas a diario. **Todo lo demás vive en Ajustes**, 
 | Sección | Opciones |
 |---|---|
 | **General** | Si se desconectan los cascos (§3.3): pausar *(por defecto)* / pausar y reanudar al reconectarlos / pausar con cualquier cambio de salida / seguir sonando · al bloquear el PC (§3.3) · **avisos**: campana / notificación / las dos *(por defecto)* / nada · **descanso de oídos**: desactivado / cada 2, 3 *(por defecto)* o 4 h · **modo mono** · al iniciar Rumor: no sonar *(por defecto)* / sonar siempre / como lo dejé · iniciar con Windows · reacción a otro audio (v0.2) |
-| **Estudio** | **Modo estudio** (sí/no, desactivado por defecto). Solo con él activado: tiempos del Pomodoro (trabajo, descanso, descanso largo y bloques) · ruido en los descansos · vincular con el ruido · inactividad: desactivada / 10 / 15 / 20 / 30 min · etiquetas (crear, renombrar, colores) |
+| **Estudio** | **Modo estudio** (sí/no, desactivado por defecto). Solo con él activado: tiempos del Pomodoro (trabajo, descanso, descanso largo y bloques) · ruido en los descansos · vincular con el ruido · **objetivo semanal** (sin objetivo *(por defecto)* o de 1 a 80 h; §4.3d) · inactividad: desactivada / 10 / 15 / 20 / 30 min · etiquetas (crear, renombrar, colores) |
 | **Atajos** | Alternar ruido (`Ctrl+Alt+P`) · subir y bajar volumen · siguiente color · abrir panel · cronómetro (`Ctrl+Alt+T`, solo con el Modo estudio) · acción del clic izquierdo en el icono. Se graban pulsando la combinación |
 | **Apariencia** | Tema: sistema, claro u oscuro · acento: el del ruido *(por defecto)* o el del sistema · mostrar espectro · idioma |
 | **Avanzado** | *Sonido:* color al iniciar · duración del fundido (0,2–3 s) · volumen máximo (el 100 % del slider equivale a ese máximo) · volumen de cada salida (§3.3) · ajuste fino de tono (v0.2). *Temporizador:* tiempos rápidos (25/50/90) · fundido final (unos 10 s). *Salida de audio:* dispositivo fijo · buffer · salida actual. *Ventana:* efecto Mica. *Mantenimiento:* exportar/importar ajustes (JSON) · registros · restablecer todo |
@@ -414,3 +421,5 @@ El panel solo enseña lo que usas a diario. **Todo lo demás vive en Ajustes**, 
 | 11 | Icono de la bandeja | **Animado solo al cambiar de estado** (~400 ms), quieto mientras suena | Cerrada (2026-10-31) |
 | 12 | Auto-actualización | **Activada por defecto**, aviso en el panel + un clic (§7) | Cerrada (2026-11-05) |
 | 13 | Separar ruido y estudio desde el panel | **Eslabón junto a «Estudio», solo para la sesión en curso**; al juntarlos de nuevo se igualan al momento (§4.3b) | Cerrada (2026-11-08) |
+| 15 | Estadísticas, segunda entrega | **Objetivo semanal con anillo, línea diaria y racha por semanas; últimas 8 semanas junto al total; variación por asignatura; entradas animadas.** Año y ruido favorito, después (§4.3d) | Cerrada (2026-11-10) |
+| 14 | Mini reloj flotante | **Botón «sacar fuera» en el panel en vez de un ajuste**: sale solo cuando se pide y para esa sesión; apagado sin sesión; el mismo botón lo guarda; el ajuste antiguo se descarta (§4.3b) | Cerrada (2026-11-10) |

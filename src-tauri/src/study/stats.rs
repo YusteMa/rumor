@@ -37,6 +37,10 @@ pub type TagId = Option<i64>;
 pub const PCT_FLOOR: u64 = 30 * 60;
 /// "Cuándo estudias más" looks this far back, the shown week included.
 pub const HEAT_WEEKS: u32 = 8;
+/// Weeks in the trend beside the week's total, the one shown included.
+pub const TREND_WEEKS: u32 = 8;
+/// Earlier weeks with study that "your usual week" needs to mean something.
+const TYPICAL_MIN_WEEKS: usize = 3;
 /// Hours of the day in the heat map, one column each; outside them, the
 /// night column.
 pub const HEAT_FIRST_HOUR: u32 = 6;
@@ -271,6 +275,16 @@ fn compare(secs: u64, previous: u64, until: Option<NaiveDateTime>) -> Option<Com
     })
 }
 
+/// The weekly goal (Settings → Study) and how it is going.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Goal {
+    /// The goal itself, in seconds a week.
+    pub secs: u64,
+    /// Weeks in a row that met it, counted back from the current one.
+    pub streak: u32,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Heat {
@@ -305,6 +319,15 @@ pub struct WeekView {
     pub elapsed_days: u32,
     pub days: Vec<DayBar>,
     pub by_tag: Vec<TagTime>,
+    /// The previous week per tag, up to the same point in the current one;
+    /// empty when there is nothing before to compare with.
+    pub tag_previous: Vec<TagTime>,
+    /// The last `TREND_WEEKS` weeks, oldest first; the last is this one.
+    pub trend: Vec<Dated>,
+    /// The mean of the earlier weeks of `trend` that had study.
+    pub typical_secs: Option<u64>,
+    /// `None` without a weekly goal.
+    pub goal: Option<Goal>,
     pub heat: Option<Heat>,
     pub records: Records,
     pub insights: Vec<Insight>,
@@ -338,11 +361,30 @@ pub struct Context<'a, Tz: TimeZone> {
     pub now: NaiveDateTime,
     pub first: Weekday,
     pub tags: &'a [Tag],
+    /// The weekly goal in seconds, if Settings has one.
+    pub goal_secs: Option<u64>,
 }
 
 impl<Tz: TimeZone> Context<'_, Tz> {
     fn today(&self) -> NaiveDate {
         self.now.date()
+    }
+
+    /// `work`, split by tag.
+    fn work_by_tag(
+        &self,
+        sessions: &[Session],
+        from: NaiveDate,
+        to: NaiveDate,
+        until: Option<i64>,
+    ) -> BTreeMap<TagId, u64> {
+        let (a, b) = (midnight(self.tz, from), midnight(self.tz, to));
+        let b = until.map_or(b, |u| b.min(u));
+        let mut by_tag = BTreeMap::new();
+        for s in sessions.iter().filter(|s| s.start >= a && s.start < b) {
+            *by_tag.entry(s.tag).or_default() += until.map_or(s.secs, |u| s.secs_by(u));
+        }
+        by_tag
     }
 
     /// Work in sessions started in `[from, to)` (days), up to `until` if given.
@@ -361,6 +403,32 @@ impl<Tz: TimeZone> Context<'_, Tz> {
             .map(|s| until.map_or(s.secs, |u| s.secs_by(u)))
             .sum()
     }
+}
+
+/// Work per week, by the week's first day.
+fn by_week(days: &BTreeMap<NaiveDate, DayTotal>, first: Weekday) -> BTreeMap<NaiveDate, u64> {
+    let mut weeks: BTreeMap<NaiveDate, u64> = BTreeMap::new();
+    for (day, d) in days {
+        *weeks.entry(week_of(*day, first)).or_default() += d.secs;
+    }
+    weeks
+}
+
+/// Weeks in a row that met the goal, counted back from `this_week`. The week
+/// in progress adds as soon as it gets there and never breaks the streak
+/// while it lasts: resting a day costs nothing (SPEC §4.3d).
+pub fn streak(weeks: &BTreeMap<NaiveDate, u64>, this_week: NaiveDate, goal_secs: u64) -> u32 {
+    if goal_secs == 0 {
+        return 0;
+    }
+    let met = |week: NaiveDate| weeks.get(&week).is_some_and(|secs| *secs >= goal_secs);
+    let mut count = u32::from(met(this_week));
+    let mut week = add_days(this_week, -7);
+    while met(week) {
+        count += 1;
+        week = add_days(week, -7);
+    }
+    count
 }
 
 /// All-time bests over `sessions` (finished ones: see the module docs).
@@ -677,6 +745,36 @@ pub fn week_view<Tz: TimeZone>(
         week,
         until.map(|u| instant(cx.tz, u)),
     );
+    let until_ms = until.map(|u| instant(cx.tz, u));
+    let tag_previous = if had_before {
+        legend(&cx.work_by_tag(sessions, add_days(week, -7), week, until_ms))
+    } else {
+        Vec::new()
+    };
+    let weeks = by_week(&days, cx.first);
+    let trend: Vec<Dated> = (0..TREND_WEEKS)
+        .rev()
+        .map(|back| {
+            let start = add_days(week, -7 * i64::from(back));
+            Dated {
+                secs: weeks.get(&start).copied().unwrap_or(0),
+                date: start.to_string(),
+            }
+        })
+        .collect();
+    let earlier: Vec<u64> = trend
+        .iter()
+        .rev()
+        .skip(1)
+        .map(|w| w.secs)
+        .filter(|secs| *secs > 0)
+        .collect();
+    let typical_secs = (earlier.len() >= TYPICAL_MIN_WEEKS)
+        .then(|| earlier.iter().sum::<u64>() / u64::try_from(earlier.len()).unwrap_or(1));
+    let goal = cx.goal_secs.filter(|g| *g > 0).map(|secs| Goal {
+        secs,
+        streak: streak(&weeks, this_week, secs),
+    });
     let last_with_data = if secs == 0 {
         days.range(..week).next_back().map(|(day, _)| {
             let weeks = (week - week_of(*day, cx.first)).num_days() / 7;
@@ -707,6 +805,10 @@ pub fn week_view<Tz: TimeZone>(
         elapsed_days: elapsed,
         days: bars,
         by_tag: legend(&merge_tags(days.range(week..end).map(|(_, d)| d))),
+        tag_previous,
+        trend,
+        typical_secs,
+        goal,
         heat: heat(cx, &done, week),
         records: records(cx.tz, &done, cx.first),
         insights: insights(cx, &done, week),
@@ -965,6 +1067,7 @@ mod tests {
             now,
             first: Weekday::Mon,
             tags: &[],
+            goal_secs: None,
         }
     }
 
@@ -1109,6 +1212,73 @@ mod tests {
             week_view(&cx(now), &sessions, 0).comparison.unwrap().pct,
             Some(50)
         );
+    }
+
+    #[test]
+    fn the_streak_counts_weeks_not_days() {
+        // Goal: 2 h a week. Three weeks met, then the one in progress.
+        let goal = 2 * 3600;
+        let mut sessions = vec![
+            session(1, at(2026, 10, 5, 10, 0), 30, None), // short week: breaks it
+            session(2, at(2026, 10, 12, 10, 0), 120, None),
+            session(3, at(2026, 10, 21, 10, 0), 150, None),
+            session(4, at(2026, 10, 26, 10, 0), 60, None),
+            session(5, at(2026, 11, 1, 10, 0), 60, None), // Sunday: same week
+        ];
+        let weeks = |s: &[Session]| by_week(&by_day(&Madrid, s), Weekday::Mon);
+        // Tuesday 3 Nov, nothing yet this week: the streak holds at three.
+        assert_eq!(streak(&weeks(&sessions), day(2026, 11, 2), goal), 3);
+        // The week in progress adds as soon as it gets there.
+        sessions.push(session(6, at(2026, 11, 3, 9, 0), 120, None));
+        assert_eq!(streak(&weeks(&sessions), day(2026, 11, 2), goal), 4);
+        // A missed week in between ends it, whatever came before.
+        sessions.retain(|s| s.id != 3);
+        assert_eq!(streak(&weeks(&sessions), day(2026, 11, 2), goal), 2);
+        // No goal, no streak.
+        assert_eq!(streak(&weeks(&sessions), day(2026, 11, 2), 0), 0);
+    }
+
+    #[test]
+    fn the_week_carries_its_goal_trend_and_tags_before() {
+        // Thursday 5 Nov 2026, 12:00.
+        let now = day(2026, 11, 5).and_hms_opt(12, 0, 0).unwrap();
+        let sessions = vec![
+            session(1, at(2026, 10, 12, 10, 0), 120, Some(1)),
+            session(2, at(2026, 10, 19, 10, 0), 180, Some(1)),
+            // Last week: Monday, and Friday (after "the same point").
+            session(3, at(2026, 10, 26, 10, 0), 60, Some(1)),
+            session(4, at(2026, 10, 30, 10, 0), 240, Some(2)),
+            session(5, at(2026, 11, 3, 10, 0), 150, Some(1)),
+        ];
+        let with_goal = Context {
+            goal_secs: Some(2 * 3600),
+            ..cx(now)
+        };
+        let w = week_view(&with_goal, &sessions, 0);
+        assert_eq!(w.trend.len(), TREND_WEEKS as usize);
+        let last: Vec<u64> = w.trend.iter().rev().take(4).map(|t| t.secs / 60).collect();
+        assert_eq!(last, [150, 300, 180, 120], "this week first, whole weeks");
+        assert_eq!(w.trend.last().map(|t| t.date.as_str()), Some("2026-11-02"));
+        // Three earlier weeks with study: (300 + 180 + 120) / 3.
+        assert_eq!(w.typical_secs, Some(200 * 60));
+        // Per tag, last week only up to Thursday 12:00: Friday's isn't there.
+        assert_eq!(
+            w.tag_previous,
+            [TagTime {
+                tag: Some(1),
+                secs: 3600
+            }]
+        );
+        // 150 min this week meets 2 h, and so did the three before.
+        assert_eq!(
+            w.goal,
+            Some(Goal {
+                secs: 7200,
+                streak: 4
+            })
+        );
+        // Without a goal there is nothing to show.
+        assert_eq!(week_view(&cx(now), &sessions, 0).goal, None);
     }
 
     #[test]

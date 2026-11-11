@@ -1,8 +1,9 @@
 //! The mini clock (SPEC §4.3b): a small floating window with the session's
 //! time and its play/pause, top right by default, always on top and never
-//! taking the focus. Off by default (Settings → Study). It exists only while
-//! a session is on (counting or paused) and the user hasn't hidden it for
-//! that session; the rest of the time there is no webview at all.
+//! taking the focus. It never appears on its own: the study card's pop-out
+//! button brings it out for the session in progress, and that button or the
+//! clock's × puts it away. It goes when the session ends; the rest of the
+//! time there is no webview at all.
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, MutexGuard};
@@ -43,8 +44,8 @@ struct Mini {
     life: Mutex<Life>,
     /// Bumped on every change, so a stale close does nothing.
     generation: AtomicU64,
-    /// The session (its start, UTC ms) the user hid the clock for.
-    dismissed: Mutex<Option<i64>>,
+    /// The session (its start, UTC ms) the user brought the clock out for.
+    shown_for: Mutex<Option<i64>>,
 }
 
 fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
@@ -60,16 +61,31 @@ fn wanted(app: &AppHandle) -> bool {
     let (Some(state), Some(mini)) = (app.try_state::<AppState>(), app.try_state::<Mini>()) else {
         return false;
     };
-    let study = state.settings().study;
-    if !(study.enabled && study.mini_clock) {
+    if !state.settings().study.enabled {
         return false;
     }
     state::study_view(app)
         .and_then(|v| v.started_at)
-        .is_some_and(|session| *lock(&mini.dismissed) != Some(session))
+        .is_some_and(|session| *lock(&mini.shown_for) == Some(session))
 }
 
-/// Shows, keeps or removes the clock to match the session and the setting.
+/// Whether the clock is out, for the panel's pop-out button.
+pub fn is_out(app: &AppHandle) -> bool {
+    wanted(app)
+}
+
+/// The study card's pop-out button: out for the session in progress, or put
+/// away. Without a session there is nothing to bring out.
+pub fn set_shown(app: &AppHandle, shown: bool) {
+    if let Some(mini) = app.try_state::<Mini>() {
+        let session = state::study_view(app).and_then(|v| v.started_at);
+        *lock(&mini.shown_for) = session.filter(|_| shown);
+    }
+    // Shows or fades the window (`sync`) and tells the panel's button.
+    state::refresh(app);
+}
+
+/// Shows, keeps or removes the clock to match the session and the button.
 /// Called on every state change (`state::refresh`).
 pub fn sync(app: &AppHandle) {
     let Some(mini) = app.try_state::<Mini>() else {
@@ -234,12 +250,9 @@ pub fn on_ready(app: &AppHandle) {
     }
 }
 
-/// The ×: hidden until the next session.
+/// The ×: put away, like pressing the panel's button again.
 pub fn dismiss(app: &AppHandle) {
-    if let Some(mini) = app.try_state::<Mini>() {
-        *lock(&mini.dismissed) = state::study_view(app).and_then(|v| v.started_at);
-    }
-    sync(app);
+    set_shown(app, false);
 }
 
 pub fn apply_appearance(app: &AppHandle, appearance: &Appearance) {

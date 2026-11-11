@@ -92,6 +92,8 @@ pub struct PanelState {
     pub study: Option<StudyView>,
     /// Noise and stopwatch go together (the study card's link button).
     pub linked: bool,
+    /// The mini clock is out (the study card's pop-out button).
+    pub mini_out: bool,
     /// A newer version, once a check found one.
     pub update: Option<UpdateView>,
 }
@@ -246,6 +248,7 @@ pub fn panel_state(app: &AppHandle) -> Option<PanelState> {
         appearance: settings.appearance,
         study: state.study_view(),
         linked: state.linked(),
+        mini_out: mini::is_out(app),
         update: update::view(app),
     })
 }
@@ -761,7 +764,9 @@ pub fn tags_delete(app: &AppHandle, id: i64) -> Result<(), DbError> {
 // ---- Statistics (SPEC §4.3d) ---------------------------------------------------------
 
 pub fn stats_week(app: &AppHandle, offset: u32) -> Result<WeekView, DbError> {
-    lock(&app.state::<AppState>().study).week_view(offset, Instant::now())
+    let state = app.state::<AppState>();
+    let goal_hours = state.settings().study.weekly_goal_hours;
+    lock(&state.study).week_view(offset, goal_hours, Instant::now())
 }
 
 pub fn stats_month(app: &AppHandle, offset: u32) -> Result<MonthView, DbError> {
@@ -1040,6 +1045,10 @@ fn apply(app: &AppHandle, old: &Settings, new: &Settings) {
     }
     if old.study.plan() != new.study.plan() {
         lock(&state.study).set_plan(new.study.plan());
+    }
+    if old.study.weekly_goal_hours != new.study.weekly_goal_hours {
+        // The ring, the goal line and the streak follow it at once.
+        stats_window::emit_changed(app);
     }
     let was_linked = {
         let session = lock(&state.link).session_link;

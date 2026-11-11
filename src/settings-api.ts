@@ -19,8 +19,8 @@ export interface Settings {
     breakNoise: BreakNoise;
     /** 0 = off. */
     idleMinutes: number;
-    /** The floating mini clock while a session is on. */
-    miniClock: boolean;
+    /** Hours a week, for the ring and the streak in Statistics; 0 = none. */
+    weeklyGoalHours: number;
   };
   sound: { startColor: "last" | Color; fadeMs: number; maxVolume: number; perOutputVolume: boolean; mono: boolean };
   playback: {
@@ -124,7 +124,7 @@ function defaults(): Settings {
       cycles: 4,
       breakNoise: "half",
       idleMinutes: 0,
-      miniClock: false,
+      weeklyGoalHours: 0,
     },
     sound: { startColor: "last", fadeMs: 400, maxVolume: 1, perOutputVolume: true, mono: false },
     playback: { onOutputChange: "pauseOnSpeakers", resumeOnReconnect: false, onLock: "pauseResumeWithHeadphones", onLaunch: "silent" },

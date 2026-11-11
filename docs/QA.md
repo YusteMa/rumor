@@ -159,10 +159,13 @@ Needs two releases, the second with a higher version (e.g. install beta.2 and pu
 - [ ] Paused: arc and knob at half strength, time grey, «Seguir»; the same in the mini clock.
 - [ ] The sphere starts on the panel's left edge (with «Estudio», colour and volume); the finish button ends on the right edge, under the tag picker's; nothing shifts between states, in Spanish and English.
 - [ ] On 1366×768 at 100 % (Windows 11 and 10) the panel uses the compact spacing and fits without scrolling; on a normal screen it looks exactly as before. Only a shorter screen still makes it scroll; no part ever goes off screen.
-- [ ] Mini clock off by default; on, it appears top right when a session starts and fades out when it ends.
+- [ ] The pop-out button sits beside the link, same size. Without a session it is dimmed, does nothing and its tooltip says to start a session.
+- [ ] In a session, clicking it brings the mini clock out top right and the icon turns accent (arrow nudged out); clicking again puts it away with a fade. Tooltips in Spanish and English.
+- [ ] The mini clock never appears on its own: starting a session doesn't show it, and after ending a session with it out, the next session starts without it.
+- [ ] Settings → Study no longer has «Mini reloj flotante»; a settings.json saved with `"miniClock": true` loads fine and the clock doesn't show by itself.
 - [ ] Dragging moves it and the spot is remembered after restarting Rumor; unplugging that screen brings it back to the corner.
 - [ ] Clicking its sphere pauses/resumes without taking the focus from the app you are typing in; clicking the time opens the panel.
-- [ ] The × (on hover) hides it until the next session. It never shows in the taskbar or Alt+Tab.
+- [ ] The × (on hover) puts it away and the panel's button goes back to grey. It never shows in the taskbar or Alt+Tab.
 - [ ] Light/dark and the noise colour change it live.
 
 ## Statistics (SPEC §4.3d)
@@ -188,6 +191,16 @@ Run these on a copy of a real history if you can (`%APPDATA%\io.github.yustema.r
 - [ ] Exportar a CSV: opens in Excel with accents right, one row per session, the running one marked; its seconds add up to the totals.
 - [ ] Changing the noise colour, the language or Mica updates the open window.
 - [ ] Light and dark, Mica on and off, 100 % and 150 %: secondary text and calendar numbers stay legible; the chosen tab is clear (accent line) and "Sin etiqueta" stands out from the card.
+
+### Goal, streak and trend (second delivery)
+
+- [ ] Settings → Study → «Objetivo semanal» at «Sin objetivo»: no ring, no dashed goal line, and the fourth figure is «Días con estudio».
+- [ ] With a goal (e.g. 12 h): the ring beside the total shows the percentage and «de 12 h», closes at 100 % and stays closed above it; the bars get a dashed «Objetivo diario» line (goal ÷ 7) whose label reads over a tall bar; changing the goal in Settings updates the open window at once.
+- [ ] «Racha» counts weeks in a row that met the goal: the current week adds as soon as it gets there and an unfinished week never breaks it.
+- [ ] «Últimas 8 semanas»: the shown week in the accent, a dashed line at «Tu media»; hover or Tab shows each week's dates and total; a click (or Enter) opens that week. Hidden with fewer than two weeks of study.
+- [ ] «Por asignatura» (Week): ▲ green / ▼ grey with the difference against the previous week, nothing under 5 min, never red; the tooltip says what it compares with.
+- [ ] Changing tab or week: cards fade in, bars rise one after another, the ring fills and the total counts up. The minute save of a session in progress changes the numbers without replaying any of it. With Windows animations off, only the fade.
+- [ ] The heat map shows the floating label on hover (no system tooltip). Light and dark.
 
 ## Measurements (SPEC §3.4)
 - [ ] `cargo run --release --example engine -- --check 20`: frames ≈ 100 % of expected, CPU < 1 % of the machine, buffer 80 ms, 0 underruns.

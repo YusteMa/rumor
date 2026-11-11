@@ -410,7 +410,7 @@ const SECTIONS: { id: string; title: Key; build: () => Node[] }[] = [
           row("optPomodoro", "hintPomodoro", times, true),
           row("optBreakNoise", "hintBreakNoise", select([["half", t("breakHalf")], ["pause", t("breakPause")], ["keep", t("breakKeep")]], (s) => s.study.breakNoise, (v) => ({ study: { breakNoise: v } }))),
           row("optLink", "hintLink", toggle((s) => s.study.linkNoise, (on) => ({ study: { linkNoise: on } }))),
-          row("optMiniClock", "hintMiniClock", toggle((s) => s.study.miniClock, (on) => ({ study: { miniClock: on } }))),
+          row("optWeeklyGoal", "hintWeeklyGoal", slider({ min: 0, max: 80, step: 1, get: (s) => s.study.weeklyGoalHours, set: (v) => ({ study: { weeklyGoalHours: v } }), format: (v) => (v === 0 ? t("goalOff") : t("goalHours", { n: v })) }), true),
           row("optIdle", "hintIdle", select([["0", t("idleOff")], ...[10, 15, 20, 30].map((n): [string, string] => [String(n), t("idleAfter", { n })])], (s) => String(s.study.idleMinutes), (v) => ({ study: { idleMinutes: Number(v) } }))),
         ),
         card(tagEditor()),

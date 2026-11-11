@@ -21,6 +21,7 @@ const COMMANDS: &[&str] = &[
     "panel_ready",
     "panel_painted",
     "mini_ready",
+    "mini_set_shown",
     "mini_dismiss",
     "mini_open_panel",
     "open_settings",

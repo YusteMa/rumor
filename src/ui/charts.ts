@@ -56,6 +56,10 @@ export interface BarsOptions {
   tip: (day: DayBar, index: number) => Node;
   /** What a screen reader hears for each bar. */
   describe: (day: DayBar, index: number) => string;
+  /** The daily goal: a dashed line with its label. */
+  goal: { secs: number; label: string } | null;
+  /** The bars rise from the axis: for a view's first draw, not a resize. */
+  rise: boolean;
 }
 
 const GHOST = [0.55, 0.8, 0.45, 0.95, 0.7, 0.35, 0.25];
@@ -78,7 +82,8 @@ export function dayBars(host: HTMLElement, o: BarsOptions): void {
 
   // The same scale from week to week (at least 6 h), so bars compare while
   // paging; it only grows for a week that goes over.
-  const max = o.ghost ? 3 * 3600 : Math.max(...o.days.map((d) => d.secs), SCALE_FLOOR);
+  const goal = o.ghost ? null : o.goal;
+  const max = o.ghost ? 3 * 3600 : Math.max(...o.days.map((d) => d.secs), SCALE_FLOOR, goal?.secs ?? 0);
   const ticks = hourTicks(max);
   const scale = plot / (ticks[ticks.length - 1] * 3600);
   const slot = (width - axis) / o.days.length;
@@ -117,10 +122,10 @@ export function dayBars(host: HTMLElement, o: BarsOptions): void {
   }
   root.append(grid);
 
-  const bars = svg("g", { class: `bars${o.ghost ? " is-ghost" : ""}` });
+  const bars = svg("g", { class: `bars${o.ghost ? " is-ghost" : ""}${o.rise ? " is-rising" : ""}` });
   o.days.forEach((day, i) => {
     const x = axis + slot * i + (slot - barW) / 2;
-    const g = svg("g", { class: "bar" });
+    const g = svg("g", { class: "bar", style: `--i: ${i}` });
     if (o.ghost) {
       const h = GHOST[i % GHOST.length] * plot;
       g.append(svg("rect", { x: x + 0.5, y: base - h + 0.5, width: barW - 1, height: h, rx: radius, class: "ghost" }));
@@ -142,7 +147,7 @@ export function dayBars(host: HTMLElement, o: BarsOptions): void {
       svg("ellipse", { cx: x + barW / 2, cy: base + floor, rx: barW / 2 + floor, ry: floor, fill: `url(#floor-${id})` }),
       svg("clipPath", { id: clip }, svg("rect", { x, y: y0, width: barW, height: h + radius, rx: radius })),
     );
-    const inner = svg("g", { "clip-path": `url(#${clip})` });
+    const inner = svg("g", { "clip-path": `url(#${clip})`, class: "bar-fill" });
     let y = base;
     parts.forEach((p) => {
       const sh = p.secs * scale;
@@ -165,6 +170,18 @@ export function dayBars(host: HTMLElement, o: BarsOptions): void {
     bars.append(g);
   });
   root.append(bars);
+
+  if (goal) {
+    const y = Math.round(base - goal.secs * scale) + 0.5;
+    root.append(
+      svg(
+        "g",
+        { class: "goal-line", "aria-hidden": "true" },
+        svg("line", { x1: axis, x2: width, y1: y, y2: y }),
+        svg("text", { x: width, y: y - px("--space-1"), "text-anchor": "end", class: "axis-label goal-label" }, goal.label),
+      ),
+    );
+  }
 
   const labels = svg("g", { "aria-hidden": "true" });
   o.labels.forEach((label, i) => {
@@ -255,7 +272,11 @@ export function heatmap(host: HTMLElement, o: HeatOptions): void {
         rx: px("--heat-radius"),
         class: `heat-${level(secs, max)}`,
       });
-      rect.append(svg("title", {}, o.describe(r, c, secs)));
+      // The same floating label as the bars, instead of the system tooltip.
+      const text = o.describe(r, c, secs);
+      rect.setAttribute("aria-label", text);
+      rect.addEventListener("pointerenter", () => showTip(host, document.createTextNode(text), x(c) + (cell - gap) / 2, r * rowH));
+      rect.addEventListener("pointerleave", () => hideTip(host));
       root.append(rect);
     }
   });
@@ -269,4 +290,94 @@ export function heatmap(host: HTMLElement, o: HeatOptions): void {
   );
   host.querySelector(".chart")?.remove();
   host.prepend(root);
+}
+
+export interface TrendOptions {
+  /** Oldest first; the last one is the week on screen. */
+  weeks: { secs: number }[];
+  /** The usual week: a dashed line across, when there is one. */
+  typical: number | null;
+  tip: (index: number) => Node;
+  describe: (index: number) => string;
+  /** A click (or Enter) on an earlier week opens it. */
+  onPick: (index: number) => void;
+}
+
+/** The last weeks as small bars beside the week's total: the one on screen
+ *  in the accent, the others quieter, each one a way to jump to its week. */
+export function weekTrend(host: HTMLElement, o: TrendOptions): void {
+  const width = host.clientWidth;
+  if (width <= 0 || o.weeks.length === 0) return;
+  const height = px("--trend-height");
+  const gap = px("--trend-gap");
+  const radius = px("--trend-radius");
+  const stub = px("--trend-stub");
+  const slot = (width + gap) / o.weeks.length;
+  const barW = Math.max(1, slot - gap);
+  const max = Math.max(...o.weeks.map((w) => w.secs), o.typical ?? 0, 1);
+  const last = o.weeks.length - 1;
+  const root = svg("svg", { width, height, viewBox: `0 0 ${width} ${height}`, class: "chart trend-chart" });
+  o.weeks.forEach((w, i) => {
+    const h = w.secs > 0 ? Math.max(stub, (w.secs / max) * height) : stub;
+    const x = slot * i;
+    const g = svg(
+      "g",
+      { class: `trend-bar${i === last ? " is-current" : ""}${w.secs > 0 ? "" : " is-empty"}`, tabindex: 0, role: i === last ? "img" : "button", "aria-label": o.describe(i) },
+      svg("rect", { x, y: height - h, width: barW, height: h, rx: Math.min(radius, h / 2), class: "trend-fill" }),
+      svg("rect", { x: x - gap / 2, y: 0, width: slot, height, class: "hit" }),
+    );
+    const show = () => showTip(host, o.tip(i), x + barW / 2, height - h);
+    g.addEventListener("pointerenter", show);
+    g.addEventListener("focus", show);
+    g.addEventListener("pointerleave", () => hideTip(host));
+    g.addEventListener("blur", () => hideTip(host));
+    if (i !== last) {
+      g.addEventListener("click", () => o.onPick(i));
+      g.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        o.onPick(i);
+      });
+    }
+    root.append(g);
+  });
+  if (o.typical !== null && o.typical > 0) {
+    const y = Math.round(height - (o.typical / max) * height) + 0.5;
+    root.append(svg("line", { x1: 0, x2: width, y1: y, y2: y, class: "trend-typical", "aria-hidden": "true" }));
+  }
+  host.querySelector(".chart")?.remove();
+  host.prepend(root);
+}
+
+/** The weekly goal as a ring: how far the week has got, with the figure
+ *  inside. It closes at 100 % and stays closed beyond it. */
+export function goalRing(fraction: number, text: string, label: string): SVGSVGElement {
+  const size = px("--goal-ring");
+  const stroke = px("--goal-ring-stroke");
+  const mid = size / 2;
+  const r = (size - stroke) / 2;
+  const length = 2 * Math.PI * r;
+  const done = Math.min(1, Math.max(0, fraction));
+  const root = svg(
+    "svg",
+    { width: size, height: size, viewBox: `0 0 ${size} ${size}`, class: `goal-ring${fraction >= 1 ? " is-met" : ""}`, role: "img", "aria-label": label },
+    svg("circle", { cx: mid, cy: mid, r, class: "ring-track" }),
+  );
+  // Nothing yet: no arc, or its round cap would show as a dot.
+  if (done > 0) {
+    root.append(
+      svg("circle", {
+        cx: mid,
+        cy: mid,
+        r,
+        class: "ring-arc",
+        transform: `rotate(-90 ${mid} ${mid})`,
+        "stroke-dasharray": length,
+        "stroke-dashoffset": length * (1 - done),
+        style: `--ring-length: ${length}`,
+      }),
+    );
+  }
+  root.append(svg("text", { x: mid, y: mid, class: "ring-text", "text-anchor": "middle", "dominant-baseline": "central" }, text));
+  return root;
 }

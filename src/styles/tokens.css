@@ -141,6 +141,10 @@
      and stopwatch go apart. */
   --link-stroke: 1.6;
   --link-spread: 1.25px;
+  /* The mini clock's pop-out button: how far the arrow leaves its frame. */
+  --pop-shift: 1px;
+  /* ...and how dim it is with no session to bring out. */
+  --pop-off: 0.45;
   --stop-glyph: 10px;
   --stop-radius: 2px;
   --control-height-sm: 28px;
@@ -193,6 +197,17 @@
   --hbar-height: 6px;
   --goal-ring: 72px;
   --goal-ring-stroke: 7px;
+  /* The last weeks beside the week's total. */
+  --trend-height: 40px;
+  --trend-gap: 4px;
+  --trend-radius: 3px;
+  --trend-stub: 2px;
+  /* Entrances: each bar starts this long after the one before; the label
+     of the goal line keeps this much of the card's colour round it; and
+     the week's total counts up in this long. */
+  --chart-stagger: 15ms;
+  --chart-label-halo: 3px;
+  --count-up: 250ms;
   --calendar-cell: 44px;
   --tip-width: 200px;
   --card-min: 260px;

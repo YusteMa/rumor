@@ -232,6 +232,128 @@ input {
   line-height: 1.1;
 }
 
+/* The total with the goal ring beside it, and the last weeks below. */
+.total-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.total-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.goal {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.goal-ring {
+  display: block;
+}
+
+.ring-track,
+.ring-arc {
+  fill: none;
+  stroke-width: var(--goal-ring-stroke);
+}
+
+.ring-track {
+  stroke: var(--accent-soft);
+}
+
+.ring-arc {
+  stroke: var(--accent);
+  stroke-linecap: round;
+}
+
+.ring-text {
+  fill: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.trend {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: var(--border);
+}
+
+.trend-head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+/* The dashed line is "your average": its label carries the same dash. */
+.trend-key::before {
+  content: "";
+  display: inline-block;
+  width: var(--space-3);
+  margin-right: var(--space-1);
+  border-top: var(--border-width) dashed var(--muted);
+  vertical-align: middle;
+}
+
+.trend-bar {
+  outline: none;
+  cursor: pointer;
+}
+
+.trend-bar.is-current {
+  cursor: default;
+}
+
+.trend-fill {
+  fill: var(--heat-2);
+  transition: fill var(--dur-press) var(--ease-out);
+}
+
+.trend-bar.is-empty .trend-fill {
+  fill: var(--line);
+}
+
+.trend-bar.is-current .trend-fill,
+.trend-bar:hover .trend-fill,
+.trend-bar:focus-visible .trend-fill {
+  fill: var(--accent);
+}
+
+.trend-bar .hit {
+  fill: transparent;
+}
+
+.trend-bar:focus-visible .hit {
+  stroke: var(--accent);
+  stroke-width: var(--border-width);
+  rx: var(--radius-control);
+}
+
+.trend-typical,
+.goal-line line {
+  stroke: var(--muted);
+  stroke-width: var(--border-width);
+  stroke-dasharray: var(--ghost-dash);
+}
+
+/* Readable over a bar: a little of the card's colour round the letters. */
+.goal-label {
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: var(--chart-label-halo);
+  stroke-linejoin: round;
+}
+
 .total-foot {
   display: flex;
   flex-wrap: wrap;
@@ -484,6 +606,23 @@ input {
 .tag-time {
   color: var(--muted);
   white-space: nowrap;
+}
+
+.tag-side {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+/* Against the week before: green up, quiet down, never red. */
+.delta {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.delta.is-up {
+  color: var(--good);
 }
 
 .tag-bar {
@@ -863,10 +1002,65 @@ input {
 
 /* ---- Reduced motion -------------------------------------------------------------- */
 
+/* ---- Entrances ------------------------------------------------------------------- */
+
+/* Arriving at a view: its cards come in, the bars rise from the axis one
+   after another and the ring fills. A refresh in place does none of it. */
+.body.is-entering > * {
+  animation: card-in var(--dur-open) var(--ease-out) both;
+}
+
+.bars.is-rising .bar-fill {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: bar-rise var(--dur-max) var(--ease-out) both;
+  animation-delay: calc(var(--i) * var(--chart-stagger));
+}
+
+.body.is-entering .ring-arc {
+  animation: ring-fill var(--dur-max) var(--ease-out) both;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--open-offset));
+  }
+}
+
+@keyframes bar-rise {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+@keyframes ring-fill {
+  from {
+    stroke-dashoffset: var(--ring-length);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bar,
   .chart-tip,
+  .trend-fill,
   .session-actions {
     transition: none;
+  }
+
+  /* Only the fade stays (SPEC §4.5). */
+  .body.is-entering > * {
+    animation-name: fade-in;
+  }
+
+  .bars.is-rising .bar-fill,
+  .body.is-entering .ring-arc {
+    animation: none;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
   }
 }

@@ -73,6 +73,7 @@ pub fn run() {
             commands::hide_panel,
             commands::panel_ready,
             commands::mini_ready,
+            commands::mini_set_shown,
             commands::mini_dismiss,
             commands::mini_open_panel,
             commands::panel_painted,

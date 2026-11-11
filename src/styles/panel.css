@@ -354,7 +354,8 @@ body {
 
 /* Noise and stopwatch together (closed link, accent) or apart for this
    session (the halves draw back and the bar between them fades). */
-.study-link {
+.study-link,
+.study-pop {
   width: var(--icon-button);
   height: var(--icon-button);
   display: grid;
@@ -370,20 +371,24 @@ body {
     transform var(--dur-press) var(--ease-out);
 }
 
-.study-link:hover {
+.study-link:hover,
+.study-pop:hover:not([aria-disabled="true"]) {
   background: var(--surface-hover);
   color: var(--ink);
 }
 
-.study-link:active {
+.study-link:active,
+.study-pop:active:not([aria-disabled="true"]) {
   transform: scale(var(--press-scale));
 }
 
-.study-link[aria-pressed="true"] {
+.study-link[aria-pressed="true"],
+.study-pop[aria-pressed="true"] {
   color: var(--accent);
 }
 
-.study-link svg {
+.study-link svg,
+.study-pop svg {
   width: var(--icon-size);
   height: var(--icon-size);
   fill: none;
@@ -416,6 +421,27 @@ body {
 .study-link[aria-pressed="false"] .link-bar {
   opacity: 0;
   transform: scaleX(0);
+}
+
+/* The mini clock's pop-out button: the arrow leaves its frame while the
+   clock is out (accent), and comes back when it is put away. Without a
+   session there is nothing to bring out: it stays, dimmed. */
+.study-pop[aria-disabled="true"] {
+  cursor: default;
+  opacity: var(--pop-off);
+}
+
+.study-pop svg {
+  stroke-linejoin: round;
+}
+
+.study-pop .pop-arrow {
+  transition: transform var(--dur-max) var(--ease-out);
+}
+
+.study-pop:hover:not([aria-disabled="true"]) .pop-arrow,
+.study-pop[aria-pressed="true"] .pop-arrow {
+  transform: translate(var(--pop-shift), calc(-1 * var(--pop-shift)));
 }
 
 /* The sphere on the panel's left edge, like everything above it; its

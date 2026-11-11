@@ -83,6 +83,8 @@ export interface StudyActions {
   openStats(): void;
   /** Noise and stopwatch together or apart, for this session. */
   setLinked(linked: boolean): void;
+  /** The mini clock out, or put away. */
+  setMini(shown: boolean): void;
 }
 
 export function study(actions: StudyActions) {
@@ -105,9 +107,14 @@ export function study(actions: StudyActions) {
   const idle = $("study-idle");
   const idleText = $("study-idle-text");
   const link = $("study-link") as HTMLButtonElement;
+  const pop = $("study-pop") as HTMLButtonElement;
 
   const ring = dial(sphere, "panel");
   link.addEventListener("click", () => actions.setLinked(link.getAttribute("aria-pressed") !== "true"));
+  // Dimmed without a session, but still focusable, so its tooltip says why.
+  pop.addEventListener("click", () => {
+    if (pop.getAttribute("aria-disabled") !== "true") actions.setMini(pop.getAttribute("aria-pressed") !== "true");
+  });
   const modeGroup = radioGroup(modes, (v) => actions.setMode(v as StudyMode));
   play.addEventListener("click", () => actions.toggle());
   finish.addEventListener("click", () => actions.finish());
@@ -123,7 +130,7 @@ export function study(actions: StudyActions) {
   let tagKey = "";
 
   return {
-    render(s: StudyView | null, linked: boolean) {
+    render(s: StudyView | null, linked: boolean, miniOut: boolean) {
       root.hidden = s === null;
       if (!s) return;
       // The noise above and the stopwatch here: one link between them.
@@ -133,6 +140,11 @@ export function study(actions: StudyActions) {
       const session = s.run !== "stopped";
       const running = s.run === "running";
       root.classList.toggle("is-running", running);
+      // The mini clock only comes out when asked, and only for a session.
+      pop.setAttribute("aria-pressed", String(session && miniOut));
+      pop.setAttribute("aria-disabled", String(!session));
+      pop.setAttribute("aria-label", t("studyMiniLabel"));
+      pop.title = t(!session ? "studyMiniNoSession" : miniOut ? "studyMiniOutTip" : "studyMiniTip");
 
       const f = face(s);
       ring.render(f);

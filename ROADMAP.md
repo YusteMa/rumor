@@ -88,11 +88,11 @@ Cada fase termina **compilando, con los tests en verde y con un commit**. No se 
 - **Controles multimedia de Windows** (SMTC, crate `souvlaki`): aparece en el panel multimedia de Windows 11 y responde a las **teclas play/pausa** del teclado y de los cascos Bluetooth.
 - ~~**Auto-actualización**~~ → adelantada a la **0.1.0-beta.2** (SPEC §7): `tauri-plugin-updater` con firma de Tauri y `latest.json` en la rama `updater`.
 - **Slider de tono** continuo (filtro *tilt*): de oscuro a brillante sin cambiar de preset.
-- **Estadísticas de estudio** (SPEC §4.3d), en dos entregas: (1) ventana propia con Semana, Mes, Sesiones editables, frases automáticas y CSV; (2) Año, objetivo semanal con anillo y línea, **racha por semanas y ruido favorito en lugar de las cifras provisionales (sesiones y días con estudio)**, y frases sobre el ruido ("con ruido marrón tus sesiones duran un 20 % más…").
+- **Estadísticas de estudio** (SPEC §4.3d), en dos entregas: (1) ventana propia con Semana, Mes, Sesiones editables, frases automáticas y CSV; (2, hecha el 2026-11-10) objetivo semanal con anillo y línea, racha por semanas, tendencia de 8 semanas, variación por asignatura y entradas animadas; (3) Año, ruido favorito y frases sobre el ruido ("con ruido marrón tus sesiones duran un 20 % más…").
 
 - **Reacción a otro audio** (vídeos, llamadas): bajar el volumen (cuánto, configurable) / pausar / nada, con transiciones suaves como en iOS. Se detecta con las sesiones de audio de WASAPI.
 - ~~**Rediseño del cronómetro**~~ (la tarjeta de Estudio del panel): hecho, la esfera (SPEC §4.3b).
-- ~~**Mini widget flotante opcional**~~ con el tiempo de estudio: hecho, el mini reloj (SPEC §4.3b), desactivado por defecto.
+- ~~**Mini widget flotante opcional**~~ con el tiempo de estudio: hecho, el mini reloj (SPEC §4.3b); desde el 2026-11-10 se saca con un botón del panel, no con un ajuste.
 - **Revisión de Ajustes**: **después del feedback de la beta**, no antes; se ordenan y simplifican las secciones con lo que digan los usuarios.
 - **Modo focalizado** (minimizar las apps que distraen mientras cuenta el cronómetro): **aparcado** el 2026-11-06. En Windows es difícil de hacer bien y la idea aún no convence; se retomará más adelante.
 

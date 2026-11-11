@@ -64,6 +64,8 @@ export interface PanelState {
   study: StudyView | null;
   /** Noise and stopwatch go together (the study card's link button). */
   linked: boolean;
+  /** The mini clock is out (the study card's pop-out button). */
+  miniOut: boolean;
   /** A newer version, once a check found one. */
   update: UpdateView | null;
 }
@@ -94,6 +96,8 @@ export interface Backend {
   studyResolveIdle(keep: boolean): Promise<void>;
   /** Noise and stopwatch together or apart, for this session only. */
   studySetLinked(linked: boolean): Promise<void>;
+  /** Brings the mini clock out for the session in progress, or puts it away. */
+  miniSetShown(shown: boolean): Promise<void>;
   hide(): Promise<void>;
   quit(): Promise<void>;
   openSettings(): Promise<void>;
@@ -144,6 +148,7 @@ async function tauriBackend(): Promise<Backend> {
     studySetTag: (tag) => call("study_set_tag", { tag }),
     studyResolveIdle: (keep) => call("study_resolve_idle", { keep }),
     studySetLinked: (linked) => call("study_set_linked", { linked }),
+    miniSetShown: (shown) => call("mini_set_shown", { shown }),
     hide: () => call("hide_panel"),
     quit: () => call("quit"),
     openStats: () => call("open_stats"),
@@ -188,6 +193,7 @@ function mockBackend(): Backend {
     systemAccent: params.get("accent") === "system" ? "#0078d4" : null,
     study: null,
     linked: params.get("linked") !== "0",
+    miniOut: false,
     update: params.get("update")
       ? { version: "0.1.0-beta.4", phase: params.get("update") as UpdateView["phase"] }
       : null,
@@ -332,6 +338,7 @@ function mockBackend(): Backend {
         onPlaying();
       }
       state.linked = params.get("linked") !== "0";
+      state.miniOut = false;
       emit();
     },
     studySetMode: async (mode) => {
@@ -353,6 +360,10 @@ function mockBackend(): Backend {
       } else if (linked && state.playing && study.run !== "running") {
         studyRun("running");
       }
+      emit();
+    },
+    miniSetShown: async (shown) => {
+      state.miniOut = shown && !!study && study.run !== "stopped";
       emit();
     },
     studyResolveIdle: async (keep) => {

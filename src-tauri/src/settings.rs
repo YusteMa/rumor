@@ -27,6 +27,8 @@ pub const LONG_BREAK_MINUTES: (u32, u32) = (1, 90);
 pub const CYCLES: (u32, u32) = (1, 12);
 /// Idle detection: 0 = off.
 pub const IDLE_MINUTES: (u32, u32) = (5, 120);
+/// The weekly study goal goes up to this (SPEC §4.3d); 0 is "no goal".
+pub const WEEKLY_GOAL_HOURS_MAX: u32 = 80;
 /// Ear break: 0 = off.
 pub const EAR_BREAK_HOURS: (u32, u32) = (1, 8);
 
@@ -234,8 +236,9 @@ pub struct Study {
     /// Ask after this many minutes without input; 0 = off (the default:
     /// paper notes don't touch the computer).
     pub idle_minutes: u32,
-    /// The floating mini clock while a session is on (off by default).
-    pub mini_clock: bool,
+    /// Hours to study a week, for the ring and the streak in Statistics;
+    /// 0 = no goal (the default).
+    pub weekly_goal_hours: u32,
 }
 
 impl Default for Study {
@@ -249,7 +252,7 @@ impl Default for Study {
             cycles: 4,
             break_noise: BreakNoise::Half,
             idle_minutes: 0,
-            mini_clock: false,
+            weekly_goal_hours: 0,
         }
     }
 }
@@ -511,6 +514,7 @@ impl Settings {
         if st.idle_minutes != 0 {
             st.idle_minutes = st.idle_minutes.clamp(IDLE_MINUTES.0, IDLE_MINUTES.1);
         }
+        st.weekly_goal_hours = st.weekly_goal_hours.min(WEEKLY_GOAL_HOURS_MAX);
         let ear = &mut self.general.ear_break_hours;
         if *ear != 0 {
             *ear = (*ear).clamp(EAR_BREAK_HOURS.0, EAR_BREAK_HOURS.1);
@@ -689,10 +693,25 @@ mod tests {
         assert_eq!(s.study.plan(), Plan::default());
         assert_eq!(s.study.break_noise, BreakNoise::Half);
         assert_eq!(s.study.idle_minutes, 0);
-        assert!(!s.study.mini_clock, "the mini clock is off by default");
+        assert_eq!(s.study.weekly_goal_hours, 0, "no weekly goal by default");
         assert_eq!(s.last.mini_position, None);
         assert_eq!(s.shortcuts.study.as_deref(), Some("Ctrl+Alt+T"));
         assert_eq!(s.last.study_mode, StudyMode::Stopwatch);
+    }
+
+    /// The mini clock used to be a setting; now only the panel's button
+    /// brings it out. The saved choice is dropped, where it was left stays.
+    #[test]
+    fn the_old_mini_clock_setting_is_dropped() {
+        let saved = json!({
+            "study": { "enabled": true, "miniClock": true },
+            "last": { "miniPosition": [40, 60] }
+        });
+        let s = Settings::from_json(saved).unwrap();
+        assert!(s.study.enabled);
+        assert_eq!(s.last.mini_position, Some([40, 60]));
+        let again = serde_json::to_value(&s).unwrap();
+        assert!(again["study"].get("miniClock").is_none());
     }
 
     #[test]

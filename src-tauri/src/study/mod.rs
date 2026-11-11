@@ -380,7 +380,13 @@ impl Study {
         (calendar::now_local().naive_local(), calendar::week_start())
     }
 
-    pub fn week_view(&self, offset: u32, now: Instant) -> Result<WeekView, DbError> {
+    /// `goal_hours`: the weekly goal from Settings, 0 for none.
+    pub fn week_view(
+        &self,
+        offset: u32,
+        goal_hours: u32,
+        now: Instant,
+    ) -> Result<WeekView, DbError> {
         let (local_now, first) = self.context();
         let week =
             stats::week_of(local_now.date(), first) - chrono::Days::new(7 * u64::from(offset));
@@ -395,6 +401,7 @@ impl Study {
             now: local_now,
             first,
             tags: &self.tags,
+            goal_secs: (goal_hours > 0).then(|| u64::from(goal_hours) * 3600),
         };
         Ok(stats::week_view(&cx, &sessions, offset))
     }
@@ -412,6 +419,7 @@ impl Study {
             now: local_now,
             first,
             tags: &self.tags,
+            goal_secs: None,
         };
         Ok(stats::month_view(&cx, &sessions, offset))
     }
@@ -623,7 +631,7 @@ mod tests {
     /// Records, week, month and panel, as each sees the history right now.
     fn snapshot(study: &mut Study) -> (u64, u64, u64, WeekView) {
         let now = Instant::now();
-        let week = study.week_view(0, now).unwrap();
+        let week = study.week_view(0, 0, now).unwrap();
         let month = study.month_view(0, now).unwrap();
         let panel = study.view(now);
         // The panel and the window always agree.
@@ -699,7 +707,7 @@ mod tests {
         );
         assert_eq!(study.delete_session(running.id), Err(SessionError::Running));
         // Until it ends it isn't a session in the figures.
-        let week = study.week_view(0, now).unwrap();
+        let week = study.week_view(0, 0, now).unwrap();
         assert_eq!(week.sessions, 0);
     }
 }
