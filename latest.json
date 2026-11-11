@@ -1,0 +1,19 @@
+{
+  "version": "0.1.0-beta.5",
+  "notes": "See the assets below: **Rumor_…_x64-setup.exe** is the recommended installer; the .msi is for managed installs.\n\nWindows SmartScreen will say \"Windows protected your PC\" because the beta isn't code-signed yet: click **More info → Run anyway**. Details in the [README](https://github.com/YusteMa/rumor#install).\n\n---\n\nLos recursos están abajo: **Rumor_…_x64-setup.exe** es el instalador recomendado; el .msi es para instalaciones gestionadas.\n\nSmartScreen dirá «Windows protegió su PC» porque la beta aún no está firmada: pulsa **Más información → Ejecutar de todas formas**.",
+  "pub_date": "2026-11-11T10:55:52.085Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMXZDMnZKUFZFaEQ0NEQ1RStzYm0vd3FGaDRXdWRtWHBsV0RNS0RKM2FPQ0tYeUxNa2VjZ205SzRXMllMM25UMVJ4Z1p0WEI4YzBBUE4zS1hRNHUyUXVxSjNhc1RvZ2dvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0Mzk0NTQ3CWZpbGU6UnVtb3JfMC4xLjAtYmV0YS41X3g2NC1zZXR1cC5leGUJdmVyc2lvbjowLjEuMC1iZXRhLjUKMFlMU2RPK0lkOHByZVBOc2RTazI3WjRJcFBzLytMek95Z3dVb3BveEFiVGNlTGJkUDl4L1owME9XU2lzY3hGbEx5Ni9Dc0E1cUh0dU9jOFp5bmV1Qmc9PQo=",
+      "url": "https://github.com/YusteMa/rumor/releases/download/v0.1.0-beta.5/Rumor_0.1.0-beta.5_x64-setup.exe"
+    },
+    "windows-x86_64-nsis": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMXZDMnZKUFZFaEQ0NEQ1RStzYm0vd3FGaDRXdWRtWHBsV0RNS0RKM2FPQ0tYeUxNa2VjZ205SzRXMllMM25UMVJ4Z1p0WEI4YzBBUE4zS1hRNHUyUXVxSjNhc1RvZ2dvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0Mzk0NTQ3CWZpbGU6UnVtb3JfMC4xLjAtYmV0YS41X3g2NC1zZXR1cC5leGUJdmVyc2lvbjowLjEuMC1iZXRhLjUKMFlMU2RPK0lkOHByZVBOc2RTazI3WjRJcFBzLytMek95Z3dVb3BveEFiVGNlTGJkUDl4L1owME9XU2lzY3hGbEx5Ni9Dc0E1cUh0dU9jOFp5bmV1Qmc9PQo=",
+      "url": "https://github.com/YusteMa/rumor/releases/download/v0.1.0-beta.5/Rumor_0.1.0-beta.5_x64-setup.exe"
+    },
+    "windows-x86_64-msi": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMXZDMnZKUFZFaEJsSFBJNWRTdXZHbks1T2Y0Q1BWVWwvZXZtcFIySzNPQVNYOVdwSUkwUkJQWS9vN3Q2L1l3Y2F5LzBid0xQMzV0OHVYYStkOHcxWU9YRVRsdU1ublFFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0Mzk0NTQ3CWZpbGU6UnVtb3JfMC4xLjAtYmV0YS41X3g2NF9lbi1VUy5tc2kJdmVyc2lvbjowLjEuMC1iZXRhLjUKam1wL0dRemtobHJVcnVINUlXTHpPTGRSSDRTYnhqby9XNG9rNWZhR1ZjaloyVGRiZmRSaDBJNG8vckR5eXkrM2hhVERrZ0ZoYllyc2lyL1BxSW1VQXc9PQo=",
+      "url": "https://github.com/YusteMa/rumor/releases/download/v0.1.0-beta.5/Rumor_0.1.0-beta.5_x64_en-US.msi"
+    }
+  }
+}
