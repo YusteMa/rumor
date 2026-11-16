@@ -25,6 +25,10 @@ import { applyAccent } from "./ui/accent";
 import { dayBars, goalRing, heatmap, level, px, tagColor, weekTrend } from "./ui/charts";
 import { dropdown } from "./ui/dropdown";
 
+// The web build (marioyuste.com): theme from the host page, and a label that
+// says the sessions are made up.
+if (import.meta.env.MODE === "web") (await import("./web-page")).webPage({ sample: true });
+
 const api = await statsBackend;
 const body = document.getElementById("body") as HTMLElement;
 const period = document.getElementById("period") as HTMLElement;

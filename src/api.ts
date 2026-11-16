@@ -387,8 +387,16 @@ function mockBackend(engine?: WebEngine): Backend {
     },
     hide: async () => {},
     quit: async () => {},
-    // The web build has no Statistics page (yet): the button stays, inert.
-    openStats: async () => void (engine || window.open("stats.html", "_blank")),
+    // On a web page, the page around the panel opens Statistics (with the
+    // same colour and theme) in a window of its own.
+    openStats: async () => {
+      if (engine && parent !== window) {
+        const theme = document.documentElement.dataset.theme;
+        parent.postMessage({ rumorOpen: "stats", color: state.color, theme, lang: state.lang }, location.origin);
+      } else {
+        window.open(`stats.html?color=${state.color}`, "_blank");
+      }
+    },
     installUpdate: async () => {
       if (state.update) state.update = { ...state.update, phase: "installing" };
       emit();
