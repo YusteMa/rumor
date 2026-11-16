@@ -47,14 +47,21 @@ registerProcessor("rumor", Rumor);
 `;
 
 export function createWebEngine(): WebEngine {
-  // On a web page the panel always looks as it does in dark mode (the site is
-  // dark), and what only makes sense in Windows goes: the footer (Settings,
-  // shortcut, Quit), Statistics and the mini clock.
-  document.documentElement.dataset.theme = "dark";
-  document.documentElement.dataset.web = "";
+  // On a web page the panel starts dark (the site is dark) and the page that
+  // embeds it can switch the theme. The footer (Settings, shortcut, Quit)
+  // only makes sense in Windows, so it goes.
+  const root = document.documentElement;
+  root.dataset.theme = "dark";
+  root.dataset.web = "";
   const style = document.createElement("style");
-  style.textContent = ":root[data-web] :is(.foot, #study-stats, #study-pop) { display: none; }";
+  style.textContent = ":root[data-web] .foot { display: none; }";
   document.head.append(style);
+  addEventListener("message", (e) => {
+    const theme = e.data?.rumorTheme;
+    if (e.origin === location.origin && (theme === "light" || theme === "dark")) {
+      root.dataset.theme = theme;
+    }
+  });
 
   const bandListeners: ((bands: number[]) => void)[] = [];
   // Last value of each control, replayed once the engine is up.

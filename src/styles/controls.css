@@ -59,8 +59,49 @@ button {
   transform: scale(var(--press-scale));
 }
 
+/* Firefox: the same track and thumb (the app runs on WebView2, but the panel
+   is also shown in browsers). The fill is drawn by the progress pseudo. */
+.slider::-moz-range-track {
+  height: var(--track-height);
+  border-radius: var(--radius-pill);
+  background: var(--line);
+}
+
+.slider::-moz-range-progress {
+  height: var(--track-height);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+}
+
+.slider::-moz-range-thumb {
+  box-sizing: border-box;
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+  border: var(--border);
+  border-radius: var(--radius-pill);
+  background: radial-gradient(
+    circle,
+    var(--accent) calc(var(--thumb-inner) / 2),
+    var(--surface) calc(var(--thumb-inner) / 2 + var(--border-width))
+  );
+  transition: transform var(--dur-press) var(--ease-out);
+}
+
+.slider:hover::-moz-range-thumb {
+  transform: scale(var(--thumb-hover-scale));
+}
+
+.slider:active::-moz-range-thumb {
+  transform: scale(var(--press-scale));
+}
+
 .slider:focus-visible {
   outline: none;
+}
+
+.slider:focus-visible::-moz-range-thumb {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
 }
 
 .slider:focus-visible::-webkit-slider-thumb {

@@ -387,7 +387,8 @@ function mockBackend(engine?: WebEngine): Backend {
     },
     hide: async () => {},
     quit: async () => {},
-    openStats: async () => void window.open("stats.html", "_blank"),
+    // The web build has no Statistics page (yet): the button stays, inert.
+    openStats: async () => void (engine || window.open("stats.html", "_blank")),
     installUpdate: async () => {
       if (state.update) state.update = { ...state.update, phase: "installing" };
       emit();

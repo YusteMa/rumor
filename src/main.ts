@@ -71,6 +71,12 @@ function render(s: PanelState): void {
   spectrum.setPlaying(s.playing);
 }
 
+// The theme can change without a state change (on a web page, from the page
+// around it): the spectrum re-reads its colours.
+new MutationObserver(() => spectrum.refreshPalette()).observe(document.documentElement, {
+  attributeFilter: ["data-theme"],
+});
+
 api.onState(render);
 api.onSpectrum((bands) => spectrum.push(bands));
 api.onTimerTick((remaining) => {
