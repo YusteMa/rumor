@@ -20,3 +20,7 @@ Thumbs.db
 
 # Local Claude Code config
 .claude/
+
+# Web demo (WebAssembly)
+web/target/
+web/dist/

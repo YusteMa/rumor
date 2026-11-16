@@ -1,5 +1,6 @@
 // The panel's only link to Rust: commands out, events in (CLAUDE.md rule 3).
 // Outside Tauri (a plain browser, for design work) a mock backend stands in.
+import type { WebEngine } from "./web-engine";
 
 export type Color = "pink" | "brown" | "white";
 export type PauseReason =
@@ -166,8 +167,12 @@ async function tauriBackend(): Promise<Backend> {
   };
 }
 
-/** Browser-only stand-in with a plausible spectrum, for design work. */
-function mockBackend(): Backend {
+/**
+ * Browser-only stand-in with a plausible spectrum, for design work. With an
+ * `engine` (the web build), it plays through the real engine and shows its
+ * spectrum.
+ */
+function mockBackend(engine?: WebEngine): Backend {
   const params = new URLSearchParams(location.search);
   const state: PanelState = {
     playing: params.get("playing") === "1",
@@ -226,6 +231,8 @@ function mockBackend(): Backend {
       }
     : null;
   state.study = study;
+  // On a web page the totals start at zero: the sample ones would read as real.
+  if (engine && study) study.todaySecs = study.weekSecs = 0;
   let workSince = 0;
   let workedBefore = 0;
   const POMODORO = [25 * 60, 5 * 60];
@@ -261,10 +268,16 @@ function mockBackend(): Backend {
   };
   arm();
   const listeners = { state: [] as ((s: PanelState) => void)[], spectrum: [] as ((b: number[]) => void)[] };
-  const emit = () => listeners.state.forEach((cb) => cb({ ...state }));
+  const emit = () => {
+    engine?.setColor(state.color);
+    engine?.setVolume(state.volume);
+    engine?.setPlaying(state.playing);
+    listeners.state.forEach((cb) => cb({ ...state }));
+  };
+  engine?.onBands((bands) => listeners.spectrum.forEach((cb) => cb(bands)));
   const slopes: Record<Color, number> = { pink: -3, brown: -6, white: 0 };
   setInterval(() => {
-    if (!state.playing) return;
+    if (!state.playing || engine) return;
     const gain = 40 * Math.log10(Math.max(state.volume, 1e-3));
     const bands = bandCentres.map(
       (f) => -70 + gain + slopes[state.color] * Math.log2(f / 1000) + (Math.random() - 0.5) * 2,
@@ -391,4 +404,10 @@ function mockBackend(): Backend {
   };
 }
 
-export const backend: Promise<Backend> = isTauri ? tauriBackend() : Promise.resolve(mockBackend());
+// `npm run build:web` (mode "web") is the panel on marioyuste.com, with the
+// engine compiled to WebAssembly. Vite drops this branch from the app build.
+export const backend: Promise<Backend> = isTauri
+  ? tauriBackend()
+  : import.meta.env.MODE === "web"
+    ? import("./web-engine").then((m) => mockBackend(m.createWebEngine()))
+    : Promise.resolve(mockBackend());

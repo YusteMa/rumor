@@ -1,0 +1,26 @@
+# Puente para usar el motor de audio de Rumor en un navegador (WebAssembly).
+# No copia el motor: lib.rs incluye los mismos archivos de src-tauri/src/audio.
+# Cómo se compila: ver web/README.md.
+[package]
+name = "rumor-web"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# Las mismas versiones que src-tauri/Cargo.toml
+serde = { version = "1.0.229", features = ["derive"] }
+rustfft = "6.4.1"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true
+
+# Proyecto independiente: no forma parte de ningún workspace
+[workspace]
