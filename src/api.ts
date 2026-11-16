@@ -272,6 +272,7 @@ function mockBackend(engine?: WebEngine): Backend {
     engine?.setColor(state.color);
     engine?.setVolume(state.volume);
     engine?.setPlaying(state.playing);
+    engine?.publish(state);
     listeners.state.forEach((cb) => cb({ ...state }));
   };
   engine?.onBands((bands) => listeners.spectrum.forEach((cb) => cb(bands)));
@@ -311,7 +312,7 @@ function mockBackend(engine?: WebEngine): Backend {
     studyRun("running");
     if (params.get("run") === "paused") studyRun("paused");
   }
-  return {
+  const backend: Backend = {
     getState: async () => ({ ...state }),
     toggle: async () => {
       state.playing = !state.playing;
@@ -411,6 +412,8 @@ function mockBackend(engine?: WebEngine): Backend {
     onShown: (cb) => queueMicrotask(cb),
     onHiding: () => {},
   };
+  engine?.connect(backend);
+  return backend;
 }
 
 // `npm run build:web` (mode "web") is the panel on marioyuste.com, with the

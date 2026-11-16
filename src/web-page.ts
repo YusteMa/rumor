@@ -16,12 +16,35 @@ export function webPage({ sample = false }: WebPageOptions = {}): void {
   addEventListener("message", (e) => {
     const theme = e.data?.rumorTheme;
     if (e.origin === location.origin && (theme === "light" || theme === "dark")) {
-      root.dataset.theme = theme;
+      setTheme(theme);
     }
   });
 
+  // Some colours transition (the accent, 300 ms; some surfaces, 250 ms) and
+  // others snap, so a live theme change flickered through mixed states. Now
+  // every colour switches at once, with transitions off, and the browser
+  // crossfades the whole page from the old picture to the new one.
+  function setTheme(theme: "light" | "dark") {
+    if (root.dataset.theme === theme) return;
+    const apply = () => {
+      root.classList.add("web-theme-switch");
+      root.dataset.theme = theme;
+      void root.offsetWidth; // apply the new colours now, without transitions
+      requestAnimationFrame(() => root.classList.remove("web-theme-switch"));
+    };
+    const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (document.startViewTransition && !calm) document.startViewTransition(apply);
+    else apply();
+  }
+
   const style = document.createElement("style");
   style.textContent = `
+    .web-theme-switch,
+    .web-theme-switch *,
+    .web-theme-switch *::before,
+    .web-theme-switch *::after { transition: none !important; }
+    ::view-transition-old(root),
+    ::view-transition-new(root) { animation-duration: 320ms; animation-timing-function: ease-in-out; }
     /* The footer (Settings, shortcut, Quit) only makes sense in Windows. */
     :root[data-web] .foot { display: none; }
     .web-sample {

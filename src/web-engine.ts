@@ -4,7 +4,7 @@
 // loads this file.
 
 import engineUrl from "../web/target/wasm32-unknown-unknown/release/rumor_web.wasm?url";
-import type { Color } from "./api";
+import type { Backend, Color, PanelState } from "./api";
 import { webPage } from "./web-page";
 
 export interface WebEngine {
@@ -12,7 +12,13 @@ export interface WebEngine {
   setColor(color: Color): void;
   setVolume(volume: number): void;
   onBands(cb: (bands: number[]) => void): void;
+  /** Tells the page around the panel what is going on. */
+  publish(state: PanelState): void;
+  /** Lets the page around the panel press the panel's buttons. */
+  connect(backend: Backend): void;
 }
+
+const NEXT_COLOR: Record<Color, Color> = { pink: "brown", brown: "white", white: "pink" };
 
 const COLOR_INDEX: Record<Color, number> = { pink: 0, brown: 1, white: 2 };
 
@@ -90,6 +96,16 @@ export function createWebEngine(): WebEngine {
   };
 
   addEventListener("pagehide", () => void context?.close());
+  // If audio was started from the page around the panel, some browsers keep
+  // it suspended until a click lands in here.
+  addEventListener("pointerdown", () => void context?.resume());
+
+  const host = parent !== window ? parent : null;
+  const publish = (s: PanelState) =>
+    host?.postMessage(
+      { rumorState: { playing: s.playing, color: s.color, volume: s.volume, study: s.study?.run ?? null } },
+      location.origin,
+    );
 
   return {
     setPlaying(playing) {
@@ -100,5 +116,20 @@ export function createWebEngine(): WebEngine {
     setColor: (color) => send("color", COLOR_INDEX[color]),
     setVolume: (volume) => send("volume", volume),
     onBands: (cb) => bandListeners.push(cb),
+    publish,
+    connect(backend) {
+      if (!host) return;
+      addEventListener("message", async (e) => {
+        if (e.origin !== location.origin || e.source !== host) return;
+        const command = e.data?.rumorCommand;
+        if (command === "toggle") await backend.toggle();
+        else if (command === "studyToggle") await backend.studyToggle();
+        else if (command === "nextColor") {
+          const s = await backend.getState();
+          if (s) await backend.setColor(NEXT_COLOR[s.color]);
+        }
+      });
+      void backend.getState().then((s) => s && publish(s));
+    },
   };
 }
