@@ -177,7 +177,7 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
 **Lo que cuenta:** solo el **tiempo de trabajo**. Pausas, descansos del Pomodoro, el PC bloqueado o suspendido no suman a la sesión ni a los totales de hoy y de la semana.
 
 **Detección de inactividad** (opcional, **desactivada por defecto**, porque si estudias con apuntes en papel no tocas el ordenador):
-- Si no hay teclado ni ratón durante X minutos (por defecto 10; se lee con `GetLastInputInfo`), al volver se plantea la pregunta *"Has estado 14 min sin actividad. ¿Seguías estudiando?"* → **Sí, contar** / **No, descontar**, **sin depender de las notificaciones ni interrumpir**:
+- Si no hay teclado ni ratón durante X minutos (por defecto 10; se lee con `GetLastInputInfo`), al volver se plantea la pregunta *"Has estado 14 min sin actividad."* → **Quitar 14 min** / **Mantener** (cada botón dice qué hace con el tiempo; nada de sí/no que se pueda leer al revés), **sin depender de las notificaciones ni interrumpir**:
   - El icono de la bandeja muestra un puntito y el tooltip dice *"¿Seguías estudiando?"* mientras la pregunta esté pendiente.
   - La pregunta espera en el panel hasta que lo abras. Rumor **nunca abre el panel solo ni quita el foco** a lo que estés haciendo.
   - Si las notificaciones están activadas, además se manda una discreta.

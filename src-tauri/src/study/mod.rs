@@ -252,17 +252,24 @@ impl Study {
         events
     }
 
-    /// The answer to "¿Seguías estudiando?": keep the time, or take it out.
+    /// The answer to the idle question: keep the time, or take it out.
     pub fn resolve_idle(&mut self, keep: bool, now: Instant) {
-        for away in std::mem::take(&mut self.away) {
-            if !keep {
-                self.machine.discount(away.from, away.to);
-            }
+        let away = std::mem::take(&mut self.away);
+        let minutes = away
+            .iter()
+            .map(Away::length)
+            .sum::<Duration>()
+            .as_secs()
+            .div_ceil(60);
+        if keep {
+            log::info!("idle time kept: {minutes} min");
+            return;
         }
-        if !keep {
-            log::info!("idle time discounted");
-            self.save(now, false);
+        for a in away {
+            self.machine.discount(a.from, a.to);
         }
+        log::info!("idle time removed: {minutes} min");
+        self.save(now, false);
     }
 
     /// Debug builds: the Pomodoro phase ends now (`--dev-study-skip`).

@@ -106,6 +106,7 @@ export function study(actions: StudyActions) {
   const tagSlot = $("study-tag");
   const idle = $("study-idle");
   const idleText = $("study-idle-text");
+  const idleDiscount = $("idle-discount");
   const link = $("study-link") as HTMLButtonElement;
   const pop = $("study-pop") as HTMLButtonElement;
 
@@ -120,7 +121,7 @@ export function study(actions: StudyActions) {
   finish.addEventListener("click", () => actions.finish());
   $("study-stats").addEventListener("click", () => actions.openStats());
   $("idle-keep").addEventListener("click", () => actions.resolveIdle(true));
-  $("idle-discount").addEventListener("click", () => actions.resolveIdle(false));
+  idleDiscount.addEventListener("click", () => actions.resolveIdle(false));
 
   // "" is no tag; ids travel as strings through the dropdown.
   const tags = dropdown<string>([], (v) => actions.setTag(v ? Number(v) : null));
@@ -184,7 +185,12 @@ export function study(actions: StudyActions) {
       idle.hidden = !asking;
       body.hidden = asking;
       foot.hidden = asking;
-      if (asking) idleText.textContent = t("idleQuestion", { n: s.idleMinutes ?? 0 });
+      if (asking) {
+        // The button says what it does with the time: no yes/no to misread.
+        const n = s.idleMinutes ?? 0;
+        idleText.textContent = t("idleQuestion", { n });
+        idleDiscount.textContent = t("idleDiscount", { n });
+      }
     },
   };
 }
