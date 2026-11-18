@@ -3,6 +3,7 @@
 //! All state lives here in Rust; the panel is only a remote control
 //! (see `CLAUDE.md`). Modules are filled in phase by phase (`ROADMAP.md`).
 
+mod ambients;
 pub mod audio;
 mod commands;
 mod ear_break;
@@ -58,6 +59,7 @@ pub fn run() {
             commands::toggle,
             commands::set_playing,
             commands::set_color,
+            commands::set_ambient,
             commands::set_volume,
             commands::set_timer,
             commands::study_toggle,

@@ -138,6 +138,15 @@ fn color_key(color: NoiseColor) -> &'static str {
     }
 }
 
+fn ambient_key(id: &str) -> &'static str {
+    match id {
+        "rain-soft" => "ambientRainSoft",
+        "storm" => "ambientStorm",
+        "downpour" => "ambientDownpour",
+        _ => "ambientRain",
+    }
+}
+
 /// `m:ss` or `h:mm:ss`.
 pub fn clock(secs: u64) -> String {
     let (h, m, s) = (secs / 3600, secs / 60 % 60, secs % 60);
@@ -158,7 +167,14 @@ fn tooltip(state: &AppState, s: &Snapshot) -> String {
         let base = t.format(
             "trayPlaying",
             &[
-                ("color", t.get(color_key(s.sound.color))),
+                (
+                    "color",
+                    t.get(
+                        s.sound
+                            .ambient
+                            .map_or(color_key(s.sound.color), ambient_key),
+                    ),
+                ),
                 ("volume", &volume),
             ],
         );
@@ -295,6 +311,7 @@ mod tests {
             playing: true,
             sound: Sound {
                 color: NoiseColor::Pink,
+                ambient: None,
                 volume: 0.4,
             },
             paused_for: None,

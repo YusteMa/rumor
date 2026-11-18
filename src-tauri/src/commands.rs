@@ -41,6 +41,13 @@ pub fn set_color(app: AppHandle, color: NoiseColor) {
     state::set_color(&app, color);
 }
 
+/// Plays an ambient (an `ambients::CATALOG` id) instead of the noise,
+/// downloading it first if needed.
+#[tauri::command]
+pub fn set_ambient(app: AppHandle, id: String) {
+    state::set_ambient(&app, &id);
+}
+
 /// `volume` is the slider position in 0..=1.
 #[tauri::command]
 pub fn set_volume(app: AppHandle, volume: f32) {

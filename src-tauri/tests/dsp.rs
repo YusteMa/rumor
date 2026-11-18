@@ -407,3 +407,81 @@ fn ducking_glides_10_db_down_and_back() {
     glide(&c, 3.0, &mut gain);
     assert!((gain - 1.0).abs() < 1e-4, "back to {gain}");
 }
+
+/// RMS over consecutive 100 ms windows of the left channel (shorter ones swing
+/// by a couple of dB in pink noise alone).
+fn window_rms(x: &[f32], fs: f32) -> Vec<f32> {
+    x.chunks((fs * 0.1) as usize)
+        .map(|w| (w.iter().map(|s| s * s).sum::<f32>() / w.len() as f32).sqrt())
+        .collect()
+}
+
+/// An "ambient" that is just another uncorrelated noise, as loud as the pink
+/// noise, so the crossfade should keep the level.
+fn ambient_noise(rng: &mut Rng, level: f32) -> [f32; 2] {
+    // Sum of uniforms: close enough to Gaussian for a level test.
+    let mut g = || (0..4).map(|_| rng.bipolar()).sum::<f32>() * 3f32.sqrt() / 2.0;
+    [g() * level, g() * level]
+}
+
+#[test]
+fn noise_to_ambient_keeps_the_level_without_steps() {
+    for fs in RATES {
+        let c = playing(NoiseColor::Pink);
+        let mut r = NoiseRenderer::new(fs, 41, &c);
+        for _ in 0..fs as usize {
+            r.next_frame(&c);
+        }
+        // Measure the noise, then match the ambient to it.
+        let noise: Vec<f32> = (0..fs as usize).map(|_| r.next_frame(&c)[0]).collect();
+        let level = (noise.iter().map(|s| s * s).sum::<f32>() / noise.len() as f32).sqrt();
+        let mut rng = Rng::new(5);
+        let mut out = Vec::new();
+        // 0.5 s of noise, then the ambient's target goes to 1 for 3 s.
+        for i in 0..(3.5 * fs) as usize {
+            let [l, rr] = ambient_noise(&mut rng, level);
+            let target = if i < (0.5 * fs) as usize { 0.0 } else { 1.0 };
+            out.push(r.next_frame_with(&c, Some([l, rr, target]))[0]);
+        }
+        assert_eq!(r.ambient_mix(), 1.0);
+        let db: Vec<f32> = window_rms(&out, fs)
+            .iter()
+            .map(|v| 20.0 * (v / level).log10())
+            .collect();
+        for (i, d) in db.iter().enumerate() {
+            assert!(d.abs() < 1.5, "{fs} Hz, window {i}: {d:+.2} dB");
+        }
+    }
+}
+
+#[test]
+fn a_late_ambient_feed_fades_instead_of_clicking() {
+    let fs = 48_000.0;
+    let c = playing(NoiseColor::Pink);
+    let mut r = NoiseRenderer::new(fs, 43, &c);
+    // A constant ambient: the worst case for a click.
+    for _ in 0..(3.0 * fs) as usize {
+        r.next_frame_with(&c, Some([0.25, 0.25, 1.0]));
+    }
+    let before = r.next_frame_with(&c, Some([0.25, 0.25, 1.0]))[0];
+    let mut prev = before;
+    let mut max_step = 0f32;
+    // The feed stops for 50 ms, then comes back.
+    let mut out = Vec::new();
+    for i in 0..(0.1 * fs) as usize {
+        let a = (i >= (0.05 * fs) as usize).then_some([0.25, 0.25, 1.0]);
+        let y = r.next_frame_with(&c, a)[0];
+        max_step = max_step.max((y - prev).abs());
+        prev = y;
+        out.push(y);
+    }
+    // Gone within ~10 ms…
+    assert!(
+        out[(0.012 * fs) as usize].abs() < 1e-3,
+        "{}",
+        out[(0.012 * fs) as usize]
+    );
+    // …and back by the end, never jumping more than a smooth 8 ms ramp would.
+    assert!((out[out.len() - 1] - before).abs() < 1e-3);
+    assert!(max_step < before / (0.008 * fs) * 1.5, "step {max_step}");
+}

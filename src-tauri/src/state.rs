@@ -3,6 +3,8 @@
 //! module and then everything that shows the state. Sound and Study never
 //! call each other: the linking between them lives here (CLAUDE.md rule 12).
 
+use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard, RwLock, RwLockReadGuard};
 use std::time::{Duration, Instant, SystemTime};
 
@@ -12,6 +14,7 @@ use tauri::{AppHandle, Manager};
 use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_notification::NotificationExt;
 
+use crate::ambients::{self, AmbientView, Status};
 use crate::audio::device_watch::{OutputKind, PauseReason, SystemEvent};
 use crate::audio::engine::{AudioEngine, EngineConfig, EngineEvent};
 use crate::audio::noise::{Controls, NoiseColor};
@@ -33,6 +36,8 @@ const VOLUME_STEP: f32 = 0.05;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Sound {
     pub color: NoiseColor,
+    /// The ambient playing instead of the noise (its catalogue id).
+    pub ambient: Option<&'static str>,
     /// Slider position in 0..=1.
     pub volume: f32,
 }
@@ -72,6 +77,10 @@ pub struct OutputSummary {
 pub struct PanelState {
     pub playing: bool,
     pub color: NoiseColor,
+    /// The ambient playing instead of the noise, if any.
+    pub ambient: Option<String>,
+    /// Every ambient and whether it is downloaded.
+    pub ambients: Vec<AmbientView>,
     pub volume: f32,
     pub timer_minutes: u32,
     pub timer_presets: [u32; 3],
@@ -124,6 +133,20 @@ pub struct AppState {
     study: Mutex<Study>,
     link: Mutex<Link>,
     ears: Mutex<EarBreak>,
+    downloads: Mutex<Downloads>,
+}
+
+/// Ambient downloads in flight and the last ones that failed.
+#[derive(Debug, Default)]
+struct Downloads {
+    /// Where ambients are kept; `None` if there is no data folder.
+    dir: Option<PathBuf>,
+    /// Progress (0..=1) of each download in flight.
+    active: HashMap<&'static str, f32>,
+    failed: Vec<&'static str>,
+    /// The ambient the user picked last: a download that finishes plays only
+    /// if it is still this one.
+    wanted: Option<&'static str>,
 }
 
 fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
@@ -191,6 +214,12 @@ impl AppState {
             (
                 Sound {
                     color: settings.last.color,
+                    ambient: settings
+                        .last
+                        .ambient
+                        .as_deref()
+                        .and_then(ambients::find)
+                        .map(|a| a.id),
                     volume: settings.last.volume,
                 },
                 settings.study.enabled,
@@ -215,6 +244,47 @@ impl AppState {
         }
     }
 
+    fn ambient_views(&self) -> Vec<AmbientView> {
+        let d = lock(&self.downloads);
+        ambients::CATALOG
+            .iter()
+            .map(|a| {
+                let (status, progress) = if let Some(p) = d.active.get(a.id) {
+                    (Status::Downloading, *p)
+                } else if a.bytes == 0 {
+                    (Status::Unavailable, 0.0)
+                } else if d
+                    .dir
+                    .as_deref()
+                    .is_some_and(|dir| ambients::is_ready(dir, a))
+                {
+                    (Status::Ready, 1.0)
+                } else if d.failed.contains(&a.id) {
+                    (Status::Failed, 0.0)
+                } else {
+                    (Status::Missing, 0.0)
+                };
+                AmbientView {
+                    id: a.id,
+                    status,
+                    progress,
+                    bytes: a.bytes,
+                }
+            })
+            .collect()
+    }
+
+    /// The label a study session keeps (SPEC §4.3d): the ambient's id, or
+    /// the noise colour.
+    fn sound_label(&self) -> &'static str {
+        let s = lock(&self.settings);
+        s.last
+            .ambient
+            .as_deref()
+            .and_then(ambients::find)
+            .map_or(s.last.color.name(), |a| a.id)
+    }
+
     fn study_view(&self) -> Option<StudyView> {
         self.study_on()
             .then(|| lock(&self.study).view(Instant::now()))
@@ -228,6 +298,8 @@ pub fn panel_state(app: &AppHandle) -> Option<PanelState> {
     Some(PanelState {
         playing: snapshot.playing,
         color: snapshot.sound.color,
+        ambient: settings.last.ambient.clone(),
+        ambients: state.ambient_views(),
         volume: snapshot.sound.volume,
         timer_minutes: lock(&state.timer).minutes(),
         timer_presets: settings.timer.presets,
@@ -297,6 +369,20 @@ pub fn setup(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         settings.study.plan(),
         settings.last.study_tag,
     );
+    let ambients_dir = data_dir.as_ref().map(|d| d.join("ambients"));
+    // The ambient from last time, if its file is still there.
+    let ambient = settings
+        .last
+        .ambient
+        .as_deref()
+        .and_then(ambients::find)
+        .zip(ambients_dir.as_deref())
+        .filter(|(a, dir)| ambients::is_ready(dir, a))
+        .map(|(a, dir)| (a.id, ambients::path(dir, a)));
+    settings.last.ambient = ambient.as_ref().map(|(id, _)| (*id).to_owned());
+    if let Some((_, path)) = ambient {
+        engine.set_ambient(Some(path));
+    }
     let welcome = !settings.onboarded;
     settings.onboarded = true;
     settings::save(app, &settings);
@@ -314,6 +400,10 @@ pub fn setup(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
             ..Link::default()
         }),
         ears: Mutex::new(EarBreak::default()),
+        downloads: Mutex::new(Downloads {
+            dir: ambients_dir,
+            ..Downloads::default()
+        }),
     });
     // Shortcuts first, so the tray and panel can show them.
     shortcut::register_all(app);
@@ -525,11 +615,83 @@ pub fn set_playing(app: &AppHandle, playing: bool) {
     refresh(app);
 }
 
+/// Picking a colour also leaves any ambient: the noise comes back.
 pub fn set_color(app: &AppHandle, color: NoiseColor) {
     let state = app.state::<AppState>();
     state.engine.set_color(color);
-    remember(app, |last| last.color = color);
+    state.engine.set_ambient(None);
+    lock(&state.downloads).wanted = None;
+    remember(app, |last| {
+        last.color = color;
+        last.ambient = None;
+    });
     refresh(app);
+}
+
+/// Plays an ambient instead of the noise. One that isn't downloaded yet is
+/// downloaded first (only now, on the user's click: CLAUDE.md rule 8) and
+/// starts when it arrives, if it is still the one wanted.
+pub fn set_ambient(app: &AppHandle, id: &str) {
+    let Some(a) = ambients::find(id) else {
+        return;
+    };
+    let state = app.state::<AppState>();
+    let dir = {
+        let mut d = lock(&state.downloads);
+        d.wanted = Some(a.id);
+        let Some(dir) = d.dir.clone() else {
+            return;
+        };
+        if !ambients::is_ready(&dir, a) {
+            if a.bytes > 0 && !d.active.contains_key(a.id) {
+                d.failed.retain(|f| *f != a.id);
+                d.active.insert(a.id, 0.0);
+                start_download(app, dir, a);
+            }
+            drop(d);
+            refresh(app);
+            return;
+        }
+        dir
+    };
+    state.engine.set_ambient(Some(ambients::path(&dir, a)));
+    remember(app, |last| last.ambient = Some(a.id.to_owned()));
+    refresh(app);
+}
+
+fn start_download(app: &AppHandle, dir: PathBuf, a: &'static ambients::Ambient) {
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let progress_app = app.clone();
+        // Redraw the panel every whole percent, not on every chunk.
+        let last = std::sync::atomic::AtomicU32::new(0);
+        let result = ambients::download(&dir, a, |done, total| {
+            let pct = (done * 100 / total.max(1)) as u32;
+            if last.swap(pct, std::sync::atomic::Ordering::Relaxed) != pct {
+                let state = progress_app.state::<AppState>();
+                lock(&state.downloads)
+                    .active
+                    .insert(a.id, done as f32 / total.max(1) as f32);
+                panel::emit_state(&progress_app);
+            }
+        })
+        .await;
+        let state = app.state::<AppState>();
+        let wanted = {
+            let mut d = lock(&state.downloads);
+            d.active.remove(a.id);
+            if let Err(e) = &result {
+                log::error!("ambient {}: download failed: {e}", a.id);
+                d.failed.push(a.id);
+            }
+            d.wanted == Some(a.id)
+        };
+        if result.is_ok() && wanted {
+            set_ambient(&app, a.id);
+        } else {
+            refresh(&app);
+        }
+    });
 }
 
 /// The next colour, for the "next colour" shortcut.
@@ -588,8 +750,7 @@ fn study_start_only(app: &AppHandle) {
     if !state.study_on() {
         return;
     }
-    let noise =
-        (state.engine.is_playing() || state.linked()).then(|| state.settings().last.color.name());
+    let noise = (state.engine.is_playing() || state.linked()).then(|| state.sound_label());
     lock(&state.study).start(Instant::now(), SystemTime::now(), noise);
     lock(&state.link).study_paused_by_lock = false;
 }

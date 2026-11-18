@@ -97,6 +97,7 @@ Cada fase termina **compilando, con los tests en verde y con un commit**. No se 
 - **Modo focalizado** (minimizar las apps que distraen mientras cuenta el cronómetro): **aparcado** el 2026-11-06. En Windows es difícil de hacer bien y la idea aún no convence; se retomará más adelante.
 
 ### v0.3 — "Más sonidos, mismo principio"
+- **Ambientes** (SPEC §3.5): grabaciones reales CC0 en FLAC, tramos al azar con fundidos para que no se note el bucle, descargadas al pulsarlas. Primera entrega: cuatro lluvias (lluvia suave, lluvia, tormenta, aguacero). Hecho el motor, la descarga y el panel; falta preparar y publicar los archivos (release `ambients-v1`). Después: olas, fuego y viento.
 - Más colores: gris (ecualizado a la sensibilidad del oído), azul y violeta.
 
 ### v1.0

@@ -10,6 +10,16 @@ export type PauseReason =
   | "suspended"
   | "locked";
 export type Lang = "es" | "en";
+
+/** One ambient (SPEC §3.5) and whether it is downloaded. */
+export interface AmbientView {
+  id: string;
+  status: "missing" | "downloading" | "ready" | "failed" | "unavailable";
+  /** 0..1 while downloading. */
+  progress: number;
+  /** Download size. */
+  bytes: number;
+}
 export type StudyMode = "stopwatch" | "pomodoro";
 export type StudyRun = "stopped" | "running" | "paused";
 export type StudyPhase = "work" | "shortBreak" | "longBreak";
@@ -46,6 +56,9 @@ export interface StudyView {
 export interface PanelState {
   playing: boolean;
   color: Color;
+  /** The ambient playing instead of the noise, if any. */
+  ambient: string | null;
+  ambients: AmbientView[];
   /** Slider position in 0..1. */
   volume: number;
   timerMinutes: number;
@@ -88,6 +101,8 @@ export interface Backend {
   getState(): Promise<PanelState | null>;
   toggle(): Promise<void>;
   setColor(color: Color): Promise<void>;
+  /** Plays an ambient instead of the noise, downloading it first if needed. */
+  setAmbient(id: string): Promise<void>;
   setVolume(volume: number): Promise<void>;
   setTimer(minutes: number): Promise<void>;
   studyToggle(): Promise<void>;
@@ -141,6 +156,7 @@ async function tauriBackend(): Promise<Backend> {
     getState: () => invoke<PanelState | null>("get_state"),
     toggle: () => call("toggle"),
     setColor: (color) => call("set_color", { color }),
+    setAmbient: (id) => call("set_ambient", { id }),
     setVolume: (volume) => call("set_volume", { volume }),
     setTimer: (minutes) => call("set_timer", { minutes }),
     studyToggle: () => call("study_toggle"),
@@ -177,6 +193,20 @@ function mockBackend(engine?: WebEngine): Backend {
   const state: PanelState = {
     playing: params.get("playing") === "1",
     color: (params.get("color") as Color) ?? "pink",
+    // ?ambient=rain plays one; the rest start ready, except the last (?get=1
+    // shows them all to download).
+    ambient: params.get("ambient"),
+    ambients: [
+      ["rain-soft", 31e6],
+      ["rain", 78e6],
+      ["storm", 62e6],
+      ["downpour", 84e6],
+    ].map(([id, bytes], i) => ({
+      id: id as string,
+      status: params.get("get") || i === 3 ? "missing" : "ready",
+      progress: 0,
+      bytes: bytes as number,
+    })),
     volume: 0.4,
     timerMinutes: Number(params.get("timer") ?? 0),
     timerRemaining: null,
@@ -323,7 +353,30 @@ function mockBackend(engine?: WebEngine): Backend {
     },
     setColor: async (c) => {
       state.color = c;
+      state.ambient = null;
       emit();
+    },
+    setAmbient: async (id) => {
+      const a = state.ambients.find((x) => x.id === id);
+      if (!a) return;
+      if (a.status === "ready") {
+        state.ambient = id;
+        emit();
+        return;
+      }
+      if (a.status === "downloading") return;
+      // A pretend download, two seconds long.
+      a.status = "downloading";
+      const started = Date.now();
+      const step = setInterval(() => {
+        a.progress = Math.min(1, (Date.now() - started) / 2000);
+        if (a.progress >= 1) {
+          clearInterval(step);
+          a.status = "ready";
+          state.ambient = id;
+        }
+        emit();
+      }, 100);
     },
     setVolume: async (v) => {
       state.volume = v;

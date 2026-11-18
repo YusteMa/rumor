@@ -36,6 +36,10 @@ tauri-plugin-dialog = "2.8.4"
 rusqlite = { version = "0.40.2", features = ["bundled"] }
 chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
 tauri-plugin-updater = "2.12.0"
+symphonia = { version = "0.6.1", default-features = false, features = ["flac"] }
+sha2 = "0.10.9"
+reqwest = { version = "0.13.5", default-features = false, features = ["rustls-no-provider"] }
+rustls = { version = "0.23.46", default-features = false, features = ["ring"] }
 
 # The spectral tests run minutes of noise through FFTs; keep them fast in debug.
 [profile.dev.package.rustfft]
@@ -72,3 +76,5 @@ webview2-com = "0.39.1"
 
 [dev-dependencies]
 chrono-tz = "0.10.4"
+flacenc = "0.5.1"
+hound = "3.5.1"

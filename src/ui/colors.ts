@@ -11,9 +11,10 @@ export function colors(onPick: (c: Color) => void) {
 
   return {
     render(s: PanelState) {
-      group.set(s.color);
+      // With an ambient playing, no colour is picked: clicking one goes back.
+      group.set(s.ambient ? "" : s.color);
       const n = SLOPES[s.color];
-      slope.textContent = t("slope", { n: n === 0 ? "0" : `−${Math.abs(n)}` });
+      slope.textContent = s.ambient ? "" : t("slope", { n: n === 0 ? "0" : `−${Math.abs(n)}` });
     },
   };
 }

@@ -10,6 +10,7 @@
 
 use std::collections::HashMap;
 use std::f32::consts::FRAC_1_SQRT_2;
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU8, AtomicU32, AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -20,6 +21,7 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{BufferSize, FromSample, Sample, SampleFormat, SizedSample, StreamConfig};
 use serde::{Deserialize, Serialize};
 
+use super::ambient_feed::{AmbientFeed, RING_CHANNELS, ring_capacity};
 use super::analysis::{Analyzer, BANDS};
 use super::device_watch::{
     Endpoint, LockPolicy, OutputChangePolicy, OutputKind, PauseReason, SystemEvent, SystemWatch,
@@ -155,6 +157,7 @@ fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
 /// Handle to the engine. Dropping it stops the audio.
 pub struct AudioEngine {
     shared: Arc<Shared>,
+    ambient: Arc<AmbientFeed>,
     tx: Sender<Command>,
     thread: Option<JoinHandle<()>>,
     spectrum_thread: Option<JoinHandle<()>>,
@@ -190,7 +193,14 @@ impl AudioEngine {
             tap: Mutex::new(None),
         });
         let (tx, rx) = mpsc::channel();
-        let control = Control::new(shared.clone(), tx.clone(), rx, Box::new(on_event));
+        let ambient = Arc::new(AmbientFeed::start()?);
+        let control = Control::new(
+            shared.clone(),
+            ambient.clone(),
+            tx.clone(),
+            rx,
+            Box::new(on_event),
+        );
         let thread = std::thread::Builder::new()
             .name("rumor-audio-control".into())
             .spawn(move || control.run())?;
@@ -200,6 +210,7 @@ impl AudioEngine {
             .spawn(move || run_spectrum(&spectrum_shared, on_spectrum))?;
         Ok(Self {
             shared,
+            ambient,
             tx,
             thread: Some(thread),
             spectrum_thread: Some(spectrum_thread),
@@ -229,6 +240,12 @@ impl AudioEngine {
 
     pub fn set_color(&self, color: NoiseColor) {
         self.shared.params.set_color(color);
+    }
+
+    /// Plays the prepared ambient at `path` instead of the noise, or goes
+    /// back to the noise with `None`. Crossfades either way.
+    pub fn set_ambient(&self, path: Option<PathBuf>) {
+        self.ambient.select(path);
     }
 
     /// Slider position in 0..=1.
@@ -338,6 +355,7 @@ struct Live {
 
 struct Control {
     shared: Arc<Shared>,
+    ambient: Arc<AmbientFeed>,
     tx: Sender<Command>,
     rx: Receiver<Command>,
     on_event: EventSink,
@@ -362,12 +380,14 @@ struct Control {
 impl Control {
     fn new(
         shared: Arc<Shared>,
+        ambient: Arc<AmbientFeed>,
         tx: Sender<Command>,
         rx: Receiver<Command>,
         on_event: EventSink,
     ) -> Self {
         Self {
             shared,
+            ambient,
             tx,
             rx,
             on_event,
@@ -734,23 +754,26 @@ impl Control {
             consumer,
             sample_rate,
         });
+        // The ambient feed's ring for this stream, at this stream's rate.
+        let (ambient_tx, ambient) = rtrb::RingBuffer::new(ring_capacity(sample_rate));
+        self.ambient.attach(ambient_tx, sample_rate);
         let shared = self.shared.clone();
         let stream = match format {
-            SampleFormat::F32 => {
-                build_stream::<f32>(device, config, renderer, producer, shared, generation)
-            }
-            SampleFormat::F64 => {
-                build_stream::<f64>(device, config, renderer, producer, shared, generation)
-            }
-            SampleFormat::I16 => {
-                build_stream::<i16>(device, config, renderer, producer, shared, generation)
-            }
-            SampleFormat::I32 => {
-                build_stream::<i32>(device, config, renderer, producer, shared, generation)
-            }
-            SampleFormat::U16 => {
-                build_stream::<u16>(device, config, renderer, producer, shared, generation)
-            }
+            SampleFormat::F32 => build_stream::<f32>(
+                device, config, renderer, producer, ambient, shared, generation,
+            ),
+            SampleFormat::F64 => build_stream::<f64>(
+                device, config, renderer, producer, ambient, shared, generation,
+            ),
+            SampleFormat::I16 => build_stream::<i16>(
+                device, config, renderer, producer, ambient, shared, generation,
+            ),
+            SampleFormat::I32 => build_stream::<i32>(
+                device, config, renderer, producer, ambient, shared, generation,
+            ),
+            SampleFormat::U16 => build_stream::<u16>(
+                device, config, renderer, producer, ambient, shared, generation,
+            ),
             other => return Err(StreamError::Format(other)),
         }?;
 
@@ -784,6 +807,7 @@ fn build_stream<T>(
     config: StreamConfig,
     mut renderer: NoiseRenderer,
     mut tap: rtrb::Producer<f32>,
+    mut ambient: rtrb::Consumer<f32>,
     shared: Arc<Shared>,
     generation: u64,
 ) -> Result<cpal::Stream, cpal::Error>
@@ -821,7 +845,18 @@ where
             let feed_tap = shared.spectrum_on.load(Ordering::Relaxed);
             let muted = shared.muted.load(Ordering::Relaxed);
             for frame in data.chunks_exact_mut(channels) {
-                let [l, r] = renderer.next_frame(&controls);
+                // Wait-free. The feed writes whole frames, but a frame is only
+                // taken once all of it is there.
+                let a = if ambient.slots() >= RING_CHANNELS {
+                    let mut f = [0.0f32; RING_CHANNELS];
+                    for v in &mut f {
+                        *v = ambient.pop().unwrap_or(0.0);
+                    }
+                    Some(f)
+                } else {
+                    None
+                };
+                let [l, r] = renderer.next_frame_with(&controls, a);
                 if feed_tap {
                     // Wait-free; if the analyser fell behind, drop the sample.
                     let _ = tap.push(0.5 * (l + r));

@@ -100,6 +100,26 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
 - RAM con el panel cerrado: **medir y documentar** (WebView2 es el coste principal; destruir el panel al cerrarlo si compensa).
 - Arranque hasta que se ve el icono: **< 1 s**.
 
+### 3.5 Ambientes (grabaciones reales)
+Decidido el 2026-11-18. El ruido se genera; la lluvia y las tormentas se **graban**: sintetizadas no sonaban reales (se probó y se descartó). Así que los ambientes son **grabaciones de campo reales**, tratadas para que conserven la promesa de §1: **sin compresión con pérdida y sin un bucle que se note**.
+
+- **Catálogo inicial** (todas con licencia **CC0** de freesound.org, con crédito en el README aunque no haga falta):
+
+  | Id | Nombre | Grabación |
+  |---|---|---|
+  | `rain-soft` | Llovizna | *Forest cabin summer rain* 1–7, de giddster (lluvia desde una cabaña) |
+  | `rain` | Lluvia | *rain in the forest atmo field recording*, de Garuda1982 |
+  | `storm` | Tormenta | *Excellent thunder & rain 25 Sept '21*, de gepetto3548 (truenos fuertes, lluvia moderada) |
+  | `downpour` | Aguacero | *Rain and thunder in Thailand*, de Felix Blume (mucha lluvia, truenos más suaves) |
+
+  Se priorizan los sonidos que más busca la gente: lluvia, olas, pájaros, fuego, tormenta, viento… (encuesta Forbes Health/OnePoll 2023; en el Reino Unido, olas y lluvia en la ventana encabezan los más relajantes). Primero lluvia; después olas, fuego y viento.
+- **Preparación** (`src-tauri/examples/ambient_prep.rs`): estéreo → 48 kHz → se recortan los extremos y los trozos con ruidos ajenos → las partes se unen con fundidos de 2 s → paso alto a 25 Hz → **misma sonoridad que los ruidos** (−24 dB K-RMS, mediana de ventanas de 400 ms para que los truenos no hundan la lluvia) → los picos raros por encima de −1 dBFS se suavizan → **FLAC de 16 bits con *dither* TPDF**. Más bits solo guardarían más ruido de fondo de la propia grabación, que está unos 30 dB por encima del *dither*.
+- **Sin bucle audible** (`audio/ambient.rs`): nunca se reproduce el archivo de principio a fin. Se salta a **tramos al azar de 25–70 s**, unidos con **fundidos de igual potencia de 4 s**, evitando los tramos que acaban de sonar. Las grabaciones duran entre 8 y 12 minutos.
+- **Reproducción** (`audio/ambient_feed.rs`): un hilo aparte decodifica (symphonia), mezcla los tramos y convierte a la frecuencia de la salida con un *resampler* polifásico propio (`audio/resample.rs`: plano hasta ~18 kHz, más de 90 dB de rechazo). Al hilo de audio le llega por una cola sin bloqueos (regla 1), con la marca de «ambiente sí/no» en cada muestra, para que el fundido ruido ↔ ambiente (1,2 s) empiece justo cuando llega el sonido nuevo. Si el hilo se retrasa, el ambiente se apaga en 8 ms y vuelve igual: nunca un clic.
+- **Descarga** (`ambients.rs`): no van en el instalador. Cada ambiente se descarga **la primera vez que se pulsa**, de la release `ambients-v1` del repositorio, y solo se usa si su **tamaño y su SHA-256** coinciden con los del catálogo. Se guarda en la carpeta de datos de la app. Es la **única petición de red además de las actualizaciones** (CLAUDE.md, regla 8), y no envía nada del usuario.
+- **En el panel:** sección **«Ambientes»** bajo los colores, con sus cuatro botones de dos en dos y **un único acento para todos** (`--accent-ambient`). Bajo cada nombre, lo que hará el clic («descargar · 80 MB», «descargando 43 %», «falló · reintentar») o, si ya está, cómo suena. Pulsar un color vuelve al ruido. Con un ambiente sonando, el espectro deja de dibujar la pendiente teórica (una grabación no la tiene).
+- **Estadísticas:** la sesión guarda el id del ambiente en la misma columna `noise` que los colores; los ids nunca coinciden con un color.
+
 ---
 
 ## 4. Interacción
@@ -422,4 +442,5 @@ El panel solo enseña lo que usas a diario. **Todo lo demás vive en Ajustes**, 
 | 12 | Auto-actualización | **Activada por defecto**, aviso en el panel + un clic (§7) | Cerrada (2026-11-05) |
 | 13 | Separar ruido y estudio desde el panel | **Eslabón junto a «Estudio», solo para la sesión en curso**; al juntarlos de nuevo se igualan al momento (§4.3b) | Cerrada (2026-11-08) |
 | 15 | Estadísticas, segunda entrega | **Objetivo semanal con anillo, línea diaria y racha por semanas; últimas 8 semanas junto al total; variación por asignatura; entradas animadas.** Año y ruido favorito, después (§4.3d) | Cerrada (2026-11-10) |
+| 16 | Lluvia y otros ambientes | **Grabaciones reales CC0**, no sintetizadas; FLAC sin pérdida, tramos al azar con fundidos para que no se note el bucle; **se descargan al pulsarlos** (§3.5) | Cerrada (2026-11-18) |
 | 14 | Mini reloj flotante | **Botón «sacar fuera» en el panel en vez de un ajuste**: sale solo cuando se pide y para esa sesión; apagado sin sesión; el mismo botón lo guarda; el ajuste antiguo se descarta (§4.3b) | Cerrada (2026-11-10) |

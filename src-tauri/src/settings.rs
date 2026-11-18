@@ -401,6 +401,9 @@ pub struct Advanced {
 #[serde(default, rename_all = "camelCase")]
 pub struct LastSession {
     pub color: NoiseColor,
+    /// The ambient playing instead of the noise (an `ambients::CATALOG` id),
+    /// or `None` for the noise in `color`.
+    pub ambient: Option<String>,
     /// Slider position in 0..=1.
     pub volume: f32,
     pub timer_minutes: u32,
@@ -424,6 +427,7 @@ impl Default for LastSession {
     fn default() -> Self {
         Self {
             color: NoiseColor::Pink,
+            ambient: None,
             volume: 0.4,
             timer_minutes: 0,
             was_playing: false,

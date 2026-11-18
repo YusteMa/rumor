@@ -10,6 +10,7 @@
     "allow-toggle",
     "allow-set-playing",
     "allow-set-color",
+    "allow-set-ambient",
     "allow-set-volume",
     "allow-set-timer",
     "allow-study-toggle",

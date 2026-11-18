@@ -33,6 +33,13 @@ pub const TARGET_K_RMS_DB: f32 = -24.0;
 pub const DUCK_DB: f32 = -10.0;
 /// The duck glides in dB over this, in and out.
 pub const DUCK_MS: f32 = 2_500.0;
+/// Noise ↔ ambient crossfade. Longer than the colour one: a recording and a
+/// noise are very different sounds, so the change should feel like a scene
+/// changing, not a switch.
+pub const AMBIENT_CROSSFADE_MS: f32 = 1_200.0;
+/// If the ambient feed falls behind, the ambient fades out this fast instead
+/// of stopping dead, and back in when it catches up (rule 2: no clicks).
+pub const AMBIENT_STARVE_MS: f32 = 8.0;
 /// The bell's peak at full volume (−12 dBFS): above the noise, not over it.
 pub const BELL_PEAK: f32 = 0.25;
 /// The bell follows the volume, but never gets quieter than at this slider
@@ -377,6 +384,15 @@ pub struct NoiseRenderer {
     bell: Bowl,
     /// The last `Controls::bell` acted on.
     bell_seen: u32,
+    /// 0 = noise, 1 = ambient. Its target travels with the ambient audio.
+    ambient_mix: Ramp,
+    /// The last target received, held while the feed is late.
+    ambient_target: f32,
+    /// 1 while ambient frames arrive, glides to 0 while they don't.
+    ambient_live: Ramp,
+    ambient_last: [f32; 2],
+    ambient_step: f32,
+    starve_step: f32,
     crossfade_step: f32,
     mono_step: f32,
     duck_step: f32,
@@ -410,19 +426,46 @@ impl NoiseRenderer {
             duck_step: step_per_sample(DUCK_MS, fs),
             bell: Bowl::new(fs),
             bell_seen: initial.bell,
+            ambient_mix: Ramp::new(0.0),
+            ambient_target: 0.0,
+            ambient_live: Ramp::new(0.0),
+            ambient_last: [0.0; 2],
+            ambient_step: step_per_sample(AMBIENT_CROSSFADE_MS, fs),
+            starve_step: step_per_sample(AMBIENT_STARVE_MS, fs),
             volume: OnePole::new(VOLUME_SMOOTHING_MS, fs, volume_gain(initial.volume)),
             crossfade_step: step_per_sample(CROSSFADE_MS, fs),
             fs,
         }
     }
 
-    /// Renders one stereo frame.
+    /// Renders one stereo frame of noise only.
     #[inline]
     pub fn next_frame(&mut self, c: &Controls) -> [f32; 2] {
+        self.next_frame_with(c, None)
+    }
+
+    /// Renders one stereo frame. `ambient` is the next frame from the ambient
+    /// feed, `[left, right, target]`, where `target` is 1 while an ambient is
+    /// selected and 0 for noise; `None` when the feed has nothing ready.
+    #[inline]
+    pub fn next_frame_with(&mut self, c: &Controls, ambient: Option<[f32; 3]>) -> [f32; 2] {
+        let live = match ambient {
+            Some([l, r, target]) => {
+                self.ambient_last = [l, r];
+                self.ambient_target = target;
+                self.ambient_live.next(1.0, self.starve_step)
+            }
+            None => self.ambient_live.next(0.0, self.starve_step),
+        };
+        let m = self
+            .ambient_mix
+            .next(self.ambient_target, self.ambient_step);
+        let (noise_w, ambient_w) = (equal_power(1.0 - m), equal_power(m) * live);
+
         let mut weights = [0.0f32; 3];
         for (i, (ramp, w)) in self.mix.iter_mut().zip(&mut weights).enumerate() {
             let target = if i == c.color.index() { 1.0 } else { 0.0 };
-            *w = equal_power(ramp.next(target, self.crossfade_step)) * self.norm[i];
+            *w = equal_power(ramp.next(target, self.crossfade_step)) * self.norm[i] * noise_w;
         }
 
         let fade = if c.playing {
@@ -447,9 +490,14 @@ impl NoiseRenderer {
         let bell = self.bell.sample();
 
         let mut raw = [0.0f32; 2];
-        for (o, channel) in raw.iter_mut().zip(&mut self.channels) {
+        for ((o, channel), a) in raw
+            .iter_mut()
+            .zip(&mut self.channels)
+            .zip(self.ambient_last)
+        {
             let s = channel.sample();
-            *o = (s[0] * weights[0] + s[1] * weights[1] + s[2] * weights[2]) * gain + bell;
+            let noise = s[0] * weights[0] + s[1] * weights[1] + s[2] * weights[2];
+            *o = (noise + a * ambient_w) * gain + bell;
         }
         // Mono before the clipper, so the sum never goes past −3 dBFS. The
         // two channels are uncorrelated, so (L + R)/√2 is as loud as each.
@@ -480,6 +528,11 @@ impl NoiseRenderer {
     /// Current overall gain (fade × smoothed volume), for click tests.
     pub fn envelope(&self) -> f32 {
         fade_curve(self.fade.value()) * self.volume.value()
+    }
+
+    /// Current noise ↔ ambient position (0 = noise, 1 = ambient).
+    pub fn ambient_mix(&self) -> f32 {
+        self.ambient_mix.value()
     }
 
     /// Current crossfade weight of each colour, before normalisation.

@@ -274,6 +274,72 @@ body {
   color: var(--ink);
 }
 
+/* Noise | Ambients: the field's label is two words that work as tabs, as
+   tall as any other label. The chosen one is ink with the accent's mark
+   under it; a dot marks the other one when the sound playing lives there. */
+.sound-tabs {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.sound-tabs [role="tab"] {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  transition: color var(--dur-press) var(--ease-out);
+}
+
+.sound-tabs [role="tab"]:hover,
+.sound-tabs [role="tab"][aria-selected="true"] {
+  color: var(--ink);
+}
+
+.sound-tabs [role="tab"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(-1 * var(--mini-seg-pad));
+  height: var(--mini-seg-pad);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  transform: scaleX(0);
+  transition: transform var(--dur-press) var(--ease-out);
+}
+
+.sound-tabs [role="tab"][aria-selected="true"]::before {
+  transform: scaleX(1);
+}
+
+.sound-tabs [role="tab"][data-live]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: calc(-1 * var(--space-2));
+  width: var(--tab-mark-height);
+  height: var(--tab-mark-height);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+}
+
+/* Both choices share one cell, so the block is as tall as the taller one
+   whichever tab shows: switching never moves the volume and timer below. */
+.sound-panels {
+  display: grid;
+}
+
+.sound-panels > * {
+  grid-area: 1 / 1;
+}
+
+.sound-panels > [hidden] {
+  display: grid;
+  visibility: hidden;
+}
+
 .segmented {
   display: grid;
   grid-auto-columns: 1fr;
@@ -322,6 +388,43 @@ body {
 
 .segmented.compact button {
   padding: var(--space-1);
+}
+
+/* Ambients: one row of four, as tall as the colours. A download fills a thin
+   bar along the bottom of its button. */
+.segmented.ambients button {
+  position: relative;
+  overflow: hidden;
+}
+
+.segmented.ambients button::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: var(--progress-height);
+  background: var(--accent);
+  transform: scaleX(var(--progress, 0));
+  transform-origin: left;
+  opacity: 0;
+  transition:
+    transform var(--dur-press) linear,
+    opacity var(--dur-press) var(--ease-out);
+}
+
+.segmented.ambients button[data-status="downloading"]::after {
+  opacity: 1;
+}
+
+.segmented.ambients button[data-status="failed"] .hint {
+  color: var(--ink);
+}
+
+.segmented.ambients button:disabled {
+  cursor: default;
+}
+
+.segmented.ambients button:disabled :is(.name, .hint) {
+  color: var(--line);
 }
 
 /* ---- Study card (SPEC §4.3b) -------------------------------------------------- */
@@ -712,9 +815,15 @@ body {
   background: var(--surface-hover);
 }
 
-.chip:first-child {
+/* The one to press: taking the idle time out. */
+.chip.primary {
   border-color: transparent;
-  background: var(--accent-soft);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.chip.primary:hover {
+  background: color-mix(in srgb, var(--accent) 85%, var(--ink));
 }
 
 /* ---- Footer ------------------------------------------------------------------ */

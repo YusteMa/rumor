@@ -1,7 +1,9 @@
 // Live spectrum (SPEC §4.2): the measured curve, normalised to 0 dB at 1 kHz
 // so it shows the colour's shape rather than the volume, over the dashed
 // theoretical slope. On a colour change the curve morphs instead of jumping
-// (SPEC §4.5); while paused only the theoretical slope remains.
+// (SPEC §4.5); while paused only the theoretical slope remains. An ambient
+// has no theoretical slope: its line fades away and only the measured curve
+// is left.
 
 import { BANDS, F_MAX, F_MIN, bandCentres, type Color } from "../api";
 
@@ -37,6 +39,9 @@ export class Spectrum {
   private playing = false;
   private slope = SLOPES.pink;
   private targetSlope = SLOPES.pink;
+  /** Opacity of the theoretical slope: 0 while an ambient plays. */
+  private theory = 1;
+  private targetTheory = 1;
   private raf = 0;
   private lastFrame = 0;
   private palette: Palette;
@@ -83,6 +88,12 @@ export class Spectrum {
     if (this.reduced.matches) this.slope = this.targetSlope;
   }
 
+  /** An ambient plays: no theoretical slope to show. */
+  setAmbient(on: boolean): void {
+    this.targetTheory = on ? 0 : 1;
+    if (this.reduced.matches) this.theory = this.targetTheory;
+  }
+
   setPlaying(playing: boolean): void {
     this.playing = playing;
   }
@@ -125,6 +136,7 @@ export class Spectrum {
     if (this.alpha === 0) this.seeded = false;
     for (let i = 0; i < BANDS; i++) this.shown[i] += (this.target[i] - this.shown[i]) * k;
     this.slope += (this.targetSlope - this.slope) * k;
+    this.theory += (this.targetTheory - this.theory) * k;
     // The accent is mid-transition after a colour change: follow it.
     const css = getComputedStyle(document.documentElement);
     this.palette.accent = css.getPropertyValue("--accent").trim();
@@ -165,7 +177,7 @@ export class Spectrum {
     ctx.setLineDash([p.dash, p.dash]);
     ctx.strokeStyle = p.muted;
     ctx.lineWidth = p.lineWidth;
-    ctx.globalAlpha = 0.5 + 0.5 * (1 - this.alpha);
+    ctx.globalAlpha = (0.5 + 0.5 * (1 - this.alpha)) * this.theory;
     ctx.beginPath();
     ctx.moveTo(0, y(this.slope * Math.log2(F_MIN / 1000)));
     ctx.lineTo(w, y(this.slope * Math.log2(F_MAX / 1000)));

@@ -16,7 +16,8 @@
 
 :root {
   /* Colour: warm neutrals and one accent, which follows the noise:
-     dusty pink, toasted caramel or blue-grey pearl. Accents are ~3.5:1
+     dusty pink, toasted caramel or blue-grey pearl, and sky blue for the
+     ambients. Accents are ~3.5:1
      against the background in light (WCAG non-text ≥ 3:1) and ≥ 7:1 in
      dark; text on the soft tints is ≥ 11:1. */
   --bg: #faf7f5;
@@ -31,6 +32,10 @@
   --accent-brown-soft: #f3e4d6;
   --accent-white: #76859a;
   --accent-white-soft: #e6eaf0;
+  /* Ambients: a clear sky blue, bluer than white's slate so the two never
+     read as one. */
+  --accent-ambient: #4f86c6;
+  --accent-ambient-soft: #dde9f7;
   --accent: var(--accent-pink);
   --accent-soft: var(--accent-pink-soft);
   --on-accent: #ffffff;
@@ -227,6 +232,8 @@
   --tab-selected: var(--surface-raised);
   --tab-mark-width: 16px;
   --tab-mark-height: 3px;
+  /* The bar along an ambient's button while it downloads. */
+  --progress-height: 2px;
   --toast-hover: color-mix(in srgb, var(--bg) 14%, transparent);
 
   /* Motion. */
@@ -274,6 +281,8 @@
     --accent-brown-soft: #3b2e23;
     --accent-white: #afbacb;
     --accent-white-soft: #2b3038;
+    --accent-ambient: #8ab8ec;
+    --accent-ambient-soft: #233246;
     --on-accent: #1c1a19;
     --surface-raised: #2c2827;
     --raised-hover: #38332f;
@@ -315,6 +324,8 @@
   --accent-brown-soft: #3b2e23;
   --accent-white: #afbacb;
   --accent-white-soft: #2b3038;
+  --accent-ambient: #8ab8ec;
+  --accent-ambient-soft: #233246;
   --on-accent: #1c1a19;
   --surface-raised: #2c2827;
   --raised-hover: #38332f;
@@ -357,6 +368,11 @@
 :root[data-noise="white"] {
   --accent: var(--accent-white);
   --accent-soft: var(--accent-white-soft);
+}
+
+:root[data-noise="ambient"] {
+  --accent: var(--accent-ambient);
+  --accent-soft: var(--accent-ambient-soft);
 }
 
 /* On Mica the backdrop shows through a warm veil; cards stay readable. */

@@ -38,15 +38,26 @@
         </div>
       </section>
 
-      <section class="field">
+      <section class="field sound">
         <div class="label">
-          <span id="color-label" data-i18n="labelColor"></span>
+          <div class="sound-tabs" id="sound-tabs" role="tablist">
+            <button type="button" role="tab" id="tab-noise" data-tab="noise" aria-controls="colors" data-i18n="tabNoise"></button>
+            <button type="button" role="tab" id="tab-ambients" data-tab="ambients" aria-controls="ambients" data-i18n="labelAmbient"></button>
+          </div>
           <span class="value" id="slope"></span>
         </div>
-        <div class="segmented" id="colors" role="radiogroup" aria-labelledby="color-label">
-          <button type="button" role="radio" data-value="pink"><span class="name" data-i18n="colorPink"></span><span class="hint" data-i18n="hintPink"></span></button>
-          <button type="button" role="radio" data-value="brown"><span class="name" data-i18n="colorBrown"></span><span class="hint" data-i18n="hintBrown"></span></button>
-          <button type="button" role="radio" data-value="white"><span class="name" data-i18n="colorWhite"></span><span class="hint" data-i18n="hintWhite"></span></button>
+        <div class="sound-panels">
+          <div class="segmented" id="colors" role="radiogroup" aria-labelledby="tab-noise">
+            <button type="button" role="radio" data-value="pink"><span class="name" data-i18n="colorPink"></span><span class="hint" data-i18n="hintPink"></span></button>
+            <button type="button" role="radio" data-value="brown"><span class="name" data-i18n="colorBrown"></span><span class="hint" data-i18n="hintBrown"></span></button>
+            <button type="button" role="radio" data-value="white"><span class="name" data-i18n="colorWhite"></span><span class="hint" data-i18n="hintWhite"></span></button>
+          </div>
+          <div class="segmented ambients" id="ambients" role="radiogroup" aria-labelledby="tab-ambients" hidden>
+            <button type="button" role="radio" data-value="rain-soft"><span class="name" data-i18n="ambientRainSoft"></span><span class="hint"></span></button>
+            <button type="button" role="radio" data-value="rain"><span class="name" data-i18n="ambientRain"></span><span class="hint"></span></button>
+            <button type="button" role="radio" data-value="storm"><span class="name" data-i18n="ambientStorm"></span><span class="hint"></span></button>
+            <button type="button" role="radio" data-value="downpour"><span class="name" data-i18n="ambientDownpour"></span><span class="hint"></span></button>
+          </div>
         </div>
       </section>
 

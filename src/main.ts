@@ -5,6 +5,8 @@ import { backend, isTauri, type PanelState } from "./api";
 import { applyStatic, setLang } from "./i18n";
 import { applyAccent } from "./ui/accent";
 import { colors } from "./ui/colors";
+import { ambients } from "./ui/ambients";
+import { soundTabs } from "./ui/sound-tabs";
 import { footer } from "./ui/footer";
 import { player } from "./ui/player";
 import { Spectrum } from "./ui/spectrum";
@@ -20,6 +22,8 @@ const spectrumCard = document.querySelector(".spectrum") as HTMLElement;
 const ui = {
   player: player(() => api.toggle()),
   colors: colors((c) => api.setColor(c)),
+  ambients: ambients((id) => api.setAmbient(id)),
+  soundTabs: soundTabs(),
   volume: volume((v) => api.setVolume(v)),
   timer: timer((m) => api.setTimer(m)),
   study: study({
@@ -56,18 +60,21 @@ function render(s: PanelState): void {
     spectrum.refreshPalette();
   }
   // The accent follows the noise (tokens.css), or Windows' own; text stays neutral.
-  document.documentElement.dataset.noise = s.color;
+  document.documentElement.dataset.noise = s.ambient ? "ambient" : s.color;
   applyAccent(s.appearance.accent === "system" ? s.systemAccent : null);
   document.documentElement.dataset.fit = s.fit;
   spectrumCard.hidden = !s.appearance.spectrum;
   spectrum.setEnabled(s.appearance.spectrum);
   ui.player.render(s);
   ui.colors.render(s);
+  ui.ambients.render(s);
+  ui.soundTabs.render(s);
   ui.volume.render(s);
   ui.timer.render(s);
   ui.study.render(s.study, s.linked, s.miniOut);
   ui.footer.render(s);
   spectrum.setColor(s.color);
+  spectrum.setAmbient(s.ambient !== null);
   spectrum.setPlaying(s.playing);
 }
 

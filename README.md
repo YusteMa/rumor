@@ -81,3 +81,5 @@ Es una **beta**: los fallos (sobre todo de sonido, cascos y Bluetooth) van a [Is
 ## License
 
 [MIT](LICENSE)
+
+The ambients are field recordings released under CC0 on [freesound.org](https://freesound.org), credited here with thanks: "Forest cabin summer rain" by giddster, "rain in the forest atmo field recording" by Garuda1982, "Excellent thunder & rain 25 Sept '21" by gepetto3548 and "Rain and thunder in Thailand" by Felix Blume.

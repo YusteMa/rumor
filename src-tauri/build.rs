@@ -5,6 +5,7 @@ const COMMANDS: &[&str] = &[
     "toggle",
     "set_playing",
     "set_color",
+    "set_ambient",
     "set_volume",
     "set_timer",
     "study_toggle",

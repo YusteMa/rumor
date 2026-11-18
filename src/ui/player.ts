@@ -4,8 +4,15 @@
 
 import type { PanelState } from "../api";
 import { t } from "../i18n";
+import { ambientHint } from "./ambients";
 
 const TITLES = { pink: "titlePink", brown: "titleBrown", white: "titleWhite" } as const;
+const AMBIENT_TITLES = {
+  "rain-soft": "ambientRainSoft",
+  rain: "ambientRain",
+  storm: "ambientStorm",
+  downpour: "ambientDownpour",
+} as const;
 const NOTICES = {
   headphonesDisconnected: "pausedHeadphones",
   outputChanged: "pausedOutputChanged",
@@ -25,13 +32,18 @@ export function player(onToggle: () => void) {
       play.setAttribute("aria-pressed", String(s.playing));
       play.setAttribute("aria-label", t(s.playing ? "actionPause" : "actionPlay"));
       play.disabled = !s.output && !s.playing;
-      title.textContent = t(TITLES[s.color]);
+      const ambient = s.ambient ? AMBIENT_TITLES[s.ambient as keyof typeof AMBIENT_TITLES] : undefined;
+      title.textContent = t(ambient ?? TITLES[s.color]);
       status.textContent = t(s.playing ? "statusPlaying" : "statusPaused");
 
       const reason = !s.output ? "noOutput" : s.playing ? null : s.pausedFor;
       // Sleep and lock pauses are expected: no notice for them.
       const notice = reason && reason !== "suspended" && reason !== "locked" ? NOTICES[reason] : null;
-      subtitle.textContent = notice ? t(notice) : t("subtitleLive");
+      subtitle.textContent = notice
+        ? t(notice)
+        : s.ambient
+          ? t("subtitleAmbient", { hint: ambientHint(s.ambient) })
+          : t("subtitleLive");
       subtitle.classList.toggle("is-notice", notice !== null);
     },
   };
