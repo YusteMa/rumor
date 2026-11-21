@@ -13,11 +13,11 @@
     "build:web": "cargo build --release --target wasm32-unknown-unknown --manifest-path web/Cargo.toml && tsc --noEmit && vite build --config vite.web.config.ts"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.12.4"
+    "@tauri-apps/api": "^2.12.5"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.12.4",
+    "@tauri-apps/cli": "^2.12.5",
     "typescript": "^7.0.2",
-    "vite": "^8.3.5"
+    "vite": "^8.3.8"
   }
 }
