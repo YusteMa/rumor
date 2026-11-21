@@ -49,7 +49,7 @@ Rumor **computes the noise sample by sample** on your PC, the way the iPhone's B
 
 ### Everyday
 - **Sleep timer** with a slow fade-out (25, 50 or 90 min by default).
-- **Global shortcuts**: `Ctrl+Alt+P` plays or pauses and `Ctrl+Alt+T` starts the stopwatch. Every other action can get its own.
+- **Global shortcuts**: `Ctrl+Alt+P` plays or pauses and `Ctrl+Alt+T` starts or pauses the stopwatch. Every other action can get its own.
 - **Light and dark themes**, Mica on Windows 11, an accent that follows the noise, and Spanish or English.
 - **Starts with Windows** if you want, and **updates itself** with one click.
 
@@ -112,6 +112,8 @@ Rumor is built with Tauri v2, a Rust audio engine (`cpal`, WASAPI) and a small T
 ## Credits and licence
 
 Rumor is released under the [MIT](LICENSE) licence.
+
+The Rumor name and icon are not covered by the MIT licence.
 
 The ambients are field recordings released under CC0 on [freesound.org](https://freesound.org), credited here with thanks:
 - "Forest cabin summer rain" by giddster

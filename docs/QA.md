@@ -62,7 +62,7 @@ Run `npm run tauri dev` (or the installed build). No window should open.
 
 ## Panel (phase 3)
 
-Reference screenshots (from the mock backend): `docs/screenshots/panel-light.png`, `panel-dark.png`, `panel-study.png`, `settings-light.png`.
+Reference screenshots (from the mock backend) are the ones in `docs/screenshots/`.
 
 - [ ] Right click on the tray icon: the panel fades in, 8 px upward, in under 150 ms, next to the icon.
 - [ ] Click anywhere outside: it fades out. Right click on the icon while open: it closes and stays closed.
