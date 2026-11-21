@@ -54,7 +54,7 @@ jobs:
         with:
           # Signed update bundles only here, so local builds need no key.
           args: --config src-tauri/tauri.release.conf.json
-          includeUpdaterJson: true
+          uploadUpdaterJson: true
           # Most people install the .exe: update them with the .exe too.
           updaterJsonPreferNsis: true
           tagName: ${{ github.ref_name }}
