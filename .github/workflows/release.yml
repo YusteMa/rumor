@@ -56,13 +56,13 @@ jobs:
           releaseBody: |
             See the assets below: **Rumor_…_x64-setup.exe** is the recommended installer; the .msi is for managed installs.
 
-            Windows SmartScreen will say "Windows protected your PC" because the beta isn't code-signed yet: click **More info < Run anyway**. Details in the [README](https://github.com/${{ github.repository }}#install).
+            Windows SmartScreen will say "Windows protected your PC" because the beta isn't code-signed yet: click **More info → Run anyway**. Details in the [README](https://github.com/${{ github.repository }}#install).
 
             ---
 
             Los recursos están abajo: **Rumor_…_x64-setup.exe** es el instalador recomendado; el .msi es para instalaciones gestionadas.
 
-            SmartScreen dirá «Windows protegió su PC» porque la beta aún no está firmada: pulsa **Más información < Ejecutar de todas formas**.
+            SmartScreen dirá «Windows protegió su PC» porque la beta aún no está firmada: pulsa **Más información → Ejecutar de todas formas**.
           releaseDraft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
 
