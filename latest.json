@@ -1,0 +1,19 @@
+{
+  "version": "0.1.0-beta.7",
+  "notes": "See the assets below: **Rumor_…_x64-setup.exe** is the recommended installer; the .msi is for managed installs.\n\nWindows SmartScreen will say \"Windows protected your PC\" because the beta isn't code-signed yet: click **More info → Run anyway**. Details in the [README](https://github.com/YusteMa/rumor#install).\n\n---\n\nLos recursos están abajo: **Rumor_…_x64-setup.exe** es el instalador recomendado; el .msi es para instalaciones gestionadas.\n\nSmartScreen dirá «Windows protegió su PC» porque la beta aún no está firmada: pulsa **Más información → Ejecutar de todas formas**.",
+  "pub_date": "2026-11-21T16:04:34.851Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMXZDMnZKUFZFaEhEK0lJTW5xd3lHSVY1ZkJ3cWVFS0xIQ3Rqdmp1V1ZVUlRYNHVja1NMZG9EcGR5RTE1SXA3K3YxMmMyMjg5OXk4VVE0aGxYR3VzTU0zWFkzSktaTFFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1Mjc3MDcxCWZpbGU6UnVtb3JfMC4xLjAtYmV0YS43X3g2NC1zZXR1cC5leGUJdmVyc2lvbjowLjEuMC1iZXRhLjcKOEFoVXd1RlRiWXM0NDJsTWdjdkRSN1gxUkVVdU1XWS9rU3RxRnZkbWdRQlFPNTdWTDQ5YlVIYjUzbDMvYWIyVWZyUS9Vc2h3MjRiUVBRaGd2TEJJREE9PQo=",
+      "url": "https://api.github.com/repos/YusteMa/rumor/releases/assets/776093031"
+    },
+    "windows-x86_64-nsis": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMXZDMnZKUFZFaEhEK0lJTW5xd3lHSVY1ZkJ3cWVFS0xIQ3Rqdmp1V1ZVUlRYNHVja1NMZG9EcGR5RTE1SXA3K3YxMmMyMjg5OXk4VVE0aGxYR3VzTU0zWFkzSktaTFFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1Mjc3MDcxCWZpbGU6UnVtb3JfMC4xLjAtYmV0YS43X3g2NC1zZXR1cC5leGUJdmVyc2lvbjowLjEuMC1iZXRhLjcKOEFoVXd1RlRiWXM0NDJsTWdjdkRSN1gxUkVVdU1XWS9rU3RxRnZkbWdRQlFPNTdWTDQ5YlVIYjUzbDMvYWIyVWZyUS9Vc2h3MjRiUVBRaGd2TEJJREE9PQo=",
+      "url": "https://api.github.com/repos/YusteMa/rumor/releases/assets/776093031"
+    },
+    "windows-x86_64-msi": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMXZDMnZKUFZFaEo0RlRsT0VGUW1JSEFFNk5JQ0Vzb0UwemNJVTczWElzZGZ0NXBRSWhQbzdRU0hUQWNXYTRlU1hYaGExN1poRjRCWUZ6UkYwcldVcVhxblNFM05FaUFVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1Mjc3MDcxCWZpbGU6UnVtb3JfMC4xLjAtYmV0YS43X3g2NF9lbi1VUy5tc2kJdmVyc2lvbjowLjEuMC1iZXRhLjcKNnJVZk1ZSjhNMStVTlZZUjRJR2UwRWVqci82a0JnZHYxMUw0WFVpL21BRUQ5MytlVnh2YWl4dXJVYnZnNXJRNUY5U2FqUlhWM3FFek9FT0MyR0JSREE9PQo=",
+      "url": "https://api.github.com/repos/YusteMa/rumor/releases/assets/776092979"
+    }
+  }
+}
