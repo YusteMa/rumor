@@ -4,8 +4,9 @@ name: Release
 # and publishes them as a GitHub pre-release (SPEC §7). Anything with a "-"
 # (beta, rc) stays a pre-release; a plain vX.Y.Z is a normal release.
 #
-# The installers are signed with the updater secrets, and latest.json goes to
-# the `updater` branch, where installed copies look.
+# The installers are signed for the updater (TAURI_SIGNING_PRIVATE_KEY and its
+# password in the repo secrets; the public half is in tauri.conf.json), and
+# latest.json goes to the `updater` branch, where installed copies look.
 
 on:
   push:
@@ -55,13 +56,13 @@ jobs:
           releaseBody: |
             See the assets below: **Rumor_…_x64-setup.exe** is the recommended installer; the .msi is for managed installs.
 
-            Windows SmartScreen will say "Windows protected your PC" because the beta isn't code-signed yet: click **More info > Run anyway**. Details in the [README](https://github.com/${{ github.repository }}#install).
+            Windows SmartScreen will say "Windows protected your PC" because the beta isn't code-signed yet: click **More info < Run anyway**. Details in the [README](https://github.com/${{ github.repository }}#install).
 
             ---
 
             Los recursos están abajo: **Rumor_…_x64-setup.exe** es el instalador recomendado; el .msi es para instalaciones gestionadas.
 
-            SmartScreen dirá «Windows protegió su PC» porque la beta aún no está firmada: pulsa **Más información > Ejecutar de todas formas**.
+            SmartScreen dirá «Windows protegió su PC» porque la beta aún no está firmada: pulsa **Más información < Ejecutar de todas formas**.
           releaseDraft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
 
@@ -79,6 +80,6 @@ jobs:
           git init --quiet --initial-branch updater
           git add latest.json
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.noreply.github.com"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit --quiet -m "chore: update manifest for $TAG"
           git push --force --quiet "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" updater
