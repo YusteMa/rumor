@@ -4,35 +4,68 @@
 
 <h1 align="center">Rumor</h1>
 
-<p align="center"><b>Real-time pink, brown and white noise for the Windows tray.</b><br>
-No loops, no compression, no account, no telemetry.</p>
+<p align="center"><b>Pink, brown and white noise, generated live in your Windows tray.</b><br>
+Real rain recordings that never loop. An optional study timer. No account, no ads, no telemetry.</p>
 
 <p align="center">
-  <img src="docs/screenshots/demo.gif" width="360" alt="The Rumor panel: play starts pink noise and the spectrum fades in; switching to brown and white reshapes the curve; then a 25-minute timer is set.">
+  <a href="https://github.com/YusteMa/rumor/releases"><img src="https://img.shields.io/github/v/release/YusteMa/rumor?include_prereleases&label=download&color=e07a8f" alt="Latest release"></a>
+  <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-555" alt="Windows 10 and 11">
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/YusteMa/rumor?color=555" alt="MIT licence"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/YusteMa/rumor/releases"><b>Download for Windows</b></a> · <a href="#en-español">Leer en español</a>
+  <img src="docs/screenshots/demo.gif" width="380" alt="The Rumor panel: play starts pink noise and the spectrum fades in, switching to brown reshapes the curve, then the Ambients tab plays rain.">
+</p>
+
+<p align="center">
+  <a href="https://github.com/YusteMa/rumor/releases"><b>Download for Windows</b></a> · <a href="https://rumor.marioyuste.com"><b>Try it in your browser</b></a>
 </p>
 
 ## Why
 
-The pink noise on YouTube or Spotify is compressed audio. Noise is pure randomness and can't be compressed, so the codec mangles it (it sounds bubbly or metallic). It is also usually a loop that your brain eventually learns to hear.
+The pink noise on YouTube or Spotify is compressed audio. Noise is pure randomness, so a codec can't compress it without damage (it ends up sounding bubbly or metallic), and it's usually a loop your brain eventually learns to hear.
 
-Rumor **computes the noise sample by sample** on your PC, the way the iPhone's Background Sounds do. It never repeats and nothing is thrown away. It lives in the tray, one click or one shortcut away.
+Rumor **computes the noise sample by sample** on your PC, the way the iPhone's Background Sounds do. It never repeats and nothing gets thrown away. It lives in the tray, one click or one shortcut away.
 
-- **Three colours:** pink (balanced), brown (deep) and white (bright), each level-matched so switching never jumps in volume.
-- **Headphones-aware:** if your headphones disconnect, Rumor pauses instead of playing through the speakers. It also pauses when you lock the PC.
-- **Smooth everything:** fades on play, pause and every change. Not a single click.
-- **Sleep timer** with a fade-out, **global shortcuts** (`Ctrl+Alt+P` plays or pauses, every other action can get its own), light and dark themes, Spanish and English.
-- **Study mode (optional):** a stopwatch or Pomodoro that follows the noise, with a synthesized singing-bowl chime, tags, daily and weekly totals and a Statistics window. An optional floating mini clock keeps the time in view. `Ctrl+Alt+T` starts or pauses it.
-- **Updates itself** with one click when a new version is out.
-- **Zero telemetry.** Rumor sends nothing of yours; its only request is the update check on GitHub, which you can turn off in Settings → About.
+## Features
+
+### Sound
+- **Three colours**: pink (balanced), brown (deep) and white (bright), level-matched so switching never jumps in volume.
+- **Ambients**: real rain recordings (drizzle, rain, storm and downpour) in lossless FLAC. Rumor plays random stretches joined with long crossfades, so **you never hear the loop**. Each one downloads the first time you pick it (30–80 MB).
+- **No clicks, ever**: every play, pause and change fades in and out.
+- **Live spectrum** of what's playing, plus mono mode for one earbud and a remembered volume per output.
+
+### Headphones-aware
+- **If your headphones disconnect, Rumor pauses** instead of blasting through the speakers. Wired and Bluetooth.
+- **It also pauses when you lock the PC** (Win+L) and resumes on unlock only if you're still on headphones.
+- An optional **ear-break reminder** after a few hours on headphones.
+
+### Study mode (optional, off by default)
+- A **stopwatch or Pomodoro** that starts and stops with the noise, or on its own.
+- A synthesized **singing-bowl chime** marks the phase changes.
+- **Tags per subject**, today's and this week's totals, and an optional **idle check** that asks whether you were still studying.
+- A **floating mini clock** that stays on top while a session runs.
+- **Statistics**: week and month views, a **weekly goal** with a progress ring and streak, an 8-week trend, editable sessions and CSV export.
+
+### Everyday
+- **Sleep timer** with a slow fade-out (25, 50 or 90 min by default).
+- **Global shortcuts**: `Ctrl+Alt+P` plays or pauses and `Ctrl+Alt+T` starts the stopwatch. Every other action can get its own.
+- **Light and dark themes**, Mica on Windows 11, an accent that follows the noise, and Spanish or English.
+- **Starts with Windows** if you want, and **updates itself** with one click.
+
+## Screenshots
 
 <p align="center">
-  <img src="docs/screenshots/panel-light.png" width="270" alt="The panel in light mode playing pink noise with a 25-minute timer">
-  <img src="docs/screenshots/panel-dark.png" width="270" alt="The panel in dark mode playing brown noise">
-  <img src="docs/screenshots/panel-study.png" width="270" alt="The panel in dark mode with a Pomodoro study session running">
+  <img src="docs/screenshots/panel-noise.png" width="270" alt="The panel playing pink noise, with the spectrum, volume and timer">
+  <img src="docs/screenshots/panel-ambients.png" width="270" alt="The Ambients tab with the four rain recordings">
+  <img src="docs/screenshots/panel-study.png" width="270" alt="The panel with a Pomodoro session running on the study dial">
+</p>
+<p align="center">
+  <img src="docs/screenshots/statistics.png" width="560" alt="The Statistics window: this week's hours per day, the weekly goal ring and time by subject">
+</p>
+<p align="center">
+  <img src="docs/screenshots/settings.png" width="420" alt="The Settings window">
+  <img src="docs/screenshots/mini-clock.png" width="240" alt="The floating mini clock over another window">
 </p>
 
 ## Install
@@ -40,16 +73,25 @@ Rumor **computes the noise sample by sample** on your PC, the way the iPhone's B
 Windows 10 or 11, 64-bit.
 
 1. Download **`Rumor_…_x64-setup.exe`** from the [latest release](https://github.com/YusteMa/rumor/releases).
-2. Run it. Rumor appears in the tray (it may be hidden under the **^** arrow; drag it onto the taskbar to keep it in view).
+2. Run it. Rumor appears in the tray; it may be hidden under the **^** arrow, so drag it onto the taskbar to keep it in view.
 3. **Left click** plays or pauses. **Right click** opens the panel.
 
-**"Windows protected your PC"?** The beta isn't code-signed yet, so SmartScreen warns about any new app. Click **More info → Run anyway**. Code signing is planned for v1.0. If you prefer, you can [build it yourself](#build-from-source).
+**"Windows protected your PC"?** Rumor isn't code-signed yet, so SmartScreen warns about it like any new app. Click **More info → Run anyway**. Code signing is planned for v1.0. If you prefer, you can [build it yourself](#build-from-source).
 
-The `.msi` in the release is the same app, for managed installs.
+The `.msi` in each release is the same app, for managed installs.
+
+## Privacy
+
+**Rumor sends nothing about you.** No account, no analytics, no telemetry. It only goes online for two things, and both go to this repository on GitHub:
+
+- **Checking for updates**: a small file every few hours. Updates install only if they carry Rumor's signature. You can turn it off in Settings → About.
+- **Downloading an ambient**: only when you pick it. The file is used only if its size and SHA-256 match the ones built into the app.
+
+Everything else, including settings and study sessions, stays on your PC.
 
 ## Feedback
 
-This is a **beta**. Bug reports are very welcome, especially about sound, headphones and Bluetooth: [open an issue](https://github.com/YusteMa/rumor/issues/new/choose). Ideas and questions go to [Discussions](https://github.com/YusteMa/rumor/discussions). English or Spanish.
+Bug reports are very welcome, especially about sound, headphones and Bluetooth: [open an issue](https://github.com/YusteMa/rumor/issues/new/choose) and attach the log (Settings → Advanced → Logs). Ideas and questions go to [Discussions](https://github.com/YusteMa/rumor/discussions). Security problems go to [SECURITY.md](SECURITY.md).
 
 ## Build from source
 
@@ -61,25 +103,18 @@ npm run tauri dev      # development
 npm run tauri build    # installers in src-tauri/target/release/bundle/
 ```
 
-Tauri v2, a Rust audio engine (`cpal`, WASAPI) and a small TypeScript panel without a UI framework. [SPEC.md](SPEC.md) describes the product, [ROADMAP.md](ROADMAP.md) what comes next and [CONTRIBUTING.md](CONTRIBUTING.md) how to help.
+Rumor is built with Tauri v2, a Rust audio engine (`cpal`, WASAPI) and a small TypeScript panel without a UI framework. The same engine compiles to WebAssembly for the [browser demo](web/README.md).
 
-## En español
+- [SPEC.md](SPEC.md) describes the product (in Spanish).
+- [ROADMAP.md](ROADMAP.md) lists what comes next.
+- [CONTRIBUTING.md](CONTRIBUTING.md) explains how to help.
 
-**Rumor** genera ruido rosa, marrón y blanco **en tiempo real** desde la bandeja de Windows. El ruido de YouTube o Spotify es audio comprimido: el códec lo destroza (suena burbujeante o metálico) y suele ser un bucle que el cerebro acaba notando. Rumor lo calcula muestra a muestra en tu PC, como los Sonidos de fondo del iPhone. Nunca se repite.
+## Credits and licence
 
-- Tres colores igualados en volumen, fundidos suaves y ni un clic.
-- **Si se desconectan los cascos, se pausa**: nunca suena por los altavoces sin que lo pidas. También se pausa al bloquear el PC.
-- Temporizador con fundido, atajos globales (`Ctrl+Alt+P` reproduce o pausa), tema claro y oscuro, en español e inglés.
-- **Modo estudio** opcional: cronómetro o Pomodoro vinculado al ruido, con un cuenco tibetano sintetizado como aviso, etiquetas, totales de hoy y de la semana y una ventana de Estadísticas. Un mini reloj flotante opcional deja el tiempo a la vista. `Ctrl+Alt+T` lo inicia o lo pausa.
-- **Se actualiza sola** con un clic cuando sale una versión nueva.
-- **Sin telemetría:** Rumor no envía nada tuyo. Solo consulta GitHub para buscar actualizaciones, y se puede desactivar en Ajustes → Acerca de.
+Rumor is released under the [MIT](LICENSE) licence.
 
-**Instalación** (Windows 10 u 11, 64 bits): descarga `Rumor_…_x64-setup.exe` de la [última versión](https://github.com/YusteMa/rumor/releases) y ábrelo. Rumor aparece en la bandeja (puede quedar oculto bajo la flecha **^**; arrástralo a la barra para tenerlo a la vista). Si Windows dice **«Windows protegió su PC»**, es porque la beta aún no está firmada: pulsa **Más información → Ejecutar de todas formas**. Clic izquierdo en el icono reproduce o pausa; clic derecho abre el panel.
-
-Es una **beta**: los fallos (sobre todo de sonido, cascos y Bluetooth) van a [Issues](https://github.com/YusteMa/rumor/issues/new/choose) y las ideas y preguntas a [Discussions](https://github.com/YusteMa/rumor/discussions).
-
-## License
-
-[MIT](LICENSE)
-
-The ambients are field recordings released under CC0 on [freesound.org](https://freesound.org), credited here with thanks: "Forest cabin summer rain" by giddster, "rain in the forest atmo field recording" by Garuda1982, "Excellent thunder & rain 25 Sept '21" by gepetto3548 and "Rain and thunder in Thailand" by Felix Blume.
+The ambients are field recordings released under CC0 on [freesound.org](https://freesound.org), credited here with thanks:
+- "Forest cabin summer rain" by giddster
+- "rain in the forest atmo field recording" by Garuda1982
+- "Excellent thunder & rain 25 Sept '21" by gepetto3548
+- "Rain and thunder in Thailand" by Felix Blume
