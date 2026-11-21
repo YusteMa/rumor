@@ -135,7 +135,7 @@
   "aboutVersion": "Version {v}",
   "aboutRepo": "Source code",
   "aboutLicense": "MIT licence",
-  "aboutTelemetry": "No telemetry: Rumor sends nothing of yours. It only asks GitHub whether there's a new version.",
+  "aboutTelemetry": "No telemetry: Rumor sends nothing about you. It only goes online to check GitHub for updates now and then (you can turn this off) and to download an ambient when you pick it.",
   "aboutBugs": "To report a bug, open an issue on GitHub and attach the log (Advanced → Logs).",
   "optPerOutputVolume": "Volume per output",
   "hintPerOutputVolume": "Remembers one volume for headphones, another for speakers… and applies it when you switch.",
