@@ -33,7 +33,7 @@ cargo test
 2. Commit, then push a tag: `git tag v0.1.0-beta.2 && git push origin v0.1.0-beta.2`.
 3. The release workflow builds and signs the installers, publishes the release and writes `latest.json` to the `updater` branch. Installed copies see it within 6 hours.
 
-The installers are signed with the updater key (`TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` in the repo secrets). If that key is lost, installed copies can't update any more and need a manual reinstall. Local `npm run tauri build` doesn't sign anything and needs no key.
+The installers are signed with the updater key (`TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` in the secrets of the `release` environment, not the repo's). If that key is lost, installed copies can't update any more and need a manual reinstall. Local `npm run tauri build` doesn't sign anything and needs no key.
 
 ## Ground rules
 

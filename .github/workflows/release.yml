@@ -5,8 +5,9 @@ name: Release
 # (beta, rc) stays a pre-release; a plain vX.Y.Z is a normal release.
 #
 # The installers are signed for the updater (TAURI_SIGNING_PRIVATE_KEY and its
-# password in the repo secrets; the public half is in tauri.conf.json), and
-# latest.json goes to the `updater` branch, where installed copies look.
+# password in the secrets of the `release` environment, not the repo's; the
+# public half is in tauri.conf.json), and latest.json goes to the `updater`
+# branch, where installed copies look.
 
 on:
   push:
@@ -18,19 +19,25 @@ permissions:
 jobs:
   release:
     runs-on: windows-latest
+    # The signing key lives in the `release` environment, which waits for
+    # Mario's approval: no installer is signed without it.
+    environment: release
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: lts/*
           cache: npm
 
       - run: npm ci
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          # Pinned by SHA, so the toolchain has to be named here.
+          toolchain: stable
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: src-tauri
 
@@ -39,7 +46,7 @@ jobs:
         working-directory: src-tauri
         run: cargo test
 
-      - uses: tauri-apps/tauri-action@v0
+      - uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0.6.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}

@@ -1,0 +1,23 @@
+# Weekly update PRs. Actions are pinned by commit SHA; Dependabot keeps the
+# SHAs (and the version comment next to them) up to date.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: cargo
+    # web/ is its own Cargo project (the browser demo), not a workspace member.
+    directories: [/src-tauri, /web]
+    schedule:
+      interval: weekly
+    groups:
+      cargo-minor:
+        update-types: [minor, patch]
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      npm-minor:
+        update-types: [minor, patch]
