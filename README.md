@@ -18,7 +18,7 @@ Real rain recordings that never loop. An optional study timer. No account, no ad
 </p>
 
 <p align="center">
-  <a href="https://github.com/YusteMa/rumor/releases"><b>Download for Windows</b></a> · <a href="https://rumor.marioyuste.com"><b>Try it in your browser</b></a>
+  <a href="https://github.com/YusteMa/rumor/releases"><b>Download for Windows</b></a> · <a href="https://marioyuste.com/proyectos/rumor/"><b>Try it in your browser</b></a>
 </p>
 
 ## Why
@@ -55,18 +55,40 @@ Rumor **computes the noise sample by sample** on your PC, the way the iPhone's B
 
 ## Screenshots
 
+<table>
+  <tr>
+    <td align="center" valign="top" width="33%">
+      <img src="docs/screenshots/panel-noise.png" width="260" alt="The panel in light mode playing pink noise, with the spectrum, the volume and a 25-minute timer running"><br>
+      <sub><b>Noise</b> with a sleep timer</sub>
+    </td>
+    <td align="center" valign="top" width="33%">
+      <img src="docs/screenshots/panel-ambients.png" width="260" alt="The panel in dark mode on the Ambients tab, playing the Rain recording; Downpour is still to download"><br>
+      <sub><b>Ambients</b>, real rain that never loops</sub>
+    </td>
+    <td align="center" valign="top" width="33%">
+      <img src="docs/screenshots/panel-study.png" width="260" alt="The panel in dark mode with a Pomodoro work phase running on the study dial, tagged Cálculo"><br>
+      <sub><b>Study mode</b> with a Pomodoro</sub>
+    </td>
+  </tr>
+</table>
+
 <p align="center">
-  <img src="docs/screenshots/panel-noise.png" width="270" alt="The panel playing pink noise, with the spectrum, volume and timer">
-  <img src="docs/screenshots/panel-ambients.png" width="270" alt="The Ambients tab with the four rain recordings">
-  <img src="docs/screenshots/panel-study.png" width="270" alt="The panel with a Pomodoro session running on the study dial">
+  <img src="docs/screenshots/statistics.png" width="720" alt="The Statistics window: this week's total against a 15-hour goal, an 8-week trend, hours per day by subject, time by subject and the hours you study most"><br>
+  <sub><b>Statistics</b>: weekly goal, trend, subjects and your best hours</sub>
 </p>
-<p align="center">
-  <img src="docs/screenshots/statistics.png" width="560" alt="The Statistics window: this week's hours per day, the weekly goal ring and time by subject">
-</p>
-<p align="center">
-  <img src="docs/screenshots/settings.png" width="420" alt="The Settings window">
-  <img src="docs/screenshots/mini-clock.png" width="240" alt="The floating mini clock over another window">
-</p>
+
+<table>
+  <tr>
+    <td align="center" valign="middle" width="62%">
+      <img src="docs/screenshots/settings.png" width="460" alt="The Settings window in dark mode, on General: what to do when headphones disconnect or the PC locks, alerts, the ear break, mono and start with Windows"><br>
+      <sub><b>Settings</b></sub>
+    </td>
+    <td align="center" valign="middle" width="38%">
+      <img src="docs/screenshots/mini-clock.png" width="260" alt="The floating mini clock: a pill with the Pomodoro ring as its pause button and 11:26 left in work phase 1 of 4"><br>
+      <sub><b>Mini clock</b>, always on top</sub>
+    </td>
+  </tr>
+</table>
 
 ## Install
 
