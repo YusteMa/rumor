@@ -126,7 +126,6 @@ export function study(actions: StudyActions) {
   // "" is no tag; ids travel as strings through the dropdown.
   const tags = dropdown<string>([], (v) => actions.setTag(v ? Number(v) : null));
   tags.node.classList.add("compact");
-  tags.node.setAttribute("aria-label", t("studyTag"));
   tagSlot.append(tags.node);
   let tagKey = "";
 
@@ -170,7 +169,9 @@ export function study(actions: StudyActions) {
 
       // Tags only appear once there is one.
       tagSlot.hidden = s.tags.length === 0;
-      const key = s.tags.map((g) => `${g.id}:${g.name}:${g.color}`).join("|");
+      // Labels in render, like the buttons above: the language can change while open.
+      tags.node.setAttribute("aria-label", t("studyTag"));
+      const key = [t("tagNone"), ...s.tags.map((g) => `${g.id}:${g.name}:${g.color}`)].join("|");
       if (key !== tagKey) {
         tagKey = key;
         tags.setOptions([["", t("tagNone")], ...s.tags.map((g): [string, string] => [String(g.id), g.name])]);
