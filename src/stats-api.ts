@@ -158,9 +158,10 @@ export interface Session {
   end: number;
   secs: number;
   tag: TagId;
-  /** The noise playing when it started; `null` without noise or before it
-   *  was recorded. */
-  noise: Color | null;
+  /** What was playing when it started: a noise colour or an ambient id
+   *  (`ambients::CATALOG`); `null` without sound or before it was recorded.
+   *  A plain string, since a history can hold names this version doesn't know. */
+  noise: string | null;
   mode: "stopwatch" | "pomodoro";
   /** 0 = as recorded, 1 = edited, 2 = added by hand. */
   edited: 0 | 1 | 2;
@@ -321,7 +322,7 @@ function generate(now: Date, notags: boolean, quiet: boolean): Session[] {
         end: endMs,
         secs: mins * 60,
         tag,
-        noise: pick<Color>(rand, [["brown", 0.5], ["pink", 0.35], ["white", 0.15]]),
+        noise: pick<string>(rand, [["brown", 0.45], ["pink", 0.3], ["white", 0.15], ["rain", 0.1]]),
         mode: rand() < 0.75 ? "stopwatch" : "pomodoro",
         edited: 0,
         running: false,

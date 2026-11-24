@@ -993,6 +993,10 @@ pub fn stats_csv(app: &AppHandle) -> Result<String, DbError> {
             ("pink", get("colorPink")),
             ("brown", get("colorBrown")),
             ("white", get("colorWhite")),
+            ("rain-soft", get("ambientRainSoft")),
+            ("rain", get("ambientRain")),
+            ("storm", get("ambientStorm")),
+            ("downpour", get("ambientDownpour")),
         ];
         let modes = [
             ("stopwatch", get("modeStopwatch")),
