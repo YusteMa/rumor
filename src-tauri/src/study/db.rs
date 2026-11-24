@@ -302,6 +302,18 @@ impl Db {
         Ok(rows.collect::<Result<_, _>>()?)
     }
 
+    /// Sessions with any time in `[from, to)` (UTC ms), oldest first,
+    /// without their segments: the ones started earlier that run into it too.
+    pub fn sessions_touching(&self, from: i64, to: i64) -> Result<Vec<Session>, DbError> {
+        let mut stmt = self.conn.prepare_cached(&format!(
+            "{SELECT} WHERE deleted_at IS NULL AND started_at < ?2
+             AND COALESCE(ended_at, started_at + net_ms) >= ?1
+             ORDER BY started_at"
+        ))?;
+        let rows = stmt.query_map(params![from, to], session_row)?;
+        Ok(rows.collect::<Result<_, _>>()?)
+    }
+
     /// Up to `limit` sessions started before `before`, newest first.
     pub fn sessions_before(&self, before: i64, limit: usize) -> Result<Vec<Session>, DbError> {
         let mut stmt = self.conn.prepare_cached(&format!(
@@ -334,6 +346,26 @@ impl Db {
             if let Some(s) = sessions.iter_mut().find(|s| s.id == id) {
                 s.segments.push((r.get(1)?, r.get(2)?));
             }
+        }
+        Ok(())
+    }
+
+    /// Fills in the segments of the sessions `pick` chooses, where they
+    /// aren't loaded yet; one query each, for the few that need them.
+    pub fn load_segments_where(
+        &self,
+        sessions: &mut [Session],
+        pick: impl Fn(&Session) -> bool,
+    ) -> Result<(), DbError> {
+        let mut stmt = self.conn.prepare_cached(
+            "SELECT started_at, ended_at FROM segments WHERE session_id = ?1 ORDER BY started_at",
+        )?;
+        for s in sessions
+            .iter_mut()
+            .filter(|s| s.segments.is_empty() && pick(s))
+        {
+            let rows = stmt.query_map([s.id], |r| Ok((r.get(0)?, r.get(1)?)))?;
+            s.segments = rows.collect::<Result<_, _>>()?;
         }
         Ok(())
     }

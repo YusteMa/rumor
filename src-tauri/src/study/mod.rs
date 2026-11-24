@@ -380,6 +380,8 @@ impl Study {
             stats::midnight(&Local, from),
             stats::midnight(&Local, to),
         )?;
+        // Days split the work of those past midnight by their segments.
+        db.load_segments_where(&mut all, |s| s.crosses_midnight(&Local))?;
         Ok(self.with_live(all, now))
     }
 
@@ -546,10 +548,16 @@ impl Study {
                 .db
                 .as_ref()
                 .map(|db| {
-                    db.sessions(
+                    // Those started before the week count for what they
+                    // worked inside it.
+                    db.sessions_touching(
                         stats::midnight(&Local, start),
                         stats::midnight(&Local, start + chrono::Days::new(7)),
                     )
+                    .and_then(|mut list| {
+                        db.load_segments_where(&mut list, |s| s.crosses_midnight(&Local))?;
+                        Ok(list)
+                    })
                     .map_err(|e| log::warn!("totals: {e}"))
                     .unwrap_or_default()
                 })

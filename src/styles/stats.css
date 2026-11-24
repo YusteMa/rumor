@@ -868,6 +868,10 @@ input {
   background: var(--accent-white);
 }
 
+.noise-dot.is-ambient {
+  background: var(--accent-ambient);
+}
+
 .mark {
   padding: 0 var(--space-2);
   border-radius: var(--radius-pill);

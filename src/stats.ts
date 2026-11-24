@@ -691,7 +691,7 @@ function sessionRow(s: Session): HTMLElement {
     el(
       "span",
       { className: "session-meta" },
-      ...(s.noise ? [el("span", { className: `noise-dot is-${s.noise}`, title: t(noiseKey(s.noise)) }), t(noiseKey(s.noise))] : []),
+      ...noiseMeta(s.noise),
       ...(marks.length ? [el("span", { className: "mark", textContent: marks.join(" · ") })] : []),
     ),
   );
@@ -711,8 +711,24 @@ function sessionRow(s: Session): HTMLElement {
   return row;
 }
 
-function noiseKey(c: Color): Key {
-  return ({ pink: "colorPink", brown: "colorBrown", white: "colorWhite" } as const)[c];
+/** Each sound a session can start with: its name, and its dot's colour. */
+const SOUNDS: Record<string, { key: Key; dot: Color | "ambient" }> = {
+  pink: { key: "colorPink", dot: "pink" },
+  brown: { key: "colorBrown", dot: "brown" },
+  white: { key: "colorWhite", dot: "white" },
+  "rain-soft": { key: "ambientRainSoft", dot: "ambient" },
+  rain: { key: "ambientRain", dot: "ambient" },
+  storm: { key: "ambientStorm", dot: "ambient" },
+  downpour: { key: "ambientDownpour", dot: "ambient" },
+};
+
+/** The dot and name of a session's sound. Nothing for silence, or for a
+ *  name this version doesn't know: a stored value never breaks the list. */
+function noiseMeta(noise: string | null): (HTMLElement | string)[] {
+  const sound = noise && Object.hasOwn(SOUNDS, noise) ? SOUNDS[noise] : null;
+  if (!sound) return [];
+  const name = t(sound.key);
+  return [el("span", { className: `noise-dot is-${sound.dot}`, title: name }), name];
 }
 
 function renderSessions(list: SessionDay[], next: number | null): void {

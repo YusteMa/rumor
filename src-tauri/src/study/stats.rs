@@ -2,9 +2,11 @@
 //! "Hoy" and "Semana", the Statistics window and the CSV export, so the three
 //! always agree.
 //!
-//! A session belongs, whole, to the local day it started on, even when it
-//! runs past midnight (decided 2026-11-05), so a day's total is always the
-//! sum of the sessions listed under it. Times are UTC milliseconds; days are
+//! Work counts on the local day it was done (decided 2026-11-24, replacing
+//! "a session counts whole on the day it started"): a session that runs past
+//! midnight, or is paused one night and continued the next morning, splits
+//! its work by its segments. The session itself (the list, the number of
+//! sessions, the longest session) stays on the day it started. Times are UTC milliseconds; days are
 //! local to the time zone passed in (`Local` in the app, Europe/Madrid in the
 //! tests), so a day with a clock change simply has 23 or 25 hours.
 //!
@@ -70,21 +72,60 @@ pub struct Session {
 }
 
 impl Session {
-    /// Work done by `until`: all of it if it ended by then, otherwise its
-    /// segments up to that instant.
-    fn secs_by(&self, until: i64) -> u64 {
-        if self.end <= until {
+    /// Its work stretches: the segments, or one stretch from the start when
+    /// they aren't loaded.
+    fn stretches(&self) -> Vec<(i64, i64)> {
+        if self.segments.is_empty() {
+            vec![(self.start, self.start + signed(self.secs) * 1000)]
+        } else {
+            self.segments.clone()
+        }
+    }
+
+    /// Work done in `[from, to)` (UTC ms): all of it if it lies inside,
+    /// otherwise its stretches cut to that span.
+    fn secs_between(&self, from: i64, to: i64) -> u64 {
+        if self.start >= from && self.end <= to {
             return self.secs;
         }
-        if self.segments.is_empty() {
-            return (u64::try_from(until - self.start).unwrap_or(0) / 1000).min(self.secs);
-        }
         let ms: i64 = self
-            .segments
+            .stretches()
             .iter()
-            .map(|&(a, b)| (b.min(until) - a).max(0))
+            .map(|&(a, b)| (b.min(to) - a.max(from)).max(0))
             .sum();
         (u64::try_from(ms).unwrap_or(0) / 1000).min(self.secs)
+    }
+
+    /// Whether it starts and ends on different local days.
+    pub fn crosses_midnight<Tz: TimeZone>(&self, tz: &Tz) -> bool {
+        day_of(tz, self.start) != day_of(tz, self.end)
+    }
+
+    /// Its work per local day, oldest first; always adds up to `secs`.
+    fn days<Tz: TimeZone>(&self, tz: &Tz) -> Vec<(NaiveDate, u64)> {
+        let first = day_of(tz, self.start);
+        if !self.crosses_midnight(tz) {
+            return vec![(first, self.secs)];
+        }
+        let mut days: Vec<(NaiveDate, u64)> = first
+            .iter_days()
+            .take_while(|d| *d <= day_of(tz, self.end))
+            .map(|d| {
+                let secs = self.secs_between(midnight(tz, d), midnight(tz, add_days(d, 1)));
+                (d, secs)
+            })
+            .filter(|(_, secs)| *secs > 0)
+            .collect();
+        // Whole seconds per day can fall a little short: the rest goes to
+        // the last day, so the days add up to the session.
+        let rest = self
+            .secs
+            .saturating_sub(days.iter().map(|(_, s)| s).sum::<u64>());
+        match days.last_mut() {
+            Some((_, secs)) => *secs += rest,
+            None => days.push((first, self.secs)),
+        }
+        days
     }
 }
 
@@ -140,25 +181,31 @@ fn signed(secs: u64) -> i64 {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct DayTotal {
-    /// Work, the session in progress included.
+    /// Work done this day, the session in progress included.
     pub secs: u64,
     pub by_tag: BTreeMap<TagId, u64>,
-    /// Finished sessions, and their work.
+    /// Finished sessions started this day.
     pub sessions: u32,
+    /// Work done this day in finished sessions.
     pub finished_secs: u64,
 }
 
 /// Every day with study and what it holds: the one sum everything else is
-/// read from.
+/// read from. Work counts on the day it was done; a session, on the day it
+/// started.
 pub fn by_day<Tz: TimeZone>(tz: &Tz, sessions: &[Session]) -> BTreeMap<NaiveDate, DayTotal> {
     let mut days: BTreeMap<NaiveDate, DayTotal> = BTreeMap::new();
     for s in sessions {
-        let d = days.entry(day_of(tz, s.start)).or_default();
-        d.secs += s.secs;
-        *d.by_tag.entry(s.tag).or_default() += s.secs;
+        for (day, secs) in s.days(tz) {
+            let d = days.entry(day).or_default();
+            d.secs += secs;
+            *d.by_tag.entry(s.tag).or_default() += secs;
+            if !s.running {
+                d.finished_secs += secs;
+            }
+        }
         if !s.running {
-            d.sessions += 1;
-            d.finished_secs += s.secs;
+            days.entry(day_of(tz, s.start)).or_default().sessions += 1;
         }
     }
     days
@@ -381,13 +428,16 @@ impl<Tz: TimeZone> Context<'_, Tz> {
         let (a, b) = (midnight(self.tz, from), midnight(self.tz, to));
         let b = until.map_or(b, |u| b.min(u));
         let mut by_tag = BTreeMap::new();
-        for s in sessions.iter().filter(|s| s.start >= a && s.start < b) {
-            *by_tag.entry(s.tag).or_default() += until.map_or(s.secs, |u| s.secs_by(u));
+        for s in sessions {
+            let secs = s.secs_between(a, b);
+            if secs > 0 {
+                *by_tag.entry(s.tag).or_default() += secs;
+            }
         }
         by_tag
     }
 
-    /// Work in sessions started in `[from, to)` (days), up to `until` if given.
+    /// Work done in `[from, to)` (days), up to `until` if given.
     fn work(
         &self,
         sessions: &[Session],
@@ -397,11 +447,7 @@ impl<Tz: TimeZone> Context<'_, Tz> {
     ) -> u64 {
         let (a, b) = (midnight(self.tz, from), midnight(self.tz, to));
         let b = until.map_or(b, |u| b.min(u));
-        sessions
-            .iter()
-            .filter(|s| s.start >= a && s.start < b)
-            .map(|s| until.map_or(s.secs, |u| s.secs_by(u)))
-            .sum()
+        sessions.iter().map(|s| s.secs_between(a, b)).sum()
     }
 }
 
@@ -731,7 +777,13 @@ pub fn week_view<Tz: TimeZone>(
         .collect();
     let secs = sum_days(&days, week, end);
     let count: u32 = days.range(week..end).map(|(_, d)| d.sessions).sum();
-    let finished_secs: u64 = days.range(week..end).map(|(_, d)| d.finished_secs).sum();
+    // The average session: whole sessions started this week, wherever their
+    // work fell.
+    let finished_secs: u64 = done
+        .iter()
+        .filter(|s| (week..end).contains(&day_of(cx.tz, s.start)))
+        .map(|s| s.secs)
+        .sum();
     let elapsed = if current {
         u32::try_from((cx.today() - week).num_days() + 1).unwrap_or(7)
     } else {
@@ -1091,8 +1143,8 @@ mod tests {
     }
 
     #[test]
-    fn a_session_across_midnight_counts_on_the_day_it_started() {
-        // 23:30 → 00:45, with a pause.
+    fn a_session_across_midnight_splits_its_work_by_day() {
+        // 23:30 → 00:45, paused 23:50 → 00:10.
         let start = at(2026, 11, 3, 23, 30);
         let s = Session {
             segments: vec![(start, start + 20 * M), (start + 40 * M, start + 75 * M)],
@@ -1100,12 +1152,52 @@ mod tests {
             ..session(1, start, 55, None)
         };
         let days = by_day(&Madrid, &[s]);
-        assert_eq!(days[&day(2026, 11, 3)].secs, 55 * 60);
-        assert!(!days.contains_key(&day(2026, 11, 4)));
+        assert_eq!(days[&day(2026, 11, 3)].secs, 20 * 60);
+        assert_eq!(days[&day(2026, 11, 4)].secs, 35 * 60);
+        // The session itself stays on the day it started.
+        assert_eq!(days[&day(2026, 11, 3)].sessions, 1);
+        assert_eq!(days[&day(2026, 11, 4)].sessions, 0);
     }
 
     #[test]
-    fn clock_changes_keep_every_session_on_its_local_day() {
+    fn a_session_paused_overnight_counts_the_morning_today() {
+        // One minute at 21:44, paused all night, 2 h 50 the next morning.
+        let start = at(2026, 11, 23, 21, 44);
+        let morning = at(2026, 11, 24, 9, 0);
+        let s = Session {
+            segments: vec![(start, start + M), (morning, morning + 170 * M)],
+            end: morning + 170 * M,
+            ..session(1, start, 171, None)
+        };
+        let (today, week) = totals(
+            &Madrid,
+            std::slice::from_ref(&s),
+            day(2026, 11, 24),
+            Weekday::Mon,
+        );
+        assert_eq!((today, week), (170 * 60, 171 * 60));
+        let page = page(&Madrid, vec![s], 14, false);
+        assert_eq!(page.days[0].date, "2026-11-23", "listed where it started");
+    }
+
+    #[test]
+    fn split_days_always_add_up_to_the_session() {
+        // Segments with stray milliseconds either side of midnight.
+        let start = at(2026, 11, 3, 23, 0) + 400;
+        let midnight = at(2026, 11, 4, 0, 0);
+        let s = Session {
+            segments: vec![(start, midnight + 30 * M + 700)],
+            end: midnight + 30 * M + 700,
+            secs: 90 * 60,
+            ..session(1, start, 0, None)
+        };
+        let days = s.days(&Madrid);
+        assert_eq!(days.iter().map(|(_, secs)| secs).sum::<u64>(), 90 * 60);
+        assert_eq!(days.len(), 2);
+    }
+
+    #[test]
+    fn clock_changes_keep_work_on_its_local_day() {
         // Spring forward: 29 March 2026, 02:00 → 03:00 (a 23-hour day).
         // Fall back: 25 October 2026, 03:00 → 02:00 (a 25-hour day).
         let sessions = [
@@ -1117,10 +1209,13 @@ mod tests {
             session(5, at(2026, 10, 25, 2, 30), 60, None),
             session(6, at(2026, 10, 25, 23, 30), 45, None),
         ];
+        // 1, 3 and 6 run past midnight: each day keeps what was done in it.
         let days = by_day(&Madrid, &sessions);
-        assert_eq!(days[&day(2026, 3, 28)].secs, 3600);
-        assert_eq!(days[&day(2026, 3, 29)].secs, 120 * 60);
-        assert_eq!(days[&day(2026, 10, 25)].secs, 165 * 60);
+        assert_eq!(days[&day(2026, 3, 28)].secs, 30 * 60);
+        assert_eq!(days[&day(2026, 3, 29)].secs, (30 + 90 + 10) * 60);
+        assert_eq!(days[&day(2026, 3, 30)].secs, 20 * 60);
+        assert_eq!(days[&day(2026, 10, 25)].secs, (60 + 60 + 30) * 60);
+        assert_eq!(days[&day(2026, 10, 26)].secs, 15 * 60);
         // The day after a change starts at its own local midnight.
         assert_eq!(
             midnight(&Madrid, day(2026, 3, 30)) - midnight(&Madrid, day(2026, 3, 29)),
@@ -1130,11 +1225,11 @@ mod tests {
             midnight(&Madrid, day(2026, 10, 26)) - midnight(&Madrid, day(2026, 10, 25)),
             25 * H
         );
-        // Weeks spanning a change still hold all their sessions.
+        // Weeks spanning a change still hold all their work.
         let (_, week) = totals(&Madrid, &sessions, day(2026, 3, 29), Weekday::Mon);
-        assert_eq!(week, 180 * 60);
+        assert_eq!(week, 160 * 60);
         let (today, week) = totals(&Madrid, &sessions, day(2026, 10, 25), Weekday::Mon);
-        assert_eq!((today, week), (165 * 60, 165 * 60));
+        assert_eq!((today, week), (150 * 60, 150 * 60));
     }
 
     #[test]
