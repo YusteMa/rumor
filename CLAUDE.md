@@ -7,10 +7,10 @@ Guía para Claude Code en este repositorio. **Lee `SPEC.md` y `ROADMAP.md` antes
 2. **El producto tiene que sentirse premium:** cada detalle visual pulido, nada que parezca hecho deprisa.
 
 ## Modo aprendizaje
-Mario está aprendiendo a programar con este proyecto.
-- Antes de cambiar código, explica qué vas a hacer y por qué.
-- Los cambios pequeños los escribe Mario: dale pistas, no la solución.
-- Revisa su código como un compañero senior: qué está bien, qué mejorarías.
+Mario sabe programar (C++), pero no TypeScript ni Rust. Quiere entender el código, no escribirlo desde cero (decidido el 2026-11-27).
+- El código lo escribe Claude. Antes de cambiarlo, explica en español sencillo qué vas a hacer y por qué.
+- **Comentarios del código nuevo en español**, explicando qué hace cada parte (comparar con C++ cuando ayude). Los comentarios que ya existen en inglés no se traducen.
+- Si Mario escribe algo por su cuenta, revísalo como un compañero senior: qué está bien y qué mejorarías.
 - Git lo maneja Mario (ramas, commits, PR). No hagas commits por él.
 
 ## Qué es
@@ -107,4 +107,4 @@ rumor/
 - **Una fase del ROADMAP cada vez.** Al terminar: tests, clippy, fmt, tsc → Mario hace el commit con Conventional Commits (`feat:`, `fix:`, `chore:`…); Claude puede proponerle el mensaje.
 - Antes de una decisión de diseño no cubierta por `SPEC.md`, **pregunta**.
 - Crates sugeridos (comprueba la última versión estable antes de añadirlos): `cpal`, `fastrand`, `rtrb`, `thiserror`, `log`, `serde`, `window-vibrancy`, `rustfft` (dev). Plugins: `global-shortcut`, `autostart`, `store`, `single-instance`, `positioner`, `notification`, `log`.
-- Código, nombres y commits **en inglés**. Textos de la UI con i18n.
+- Nombres y commits **en inglés**; comentarios nuevos en español (ver «Modo aprendizaje»). Textos de la UI con i18n.

@@ -47,7 +47,7 @@ Nombre: **Rumor**. Versión objetivo de este documento: **v0.1.0-beta**.
 
 ### Descartado (y por qué)
 - **Electron:** más de 150 MB para hacer ruido. No.
-- **PWA:** no puede poner icono en la bandeja ni registrar atajos globales.
+- **PWA (en Windows):** no puede poner icono en la bandeja ni registrar atajos globales. En el móvil, en cambio, es el camino elegido (§10).
 - **Widgets de Windows 11:** solo admiten tarjetas tipo Adaptive Cards, requieren app empaquetada y casi nadie abre ese panel.
 - **Audio en el WebView (AudioWorklet):** se cortaría al destruir la ventana y depende del throttling de WebView2.
 
@@ -444,3 +444,57 @@ El panel solo enseña lo que usas a diario. **Todo lo demás vive en Ajustes**, 
 | 15 | Estadísticas, segunda entrega | **Objetivo semanal con anillo, línea diaria y racha por semanas; últimas 8 semanas junto al total; variación por asignatura; entradas animadas.** Año y ruido favorito, después (§4.3d) | Cerrada (2026-11-10) |
 | 16 | Lluvia y otros ambientes | **Grabaciones reales CC0**, no sintetizadas; FLAC sin pérdida, tramos al azar con fundidos para que no se note el bucle; **se descargan al pulsarlos** (§3.5) | Cerrada (2026-11-18) |
 | 14 | Mini reloj flotante | **Botón «sacar fuera» en el panel en vez de un ajuste**: sale solo cuando se pide y para esa sesión; apagado sin sesión; el mismo botón lo guarda; el ajuste antiguo se descarta (§4.3b) | Cerrada (2026-11-10) |
+| 17 | Rumor en el móvil | **PWA en `rumor.marioyuste.com`** (web de Rumor en `/` y app en `/app/`), sin tiendas; primero una prueba en un iPhone real (§10) | Cerrada (2026-11-27) |
+| 18 | Monetización | **Gratis y completo + «Rumor Plus» de pago único** con extras; **nunca anuncios**. Se diseña en la fase W4 (§10.5) | Cerrada (2026-11-27) |
+| 19 | Audio en el móvil | **AudioWorklet → `<audio>`** y play/pausa gobernados por el sistema, sin `setActionHandler`; probado en un iPhone real (§10.3, `docs/web-spike.md`) | Cerrada (2026-11-27) |
+
+---
+
+## 10. Rumor en el móvil y en la web (decidido el 2026-11-27)
+
+> La app de Windows sigue siendo el producto principal. Esto lo lleva a iPhone, iPad y Android **sin pasar por las tiendas** (99 €/año de Apple, 25 $ de Google), con el mismo motor de sonido.
+
+### 10.1 Dos piezas en un mismo sitio
+- **Dominio:** `rumor.marioyuste.com`, un proyecto propio de Cloudflare Pages desplegado desde este repo. Cuesta 0 € y tiene sus propios datos, separados de la web personal.
+- **`/`, la web de Rumor:** para informar. Qué es, por qué suena mejor y en qué dispositivos está.
+- **`/app/`, la app para el móvil:** una PWA (`scope: /app/`) que se instala con «Añadir a pantalla de inicio».
+- La página de marioyuste.com/proyectos/rumor/ sigue siendo el caso de estudio y enlaza aquí.
+- **Ojo con mudarse de dominio:** el navegador guarda los datos (y la app instalada) atados a la dirección exacta. Cambiar de dominio los deja atrás, y por eso la app exporta e importa en JSON desde el primer día (§10.4).
+
+### 10.2 La web de Rumor
+- **Mismo sistema de diseño que la app** (§4.5, `tokens.css`, el icono y las fuentes), en HTML y TS sin framework, ligera y en ES/EN, con tema claro y oscuro.
+- **Lo que tiene, en este orden:**
+  1. **Portada:** Rumor en una frase, con la esfera o el espectro animados.
+  2. **«Escúchalo aquí»:** la demo con el motor WASM (`web/`). Lo que vende es el sonido.
+  3. **Por qué suena mejor:** se genera en el momento, nunca se repite, sin anuncios, sin cuenta, sin telemetría, open source.
+  4. **Funciones:** los ruidos, el temporizador y el Estudio, con capturas reales.
+  5. **«¿Dónde lo quieres?»:** un botón por dispositivo, y el del dispositivo del visitante sale marcado:
+     - **Windows** → el instalador de la última release, con el aviso de SmartScreen (§7).
+     - **iPhone / iPad** → `/app/`, con instrucciones ilustradas de «Compartir → Añadir a pantalla de inicio».
+     - **Android** → `/app/`, con el botón de instalar del navegador.
+     - **Mac / Linux** → «Próximamente» (v1.0).
+  6. **Pie:** GitHub, licencia MIT y, más adelante, Rumor Plus.
+
+### 10.3 La app del móvil: sonido
+- **El mismo DSP:** `web/src/lib.rs` incluye `noise.rs`, `smoothing.rs`, `bell.rs` y `analysis.rs` de la app. Cada mejora del sonido llega también a la web.
+- **Lleva:** color, volumen, espectro, temporizador de apagado con fundido, y controles en la pantalla de bloqueo y en los cascos (Media Session).
+- **No lleva:** bandeja, atajos, mini reloj, el pie de Windows ni el updater (el service worker se actualiza solo).
+- **Diseño táctil:** zonas de 44 px o más, respeto del notch (`safe-area-inset`) y el tema del sistema.
+- **Sin red una vez instalada:** el service worker guarda en caché todos los archivos (regla 8).
+- **Salida por un `<audio>`** (decidido el 2026-11-27, tras la W0: `docs/web-spike.md`): AudioWorklet → `MediaStreamAudioDestinationNode` → `<audio>`. Si el AudioWorklet va directo a la salida, iOS lo apaga al bloquear la pantalla. Con el `<audio>`, en el iPhone sigue sonando bloqueado (15 min al 100 %) y con el interruptor de silencio. **Un bucle pregrabado no vale**, porque rompe la promesa de §1.
+- **Play y pausa los gobierna el sistema:** Media Session solo lleva `metadata` (título e icono), sin `setActionHandler`. iOS pausa y reanuda el `<audio>` él mismo, y el motor lo sigue.
+  - **Cascos fuera → pausa al instante** (§3.3), y **cascos dentro → vuelve solo**.
+  - **Un vídeo o una llamada** lo pausan, y luego se reanuda a mano, como la música.
+  - **El botón de la app** para el motor, espera su fundido de salida y después pausa el `<audio>`.
+
+### 10.4 La app del móvil: Estudio
+- **La misma lógica que en Windows:** `study/machine.rs` y `study/stats.rs` compilados a WASM, sin reescribirlos. En `wasm32` el `Instant` sale de `web_time`, porque `std::time::Instant::now()` no existe ahí.
+- **Guardado en IndexedDB**, con el modelo de `db.rs` (sesiones, segmentos y etiquetas), y **exportar e importar en JSON**.
+- **Avisos:** la campana con la app abierta. En iOS, con la pantalla bloqueada no hay avisos sin un servidor de *push*, y no se añade ninguno: se dice claro en la interfaz.
+
+### 10.5 Rumor Plus (se diseña en la W4)
+- **Lo gratis nunca empeora:** los tres ruidos, la calidad de sonido y el Estudio son siempre gratis.
+- **Plus, de pago único:** extras como los ambientes, más colores o el resumen del año.
+- **Cobro con un «merchant of record»** (Lemon Squeezy o Paddle), que se encarga del IVA europeo.
+- **Licencia:** una clave firmada que se comprueba sin conexión y sin cuenta. A ser posible, la misma clave vale en Windows y en la web.
+- Cuando se haga, hay que actualizar la regla 8 de `CLAUDE.md` (la compra se hace en la página del proveedor) y §1.

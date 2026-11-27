@@ -107,6 +107,55 @@ Cada fase termina **compilando, con los tests en verde y con un commit**. No se 
 
 ---
 
+## Rumor en el móvil y en la web (SPEC §10, decidido el 2026-11-27)
+
+Va en paralelo a las versiones de Windows, una fase cada vez y con los mismos criterios (tests, clippy, fmt y tsc en verde, y `npm run build:web`).
+
+### ~~Fase W0 — Prueba en un iPhone real (sí o no)~~ → hecha el 2026-11-27
+**Resultado** (`docs/web-spike.md`): en el iPhone vale la **variante 2** (salida por `<audio>`). Android se prueba en la W2, con la app ya hecha.
+
+- Una página mínima en una URL de vista previa de Cloudflare Pages (https), con tres variantes de salida:
+  1. el AudioWorklet directo, como la demo;
+  2. el AudioWorklet → `MediaStreamAudioDestinationNode` → `<audio>`, con Media Session;
+  3. la 2, más `navigator.audioSession.type = "playback"`.
+- Se prueba en el iPhone (como PWA instalada y en Safari) y en Android con Chrome:
+  - 30 min con la pantalla bloqueada,
+  - cambiar de app,
+  - una llamada entrante,
+  - quitarse los AirPods (tiene que pausar),
+  - el interruptor de silencio.
+- Los resultados se apuntan en `docs/web-spike.md`.
+
+**Hecho cuando:** se sabe qué variante sigue sonando con la pantalla bloqueada en cada sistema y se decide el camino. Si iOS no lo permite: la PWA sale para Android, en iOS con el aviso de «mantén la pantalla encendida», y la app nativa (Tauri v2 móvil) se adelanta a la W4.
+
+### Fase W1 — La web de Rumor (`rumor.marioyuste.com/`)
+- Proyecto de Cloudflare Pages con el dominio personalizado.
+- Las secciones de SPEC §10.2: portada, demo, por qué suena mejor, funciones y «¿Dónde lo quieres?», con el dispositivo del visitante marcado.
+- ES/EN, tema claro y oscuro, y `tokens.css`.
+
+**Hecho cuando:** se ve premium en móvil, tablet y escritorio; cada botón lleva a su sitio (el de Windows, a la última release); la demo suena sin clics. Hasta la W2, los botones del móvil dicen «Próximamente».
+
+### Fase W2 — La app del móvil: sonido (`/app/`)
+- Un modo de Vite `pwa`, siguiendo `vite.web.config.ts`.
+- `manifest.webmanifest`, con los iconos de `scripts/gen-app-icon.mjs` (maskable y Apple touch).
+- Un service worker que lo guarda todo en caché.
+- El panel adaptado al tacto (SPEC §10.3), Media Session y el temporizador de apagado.
+
+**Hecho cuando:** se instala en el iPhone y en Android, funciona sin conexión, suena como en Windows y responde a los controles de la pantalla de bloqueo.
+
+### Fase W3 — La app del móvil: Estudio
+- `study/machine.rs` y `stats.rs` compilados a WASM, con `web_time::Instant` en `wasm32`.
+- IndexedDB, y exportar e importar en JSON.
+- La campana con la app abierta.
+
+**Hecho cuando:** una sesión de 2 h con pausas cuadra al segundo, y exportar → borrar → importar lo deja todo igual.
+
+### Fase W4 — Rumor Plus
+- Con su propio plan: qué es Plus, el proveedor de pago, la licencia sin conexión y los cambios de la regla 8 y de SPEC §1.
+- Mario consulta la parte fiscal con un gestor.
+
+---
+
 ## Cómo medir si la beta va bien
 - Issues abiertos y la calidad del feedback en Discussions (no hay telemetría, a propósito).
 - Estrellas y descargas de la release en GitHub.
