@@ -10,7 +10,8 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "tauri": "tauri",
-    "build:web": "cargo build --release --target wasm32-unknown-unknown --manifest-path web/Cargo.toml && tsc --noEmit && vite build --config vite.web.config.ts"
+    "build:web": "cargo build --release --target wasm32-unknown-unknown --manifest-path web/Cargo.toml && tsc --noEmit && vite build --config vite.web.config.ts",
+    "build:spike": "cargo build --release --target wasm32-unknown-unknown --manifest-path web/Cargo.toml && tsc --noEmit && vite build --config vite.spike.config.ts"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.12.5"

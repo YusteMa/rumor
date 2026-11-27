@@ -24,7 +24,9 @@ const COLOR_INDEX: Record<Color, number> = { pink: 0, brown: 1, white: 2 };
 
 // Runs on the browser's audio thread. It gets the .wasm bytes, compiles them
 // there and asks the engine for each 128-frame block, like the cpal callback.
-const WORKLET = `
+// `export` lo deja usar desde otros archivos (aquí, la página de prueba de la
+// W0 en src/spike/), como declararlo en un .h en C++.
+export const WORKLET = `
 class Rumor extends AudioWorkletProcessor {
   constructor(options) {
     super();

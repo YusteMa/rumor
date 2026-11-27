@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- Para que iOS la abra a pantalla completa, como una app, desde la pantalla de inicio. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Rumor W0" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icon.png" />
+    <title>Rumor · prueba W0</title>
+    <script type="module" src="./spike.ts"></script>
+  </head>
+  <body>
+    <main>
+      <h1>Prueba W0</h1>
+      <p class="hint">¿Sigue sonando con la pantalla bloqueada? Elige una variante, dale a sonar y bloquea el móvil.</p>
+
+      <fieldset id="variants">
+        <legend>Salida del audio</legend>
+        <label><input type="radio" name="variant" value="1" /> 1 · AudioWorklet directo</label>
+        <label><input type="radio" name="variant" value="2" /> 2 · Por un &lt;audio&gt; + Media Session</label>
+        <label><input type="radio" name="variant" value="3" /> 3 · La 2 + audioSession «playback»</label>
+      </fieldset>
+
+      <button id="play" type="button" disabled>Preparando…</button>
+
+      <dl id="status"></dl>
+
+      <div class="row">
+        <button id="copy" type="button" class="ghost">Copiar registro</button>
+        <button id="clear" type="button" class="ghost">Borrar registro</button>
+      </div>
+      <ol id="log"></ol>
+    </main>
+  </body>
+</html>
