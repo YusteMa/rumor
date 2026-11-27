@@ -77,7 +77,8 @@ rumor/
 │  ├─ icons/                 # icono de la app, generado por scripts/gen-app-icon.mjs
 │  ├─ capabilities/default.json
 │  └─ tauri.conf.json
-├─ docs/  (prototype.html, QA.md)
+├─ web/                      # src/lib.rs: el motor en WebAssembly (demo); site/: la web de Rumor (SPEC §10, `npm run build:site`)
+├─ docs/  (prototype.html, QA.md, web-spike.md)
 ├─ scripts/                  # generadores (icono de la app)
 ├─ .github/  (workflows/ci.yml, workflows/release.yml, ISSUE_TEMPLATE/)
 ├─ SPEC.md  ROADMAP.md  README.md  CONTRIBUTING.md  LICENSE  CLAUDE.md

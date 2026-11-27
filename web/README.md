@@ -31,6 +31,17 @@ clock) are hidden.
 Copy `web/dist/` to the website as `public/rumor/panel/` and update the
 version noted in `src/components/DemoRuido.astro`.
 
+## The Rumor website
+
+`web/site/` is the website at rumor.marioyuste.com (SPEC §10.2). `npm run build:site`
+builds the demo above, then the site into `web/site-dist/`, with the demo copied
+into `demo/`. The Windows button links to the installer of the version in the
+`updater` branch's `latest.json`. To publish:
+
+```sh
+npx wrangler pages deploy web/site-dist --project-name rumor-site --branch main
+```
+
 ## API
 
 | Function | What it does |
