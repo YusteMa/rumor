@@ -129,6 +129,8 @@ Va en paralelo a las versiones de Windows, una fase cada vez y con los mismos cr
 **Hecho cuando:** se sabe qué variante sigue sonando con la pantalla bloqueada en cada sistema y se decide el camino. Si iOS no lo permite: la PWA sale para Android, en iOS con el aviso de «mantén la pantalla encendida», y la app nativa (Tauri v2 móvil) se adelanta a la W4.
 
 ### Fase W1 — La web de Rumor (`rumor.marioyuste.com/`)
+**Beta publicada el 2026-11-27** (`web/site/`, `npm run build:site`). Falta una ronda de cambios de Mario y hacer capturas en español y en los dos temas.
+
 - Proyecto de Cloudflare Pages con el dominio personalizado.
 - Las secciones de SPEC §10.2: portada, demo, por qué suena mejor, funciones y «¿Dónde lo quieres?», con el dispositivo del visitante marcado.
 - ES/EN, tema claro y oscuro, y `tokens.css`.

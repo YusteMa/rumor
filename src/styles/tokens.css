@@ -236,6 +236,40 @@
   --progress-height: 2px;
   --toast-hover: color-mix(in srgb, var(--bg) 14%, transparent);
 
+  /* Web de Rumor (SPEC §10.2, web/site/): la página que presenta Rumor.
+     Los tamaños grandes crecen con la pantalla con clamp(mínimo, ideal, máximo). */
+  --site-max: 1120px;
+  --site-gutter: 16px;
+  --site-section-gap: clamp(72px, 11vw, 136px);
+  --site-hero-text: clamp(40px, 6.4vw, 68px);
+  --site-h2: clamp(28px, 4.2vw, 44px);
+  --site-lead: clamp(17px, 1.8vw, 20px);
+  --site-nav-height: 64px;
+  --site-icon: 28px;
+  --site-art: clamp(220px, 34vw, 380px);
+  /* El icono de la app (scripts/gen-app-icon.mjs): siempre en oscuro,
+     con barras del 15 % de ancho separadas un 9 %. */
+  --icon-tile: #1c1a19;
+  --icon-tile-line: #3a3432;
+  --icon-bar-pink: #e8899f;
+  --icon-bar-brown: #e5a05e;
+  --icon-bar-white: #afbacb;
+  --site-art-radius: 22.5%;
+  --site-bar-width: 15%;
+  --site-bar-gap: 9%;
+  --site-stats-height: 900px;
+  --site-backdrop: 0.45;
+  --site-glow: 0 30px 90px color-mix(in srgb, var(--accent) 28%, transparent);
+  --site-panel-width: 360px;
+  --site-panel-height: 668px;
+  --site-shot-shadow: 0 24px 60px rgb(43 37 35 / 0.16), 0 4px 14px rgb(43 37 35 / 0.08);
+  --site-card-pad: clamp(20px, 3vw, 32px);
+  --site-badge-pad-x: 10px;
+  --site-reveal: 600ms;
+  --site-bars: 2.8s;
+  --tracking-display: -0.03em;
+  --leading-display: 1.04;
+
   /* Motion. */
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);

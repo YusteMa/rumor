@@ -1,0 +1,661 @@
+/* La web de Rumor (SPEC §10.2). Todo color, tamaño y duración sale de
+   src/styles/tokens.css (regla 9): los mismos de la app, más los --site-*.
+   El tema claro u oscuro lo pone el sistema, como en la app. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Al saltar a una sección, que no quede debajo de la barra de arriba. */
+  scroll-padding-top: var(--site-nav-height);
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: var(--text-md) / var(--leading-text) var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-display);
+  text-wrap: balance;
+}
+
+h3 {
+  font-size: var(--text-lg);
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading);
+}
+
+p {
+  margin: 0;
+  text-wrap: pretty;
+}
+
+/* Enlace para saltar la barra con el teclado: solo se ve al enfocarlo. */
+.skip {
+  position: absolute;
+  left: var(--space-4);
+  top: calc(-1 * var(--site-nav-height));
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  z-index: 10;
+}
+
+.skip:focus {
+  top: var(--space-2);
+}
+
+/* ---------- Barra de arriba ---------- */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: saturate(1.4) blur(14px);
+  border-bottom: var(--border-width) solid color-mix(in srgb, var(--line) 70%, transparent);
+}
+
+.nav__inner,
+.footer__inner,
+main {
+  width: min(100% - 2 * var(--site-gutter), var(--site-max));
+  margin-inline: auto;
+}
+
+.nav__inner {
+  height: var(--site-nav-height);
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font: var(--weight-semibold) var(--text-lg) / 1 var(--font-display);
+  letter-spacing: var(--tracking-tight);
+  text-decoration: none;
+}
+
+.brand__icon {
+  width: var(--site-icon);
+  height: var(--site-icon);
+  border-radius: var(--radius-control);
+}
+
+.brand--small {
+  font-size: var(--text-md);
+}
+
+.brand--small .brand__icon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.nav__links {
+  display: flex;
+  gap: var(--space-6);
+  margin-left: auto;
+}
+
+.nav__links a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: var(--text-sm);
+  transition: color var(--dur-open) var(--ease-out);
+}
+
+.nav__links a:hover {
+  color: var(--ink);
+}
+
+.lang {
+  min-width: var(--control-height);
+  height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink);
+  font: var(--weight-semibold) var(--text-xs) / 1 var(--font);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background var(--dur-open) var(--ease-out);
+}
+
+.lang:hover {
+  background: var(--surface-hover);
+}
+
+/* En el móvil no caben los enlaces: queda la marca y el idioma. */
+@media (width < 640px) {
+  .nav__links {
+    display: none;
+  }
+
+  .lang {
+    margin-left: auto;
+  }
+}
+
+/* ---------- Piezas comunes ---------- */
+
+.eyebrow {
+  color: var(--accent);
+  font: var(--weight-semibold) var(--text-sm) / var(--leading) var(--font);
+  letter-spacing: 0.02em;
+  transition: color var(--dur-accent) var(--ease-in-out);
+}
+
+.lead {
+  color: var(--muted);
+  font-size: var(--site-lead);
+  max-width: var(--measure);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(var(--control-height) + var(--space-4));
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-pill);
+  font: var(--weight-semibold) var(--text-md) / 1 var(--font);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform var(--dur-press) var(--ease-out),
+    background var(--dur-open) var(--ease-out),
+    box-shadow var(--dur-open) var(--ease-out);
+}
+
+.button:active {
+  transform: scale(var(--press-scale));
+}
+
+.button--primary {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.button--primary:hover {
+  box-shadow: var(--site-glow);
+}
+
+.button--ghost {
+  border: var(--border);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.button--ghost:hover {
+  background: var(--surface-hover);
+}
+
+.section {
+  margin-top: var(--site-section-gap);
+}
+
+.section__head {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-8);
+}
+
+.section__head h2 {
+  font-size: var(--site-h2);
+}
+
+/* ---------- Portada ---------- */
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-8);
+  min-height: calc(88svh - var(--site-nav-height));
+  padding-block: var(--space-8);
+}
+
+.hero__text {
+  display: grid;
+  gap: var(--space-6);
+  justify-items: start;
+}
+
+.hero h1 {
+  font-size: var(--site-hero-text);
+}
+
+.facts {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+/* El icono de Rumor en grande: tesela oscura con tres barras (rosa,
+   caramelo y perla) que suben y bajan despacio, cada una a su ritmo. */
+.art {
+  display: grid;
+  place-items: center;
+}
+
+.art__tile {
+  width: var(--site-art);
+  aspect-ratio: 1;
+  border-radius: var(--site-art-radius);
+  background: var(--icon-tile);
+  border: var(--border-width) solid var(--icon-tile-line);
+  box-shadow: var(--site-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--site-bar-gap);
+  transition: box-shadow var(--dur-accent) var(--ease-in-out);
+}
+
+.art__bar {
+  width: var(--site-bar-width);
+  border-radius: var(--radius-pill);
+  transform-origin: center;
+  animation: breathe var(--site-bars) var(--ease-in-out) infinite alternate;
+}
+
+.art__bar--pink {
+  background: var(--icon-bar-pink);
+  height: 36%;
+}
+
+.art__bar--brown {
+  background: var(--icon-bar-brown);
+  height: 60%;
+  animation-duration: calc(var(--site-bars) * 1.31);
+  animation-delay: calc(var(--site-bars) * -0.4);
+}
+
+.art__bar--white {
+  background: var(--icon-bar-white);
+  height: 43%;
+  animation-duration: calc(var(--site-bars) * 0.83);
+  animation-delay: calc(var(--site-bars) * -0.7);
+}
+
+@keyframes breathe {
+  from {
+    transform: scaleY(var(--breathe-min));
+  }
+  to {
+    transform: scaleY(calc(var(--breathe-max) + 0.12));
+  }
+}
+
+@media (width < 860px) {
+  .hero {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    padding-block: var(--space-8) 0;
+  }
+
+  .art {
+    order: -1;
+    justify-items: start;
+  }
+
+  .art__tile {
+    width: calc(var(--site-art) * 0.5);
+  }
+}
+
+/* ---------- La demo ---------- */
+
+.demo__body {
+  display: grid;
+  grid-template-columns: var(--site-panel-width) minmax(0, 1fr);
+  gap: var(--space-8) calc(var(--space-8) * 2);
+  align-items: start;
+}
+
+.window {
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  border: var(--border);
+  background: var(--bg);
+  box-shadow: var(--site-shot-shadow);
+}
+
+.window__panel {
+  display: block;
+  width: 100%;
+  height: var(--site-panel-height);
+  border: 0;
+  background: var(--bg);
+}
+
+.tips {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: tip;
+  display: grid;
+  gap: var(--space-6);
+  align-self: center;
+}
+
+.tips li {
+  counter-increment: tip;
+  display: grid;
+  grid-template-columns: calc(var(--control-height) + var(--space-2)) 1fr;
+  gap: var(--space-1) var(--space-3);
+}
+
+/* El número de cada paso, en un círculo del color del ruido. */
+.tips li::before {
+  content: counter(tip);
+  grid-row: span 2;
+  width: calc(var(--control-height) + var(--space-2));
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--ink);
+  font: var(--weight-semibold) var(--text-sm) / 1 var(--font);
+  transition: background var(--dur-accent) var(--ease-in-out);
+}
+
+.tips b {
+  font-weight: var(--weight-semibold);
+}
+
+.tips span {
+  color: var(--muted);
+}
+
+@media (width < 860px) {
+  .demo__body {
+    grid-template-columns: minmax(0, var(--site-panel-width));
+    justify-content: center;
+  }
+}
+
+/* ---------- Por qué suena mejor ---------- */
+
+.cards {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--card-min)), 1fr));
+  gap: var(--space-4);
+}
+
+.card {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  padding: var(--site-card-pad);
+  border: var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.card p {
+  color: var(--muted);
+}
+
+/* ---------- Funciones ---------- */
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-8) var(--space-6);
+  align-items: start;
+}
+
+.feature {
+  margin: 0;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.feature img {
+  border-radius: var(--radius-card);
+  box-shadow: var(--site-shot-shadow);
+  margin-inline: auto;
+  max-height: var(--site-panel-height);
+  width: auto;
+}
+
+.feature--wide {
+  grid-column: 1 / -1;
+}
+
+.feature--wide img {
+  max-height: none;
+  width: 100%;
+}
+
+.feature figcaption {
+  display: grid;
+  gap: var(--space-1);
+  max-width: var(--measure);
+}
+
+.feature figcaption p {
+  color: var(--muted);
+}
+
+.callout {
+  margin-top: var(--space-8);
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-card);
+  background: var(--accent-soft);
+  font-weight: var(--weight-semibold);
+  transition: background var(--dur-accent) var(--ease-in-out);
+}
+
+@media (width < 640px) {
+  .features {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- ¿Dónde lo quieres? ---------- */
+
+.platforms {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--card-min)), 1fr));
+  gap: var(--space-4);
+}
+
+.platform {
+  position: relative;
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: var(--space-3);
+  padding: var(--site-card-pad);
+  border: var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  transition: border-color var(--dur-accent) var(--ease-in-out);
+}
+
+/* La tarjeta del dispositivo del visitante, marcada con el color del ruido. */
+.platform--yours {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 var(--border-width) var(--accent);
+}
+
+.platform__meta {
+  color: var(--muted);
+}
+
+.platform__note {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--pill-pad-y) var(--site-badge-pad-x);
+  border-radius: var(--radius-pill);
+  font: var(--weight-semibold) var(--text-xs) / var(--leading) var(--font);
+}
+
+.badge[hidden] {
+  display: none;
+}
+
+.badge--yours {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.badge--soon {
+  background: var(--surface-hover);
+  color: var(--muted);
+}
+
+/* ---------- Pie ---------- */
+
+.footer {
+  margin-top: var(--site-section-gap);
+  border-top: var(--border);
+}
+
+.footer__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-6);
+  padding-block: var(--space-8) calc(var(--space-8) + env(safe-area-inset-bottom));
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.footer a {
+  color: var(--muted);
+  text-underline-offset: 3px;
+}
+
+.footer a:hover {
+  color: var(--ink);
+}
+
+/* ---------- Estadísticas de la demo ---------- */
+
+.stats {
+  width: min(100% - 2 * var(--site-gutter), var(--stats-max));
+  height: min(100svh - 2 * var(--site-gutter), var(--site-stats-height));
+  padding: 0;
+  border: var(--border);
+  border-radius: var(--radius-card);
+  background: var(--bg);
+  color: var(--ink);
+  overflow: hidden;
+}
+
+.stats[open] {
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.stats::backdrop {
+  background: rgb(0 0 0 / var(--site-backdrop));
+  backdrop-filter: blur(4px);
+}
+
+.stats__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  border-bottom: var(--border);
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.stats__close {
+  height: var(--control-height);
+  padding: 0 var(--space-4);
+  border: var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink);
+  font: var(--weight-semibold) var(--text-sm) / 1 var(--font);
+  cursor: pointer;
+}
+
+.stats__frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* ---------- Entradas al hacer scroll ---------- */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(calc(var(--open-offset) * 2));
+  transition:
+    opacity var(--site-reveal) var(--ease-out),
+    transform var(--site-reveal) var(--ease-out);
+}
+
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .art__bar {
+    animation: none;
+  }
+}

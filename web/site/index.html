@@ -1,0 +1,244 @@
+<!doctype html>
+<!-- La web de Rumor (SPEC §10.2). El texto en español está escrito aquí;
+     site.ts lo cambia al inglés si hace falta (los textos están en i18n.ts). -->
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Rumor · Ruido para concentrarte, calculado en directo</title>
+    <meta
+      name="description"
+      content="Rumor genera ruido rosa, marrón y blanco en tiempo real: nunca en bucle, sin anuncios y sin cuenta. Con cronómetro y Pomodoro para estudiar. Gratis y open source."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#faf7f5" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1c1a19" media="(prefers-color-scheme: dark)" />
+    <meta property="og:title" content="Rumor · Ruido para concentrarte, calculado en directo" />
+    <meta property="og:description" content="Ruido rosa, marrón y blanco que nunca se repite. Gratis, sin anuncios y open source." />
+    <meta property="og:type" content="website" />
+    <link rel="icon" type="image/png" href="./icon.png" />
+    <link rel="apple-touch-icon" href="./icon.png" />
+    <script type="module" src="./site.ts"></script>
+  </head>
+  <body>
+    <a class="skip" href="#main" data-i18n="skip">Saltar al contenido</a>
+
+    <header class="nav">
+      <div class="nav__inner">
+        <a class="brand" href="#top" aria-label="Rumor">
+          <img class="brand__icon" src="./icon.png" alt="" width="28" height="28" />
+          <span>Rumor</span>
+        </a>
+        <nav class="nav__links" aria-label="Secciones" data-i18n-aria="navLabel">
+          <a href="#escuchar" data-i18n="navListen">Escuchar</a>
+          <a href="#funciones" data-i18n="navFeatures">Funciones</a>
+          <a href="#descargar" data-i18n="navDownload">Descargar</a>
+        </nav>
+        <button class="lang" type="button" data-lang-toggle aria-label="Read in English">EN</button>
+      </div>
+    </header>
+
+    <main id="main">
+      <!-- ---------- Portada ---------- -->
+      <section class="hero" id="top">
+        <div class="hero__text">
+          <p class="eyebrow" data-i18n="heroEyebrow">Ruido rosa, marrón y blanco</p>
+          <h1 data-i18n="heroTitle">Ruido para concentrarte, calculado en directo.</h1>
+          <p class="lead" data-i18n="heroLead">
+            Rumor no reproduce ninguna grabación: genera el ruido en el momento, así que nunca se repite ni suena
+            comprimido. Sin anuncios y sin cuenta. Y si estudias con él, te cuenta el tiempo.
+          </p>
+          <div class="actions">
+            <a class="button button--primary" href="#descargar" data-primary>Descargar</a>
+            <a class="button button--ghost" href="#escuchar" data-secondary data-i18n="ctaListen">Escúchalo aquí</a>
+          </div>
+          <p class="facts" data-i18n="heroFacts">Gratis · Open source · Windows 10 y 11</p>
+        </div>
+
+        <!-- El icono de la app en grande: tres barras que respiran. Solo decora. -->
+        <div class="art" aria-hidden="true">
+          <div class="art__tile">
+            <i class="art__bar art__bar--pink"></i>
+            <i class="art__bar art__bar--brown"></i>
+            <i class="art__bar art__bar--white"></i>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- La demo: el panel de verdad ---------- -->
+      <section class="section demo" id="escuchar" aria-labelledby="demo-title">
+        <div class="section__head">
+          <p class="eyebrow" data-i18n="demoEyebrow">Pruébalo</p>
+          <h2 id="demo-title" data-i18n="demoTitle">Escúchalo aquí</h2>
+          <p class="lead" data-i18n="demoLead">
+            Es la app, no una captura: el mismo panel y el mismo motor de audio que en Windows, sonando en tu
+            navegador. Mejor con cascos y el volumen bajo.
+          </p>
+        </div>
+
+        <div class="demo__body">
+          <div class="window">
+            <iframe
+              class="window__panel"
+              data-panel
+              title="Panel de Rumor: reproduce ruido rosa, marrón o blanco"
+              loading="lazy"
+              allow="autoplay"
+            ></iframe>
+          </div>
+
+          <ol class="tips">
+            <li>
+              <b data-i18n="tip1Title">Dale al play</b>
+              <span data-i18n="tip1">El ruido entra con un fundido, sin golpe.</span>
+            </li>
+            <li>
+              <b data-i18n="tip2Title">Cambia de color sin parar</b>
+              <span data-i18n="tip2">Rosa, marrón o blanco: el motor cruza los dos en 150 ms y no se oye ni un clic.</span>
+            </li>
+            <li>
+              <b data-i18n="tip3Title">Arranca el cronómetro</b>
+              <span data-i18n="tip3">Va ligado al ruido: si arranca uno, arranca el otro.</span>
+            </li>
+            <li>
+              <b data-i18n="tip4Title">Mira las estadísticas</b>
+              <span data-i18n="tip4">Con diez semanas de ejemplo, para ver cómo cuenta Rumor el tiempo.</span>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- ---------- Por qué suena mejor ---------- -->
+      <section class="section" aria-labelledby="why-title">
+        <div class="section__head">
+          <p class="eyebrow" data-i18n="whyEyebrow">El sonido, primero</p>
+          <h2 id="why-title" data-i18n="whyTitle">Por qué suena mejor</h2>
+        </div>
+        <ul class="cards">
+          <li class="card">
+            <h3 data-i18n="why1Title">Calculado, no grabado</h3>
+            <p data-i18n="why1">
+              El ruido de YouTube o Spotify es audio comprimido, y el ruido no se deja comprimir: suena burbujeante.
+              Rumor lo calcula muestra a muestra, como los sonidos de fondo del iPhone.
+            </p>
+          </li>
+          <li class="card">
+            <h3 data-i18n="why2Title">Nunca en bucle</h3>
+            <p data-i18n="why2">
+              No hay ningún archivo que vuelva a empezar, así que tu cabeza no encuentra la costura.
+            </p>
+          </li>
+          <li class="card">
+            <h3 data-i18n="why3Title">Ni un clic</h3>
+            <p data-i18n="why3">
+              Volumen, color, pausa: todo cambio se suaviza. Si alguna vez oyes un clic, es un fallo.
+            </p>
+          </li>
+          <li class="card">
+            <h3 data-i18n="why4Title">Tuyo y de nadie más</h3>
+            <p data-i18n="why4">Sin anuncios, sin cuenta y sin telemetría. Código abierto, con licencia MIT.</p>
+          </li>
+        </ul>
+      </section>
+
+      <!-- ---------- Funciones ---------- -->
+      <section class="section" id="funciones" aria-labelledby="features-title">
+        <div class="section__head">
+          <p class="eyebrow" data-i18n="featuresEyebrow">Funciones</p>
+          <h2 id="features-title" data-i18n="featuresTitle">Para estudiar, no solo para escuchar</h2>
+        </div>
+
+        <div class="features">
+          <figure class="feature">
+            <img data-shot="panelNoise" alt="" loading="lazy" width="360" height="540" />
+            <figcaption>
+              <h3 data-i18n="f1Title">Tres colores</h3>
+              <p data-i18n="f1">Rosa equilibrado, marrón profundo y blanco brillante, con su espectro en directo.</p>
+            </figcaption>
+          </figure>
+          <figure class="feature">
+            <img data-shot="panelStudy" alt="" loading="lazy" width="360" height="716" />
+            <figcaption>
+              <h3 data-i18n="f2Title">Cronómetro o Pomodoro</h3>
+              <p data-i18n="f2">Ligado al ruido: le das al play y empiezas a contar. Con etiquetas por asignatura.</p>
+            </figcaption>
+          </figure>
+          <figure class="feature feature--wide">
+            <img data-shot="statistics" alt="" loading="lazy" width="820" height="878" />
+            <figcaption>
+              <h3 data-i18n="f3Title">Estadísticas</h3>
+              <p data-i18n="f3">
+                Tu semana y tu mes, un objetivo semanal y a qué horas rindes más. Todo se guarda en tu equipo.
+              </p>
+            </figcaption>
+          </figure>
+        </div>
+
+        <p class="callout" data-i18n="headphones">
+          Si se desconectan los cascos, Rumor se pausa. Nunca suena por los altavoces sin que se lo pidas.
+        </p>
+      </section>
+
+      <!-- ---------- ¿Dónde lo quieres? ---------- -->
+      <section class="section" id="descargar" aria-labelledby="download-title">
+        <div class="section__head">
+          <p class="eyebrow" data-i18n="downloadEyebrow">Descargar</p>
+          <h2 id="download-title" data-i18n="downloadTitle">¿Dónde lo quieres?</h2>
+        </div>
+
+        <ul class="platforms">
+          <li class="platform" data-platform="windows">
+            <span class="badge badge--yours" data-i18n="yours" hidden>Tu dispositivo</span>
+            <h3>Windows</h3>
+            <p class="platform__meta" data-windows-meta>Windows 10 y 11</p>
+            <a class="button button--primary" data-windows-download data-i18n="downloadWindows">Descargar</a>
+            <p class="platform__note" data-i18n="smartscreen">
+              La beta aún no está firmada: si Windows dice «Windows protegió su PC», pulsa «Más información» y
+              «Ejecutar de todas formas».
+            </p>
+          </li>
+          <li class="platform" data-platform="ios">
+            <span class="badge badge--yours" data-i18n="yours" hidden>Tu dispositivo</span>
+            <h3 data-i18n="ios">iPhone y iPad</h3>
+            <p class="platform__meta" data-i18n="iosMeta">Una app web que se instala desde Safari, sin App Store.</p>
+            <span class="badge badge--soon" data-i18n="soon">Próximamente</span>
+          </li>
+          <li class="platform" data-platform="android">
+            <span class="badge badge--yours" data-i18n="yours" hidden>Tu dispositivo</span>
+            <h3>Android</h3>
+            <p class="platform__meta" data-i18n="androidMeta">La misma app web, instalable desde Chrome.</p>
+            <span class="badge badge--soon" data-i18n="soon">Próximamente</span>
+          </li>
+          <li class="platform" data-platform="desktop">
+            <span class="badge badge--yours" data-i18n="yours" hidden>Tu dispositivo</span>
+            <h3 data-i18n="desktop">Mac y Linux</h3>
+            <p class="platform__meta" data-i18n="desktopMeta">Tauri lo permite: llegará con la versión 1.0.</p>
+            <span class="badge badge--soon" data-i18n="later">Más adelante</span>
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer__inner">
+        <span class="brand brand--small">
+          <img class="brand__icon" src="./icon.png" alt="" width="20" height="20" />
+          <span>Rumor</span>
+        </span>
+        <span data-i18n="footerLicense">Código abierto · Licencia MIT</span>
+        <a href="https://github.com/YusteMa/rumor">GitHub</a>
+        <a href="https://marioyuste.com" data-i18n="footerBy">Hecho por Mario Yuste</a>
+      </div>
+    </footer>
+
+    <!-- Estadísticas de la demo: el panel pide abrirlas con un mensaje.
+         <dialog> con showModal() ya trae fondo oscurecido, foco atrapado y Esc. -->
+    <dialog class="stats" data-stats>
+      <form method="dialog" class="stats__bar">
+        <span data-i18n="statsTitle">Estadísticas · datos de ejemplo</span>
+        <button type="submit" class="stats__close" data-i18n="close">Cerrar</button>
+      </form>
+      <iframe class="stats__frame" data-stats-frame title="Estadísticas de Rumor con datos de ejemplo"></iframe>
+    </dialog>
+  </body>
+</html>
