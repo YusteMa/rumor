@@ -1,6 +1,6 @@
 # Fase W0: ¿suena Rumor con el móvil bloqueado?
 
-Prueba de usar y tirar (`src/spike/`, `npm run build:spike`). Responde a una pregunta: si la app del móvil (PWA) puede seguir sonando con la pantalla bloqueada. Decide el camino de SPEC §10.3.
+Prueba de usar y tirar, ya borrada. El código está en el commit `58f4744` (`src/spike/`, `npm run build:spike`): `git show 58f4744` o `git checkout 58f4744 -- src/spike vite.spike.config.ts` para recuperarla. Responde a una pregunta: si la app del móvil (PWA) puede seguir sonando con la pantalla bloqueada. Decide el camino de SPEC §10.3.
 
 **Cómo se mide:** el reloj del `AudioContext` solo avanza mientras el navegador genera audio. La página lo compara con la hora real y apunta en el registro «el audio avanzó X de Y». **Audio vivo** es el total desde que le diste a sonar.
 

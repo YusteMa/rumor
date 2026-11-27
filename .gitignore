@@ -24,4 +24,3 @@ Thumbs.db
 # Web demo (WebAssembly)
 web/target/
 web/dist/
-web/dist-spike/

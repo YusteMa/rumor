@@ -31,13 +31,6 @@ clock) are hidden.
 Copy `web/dist/` to the website as `public/rumor/panel/` and update the
 version noted in `src/components/DemoRuido.astro`.
 
-## Background-audio test (phase W0)
-
-`npm run build:spike` builds the throwaway test page in `src/spike/` into
-`web/dist-spike/`. It answers one question for the phone app (SPEC §10.3): does
-Rumor keep sounding with the screen locked? How to test, and the results:
-[`docs/web-spike.md`](../docs/web-spike.md). Deleted once W0 has its answer.
-
 ## API
 
 | Function | What it does |
